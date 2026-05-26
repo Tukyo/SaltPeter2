@@ -1,6 +1,6 @@
-appId: com.pixelsim.app
-productName: PixelSim
-copyright: Copyright © 2025
+appId: com.saltpeter.app
+productName: SaltPeter
+copyright: Copyright © 2026
 
 directories:
   output: release

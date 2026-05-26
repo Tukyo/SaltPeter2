@@ -57,7 +57,7 @@ export class SandboxScene extends Nitrate.Scene {
             type: { default: 'noise' }
         });
         new Nitrate.MaterialsPanel({ activeMaterial: { defaultMaterial: 'sand' } });
-        new Nitrate.ScenePanel();
+        new Nitrate.ScenePanel({clear: {}});
 
         new Nitrate.AnalyticsOverlay();
         new Nitrate.DebugOverlay();
