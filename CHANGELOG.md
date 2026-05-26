@@ -2,7 +2,7 @@
 
 ---
 
-## [0.0.2] - Patch
+## [0.0.2] - Patch - 05/26/2026
 ### Updates & Changes
 - Added eyedropper tool to the editor (gameobject mode) — hold ALT to sample any material under the cursor, ALT+click applies the material, brush type, and color variant to the active panels
 - Added eyedropper tooltip UI with color swatch, material name, and ID

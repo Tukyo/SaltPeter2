@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit && electron-vite build",
     "package": "electron-vite build && electron-builder",
     "release": "electron-vite build && electron-builder --publish always",
+    "version": "node changelog.mjs && git add CHANGELOG.md",
     "docs": "node docs.mjs"
   },
   "keywords": [],
