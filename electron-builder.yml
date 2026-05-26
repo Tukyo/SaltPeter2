@@ -6,6 +6,7 @@ publish:
   provider: github
   owner: Tukyo
   repo: SaltPeter2
+  releaseType: release
 
 directories:
   output: release
