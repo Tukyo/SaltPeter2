@@ -1,18 +1,27 @@
 {
   "name": "saltpeter",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "type": "module",
-  "description": "",
   "main": "out/main/main.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit && electron-vite build",
     "package": "electron-vite build && electron-builder",
+    "release": "electron-vite build && electron-builder --publish always",
     "docs": "node docs.mjs"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Tukyo Games",
+  "description": "SaltPeter - Powered by Nitrate",
+  "homepage": "https://tukyo.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tukyo/SaltPeter2.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Tukyo/SaltPeter2/issues"
+  },
+  "license": "CC0-1.0",
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@types/node": "^25.9.0",
@@ -22,5 +31,8 @@
     "electron-vite": "^5.0.0",
     "typescript": "^6.0.3",
     "vite": "^7.3.3"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.3"
   }
 }

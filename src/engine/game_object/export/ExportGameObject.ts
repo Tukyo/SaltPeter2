@@ -2,7 +2,7 @@ import type { MaterialId } from '../../materials/definitions/MaterialIdentity';
 import type { Rect2D, Vec2 } from '../../definitions/Primitives';
 
 import { Export } from './Export';
-import { MaterialVisualSchema } from '../../materials/MaterialVisualSchema';
+import { MaterialQuery } from '../../materials/MaterialQuery';
 import { Metadata } from '../Metadata';
 import { PixelData } from '../../component/definitions/pixeldata/PixelData';
 import { SimulationManager } from '../../simulation/SimulationManager';
@@ -44,7 +44,6 @@ export class ExportGameObject extends Export {
         if (!pingPong || !texturePixelReader) { return; }
 
         const gridSize = pingPong.width;
-        const colorsPerMaterial = MaterialVisualSchema.GetColorsPerMaterial();
 
         const { x1, y1, x2, y2 } = norm;
         const width = x2 - x1 + 1;
@@ -67,7 +66,7 @@ export class ExportGameObject extends Export {
                 for (let cx = x1; cx <= x2; cx++) {
                     const byteOffset = (y2 - cy) * bytesPerRow + cx * 4;
                     const materialId = data[byteOffset] as MaterialId;
-                    const colorVariant = Math.floor((data[byteOffset + 1] / 255) * colorsPerMaterial);
+                    const colorVariant = MaterialQuery.DecodeColorIndex(data[byteOffset + 1]);
                     pixelData.cells.push({ pos: { x: cx - x1, y: cy - y1 }, materialId, colorVariant });
                 }
             }

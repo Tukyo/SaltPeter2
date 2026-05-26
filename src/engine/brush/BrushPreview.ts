@@ -16,9 +16,7 @@ import { SimulationManager } from '../simulation/SimulationManager';
 export class BrushPreview extends NitrateProcess {
     private readonly canvas: HTMLCanvasElement;
     private readonly element: HTMLDivElement;
-    private readonly resizeObserver: ResizeObserver;
 
-    private rect: DOMRect;
     private lastSize: number = -1;
     private lastCellW: number = -1;
     private lastCellX: number = -1;
@@ -36,12 +34,6 @@ export class BrushPreview extends NitrateProcess {
         this.element = document.createElement('div');
         this.element.id = 'brush-preview';
         document.body.appendChild(this.element);
-
-        this.rect = this.canvas.getBoundingClientRect();
-        this.resizeObserver = new ResizeObserver(() => {
-            this.rect = this.canvas.getBoundingClientRect();
-        });
-        this.resizeObserver.observe(this.canvas);
     }
 
     public Start(): void {
@@ -61,10 +53,11 @@ export class BrushPreview extends NitrateProcess {
         const pingPong = SimulationManager.Instance?.pingPong;
         if (!brushState || !pingPong) { this.Hide(); return; }
 
+        const rect = this.canvas.getBoundingClientRect();
         const simWidth = pingPong.width;
         const simHeight = pingPong.height;
-        const cellW = this.rect.width / Math.max(1, simWidth);
-        const cellH = this.rect.height / Math.max(1, simHeight);
+        const cellW = rect.width / Math.max(1, simWidth);
+        const cellH = rect.height / Math.max(1, simHeight);
 
         const size = Math.max(1, brushState.GetSize());
         const elW = size * cellW;
@@ -79,15 +72,15 @@ export class BrushPreview extends NitrateProcess {
             cellX = Math.floor(mouse.pos.x * simWidth / Math.max(1, this.canvas.width));
             cellY = Math.floor(mouse.pos.y * simHeight / Math.max(1, this.canvas.height));
             const halfSize = Math.floor(size / 2);
-            screenX = this.rect.left + (cellX - halfSize) * cellW;
-            screenY = this.rect.top + this.rect.height - (cellY + 1 + halfSize) * cellH;
+            screenX = rect.left + (cellX - halfSize) * cellW;
+            screenY = rect.top + rect.height - (cellY + 1 + halfSize) * cellH;
         } else {
-            const csX = this.rect.width / Math.max(1, this.canvas.width);
-            const csY = this.rect.height / Math.max(1, this.canvas.height);
+            const csX = rect.width / Math.max(1, this.canvas.width);
+            const csY = rect.height / Math.max(1, this.canvas.height);
             cellX = Math.floor(mouse.pos.x * simWidth / Math.max(1, this.canvas.width));
             cellY = Math.floor(mouse.pos.y * simHeight / Math.max(1, this.canvas.height));
-            screenX = this.rect.left + mouse.pos.x * csX - elW / 2;
-            screenY = this.rect.top + this.rect.height - mouse.pos.y * csY - elH / 2;
+            screenX = rect.left + mouse.pos.x * csX - elW / 2;
+            screenY = rect.top + rect.height - mouse.pos.y * csY - elH / 2;
         }
 
         const isErase = brushState.GetMode() === 'erase';
@@ -126,7 +119,6 @@ export class BrushPreview extends NitrateProcess {
     }
 
     public OnDestroy(): void {
-        this.resizeObserver.disconnect();
         this.element.remove();
         LogManager.Instance?.Log({
             text: 'BrushPreview destroyed.',

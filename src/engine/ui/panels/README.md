@@ -41,6 +41,8 @@ interface BrushOptions {
 | [`GetMode(): BrushMode`](BrushPanel.ts) | Returns the current brush mode, or 'draw' if no mode control exists. |
 | [`GetBrushType(): BrushType`](BrushPanel.ts) | Returns the current brush type, or 'noise' if no type control exists. |
 | [`GetSnap(): boolean`](BrushPanel.ts) | Returns whether snap is enabled, or false if no snap control exists. |
+| [`SetBrushType(type: BrushType): void`](BrushPanel.ts) | Sets the brush type, updating the control UI and BrushManager. |
+| [`SetColorVariant(index: number): void`](BrushPanel.ts) | Sets the active palette color variant, updating the control UI and BrushManager. |
 | [`GetColorVariant(): number`](BrushPanel.ts) | Returns the currently selected palette color variant index, or 0 if no palette exists. |
 | [`ApplySettings(): void`](BrushPanel.ts) | Pushes all current panel values to BrushState. Call after BrushManager reinitializes. |
 | [`SetPaletteColors(colors: Color[]): void`](BrushPanel.ts) | Updates the palette swatch colors from an array of Color values. |
@@ -96,6 +98,7 @@ interface MaterialsPanelParams {
 
 | Method | Description |
 |--------|-------------|
+| [`SetActiveMaterialById(id: MaterialId): void`](MaterialsPanel.ts) | Sets the active material by ID, updating the control UI and BrushManager. |
 | [`GetMaterialId(): MaterialId`](MaterialsPanel.ts) | Returns the currently selected material ID, or 0 if no material control exists. |
 
 ---

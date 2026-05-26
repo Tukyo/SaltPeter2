@@ -4,6 +4,7 @@ import type { EditorMode } from './scripts/EditorModeController';
 
 import { AnchorController } from './scripts/AnchorController';
 import { EditorModeController } from './scripts/EditorModeController';
+import { EyedropperController } from './scripts/EyedropperController';
 import { OverlayController } from './scripts/OverlayController';
 import { SelectionController } from './scripts/SelectionController';
 
@@ -22,6 +23,7 @@ export class EditorScene extends Nitrate.Scene {
     private selectionController: SelectionController | null = null;
     private anchorController: AnchorController | null = null;
     private overlayController: OverlayController | null = null;
+    private eyedropperController: EyedropperController | null = null;
     private gridOverlay: Nitrate.Renderer2D | null = null;
 
     private hierarchy: Nitrate.Hierarchy | null = null;
@@ -132,6 +134,14 @@ export class EditorScene extends Nitrate.Scene {
                 type: { default: 'palette' },
                 snap: { default: true, show: false },
             });
+
+            if (renderer) {
+                this.eyedropperController = new EyedropperController(
+                    renderer.canvas,
+                    () => this.materialsPanel,
+                    () => this.brushPanel,
+                );
+            }
         } else {
             this.hierarchy?.AddHierarchyObject({ components: [Nitrate.Blueprint] });
 
@@ -186,6 +196,8 @@ export class EditorScene extends Nitrate.Scene {
         this.anchorController = null;
         this.DestroyProcess(this.overlayController);
         this.overlayController = null;
+        this.DestroyProcess(this.eyedropperController);
+        this.eyedropperController = null;
         if (this.gridOverlay) { Nitrate.Renderer.Destroy2D(this.gridOverlay); }
         this.gridOverlay = null;
         this.DestroyProcess(this.renderingPanel);
@@ -438,6 +450,7 @@ export class EditorScene extends Nitrate.Scene {
         this.selectionController = null;
         this.anchorController = null;
         this.overlayController = null;
+        this.eyedropperController = null;
         this.gridOverlay = null;
         this.hierarchy = null;
         this.brushPanel = null;

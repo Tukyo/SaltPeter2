@@ -2,13 +2,14 @@ import type { SelectSetting, RangeSetting } from '../UserInterfaceTypes';
 
 import { CollapsiblePanel } from '../CollapsiblePanel';
 import { Modal } from '../Modal';
+import { NitrateEngine } from '../../NitrateEngine';
 import { NitrateProcess } from '../../NitrateProcess';
 import { RangeControl } from '../controls/RangeControl';
+import { Renderer } from '../../rendering/Renderer';
 import { SceneManager } from '../../scene/SceneManager';
 import { SelectControl } from '../controls/SelectControl';
 import { SimulationManager } from '../../simulation/SimulationManager';
 import { UserInterfaceManager } from '../UserInterfaceManager';
-import { WindowManager } from '../../window/WindowManager';
 
 export type RenderingPanelParams = ScaledParams | GridParams;
 
@@ -77,7 +78,8 @@ export class RenderingPanel extends NitrateProcess {
 
             const onResolutionChange = () => {
                 SimulationManager.Instance?.state.SetResolution(this.GetResolution());
-                WindowManager.Instance?.ScheduleResize();
+                const canvas = Renderer.Instance?.GetWebGPU()?.canvas;
+                if (canvas) { void NitrateEngine.Resize({ width: canvas.width, height: canvas.height }); }
                 params.onResolutionChange?.();
             };
             let prevResolution = this.resolutionElement.value;
@@ -109,7 +111,8 @@ export class RenderingPanel extends NitrateProcess {
 
             const onScaleChange = () => {
                 SimulationManager.Instance?.state.SetResolutionScale(this.GetResolutionScale());
-                WindowManager.Instance?.ScheduleResize();
+                const canvas = Renderer.Instance?.GetWebGPU()?.canvas;
+                if (canvas) { void NitrateEngine.Resize({ width: canvas.width, height: canvas.height }); }
                 params.onScaleChange?.();
             };
             let prevScale = this.scaleElement.value;

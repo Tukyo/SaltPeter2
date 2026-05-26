@@ -1,5 +1,6 @@
 import type { MaterialName } from './definitions/MaterialIdentity';
 import { MaterialRegistry } from './MaterialRegistry';
+import { MaterialVisualSchema } from './MaterialVisualSchema';
 
 export interface MaterialFilter {
     phases?: string[];
@@ -20,6 +21,11 @@ export class MaterialQuery {
         const all = Object.values(MaterialRegistry.Materials).filter(m => m.name !== 'air');
         return [...new Set(all.flatMap(m => m.tags ?? []))].sort()
             .map(t => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) }));
+    }
+
+    /** Decodes the G-channel seed byte from an rgba8unorm identity texture pixel into a 0-based color index. */
+    public static DecodeColorIndex(seedByte: number): number {
+        return Math.floor((seedByte / 255) * MaterialVisualSchema.GetColorsPerMaterial());
     }
 
     /** Filters non-air materials by phase and tag requirements, then returns them as sorted value/label pairs. */

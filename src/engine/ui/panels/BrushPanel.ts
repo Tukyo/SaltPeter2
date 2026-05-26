@@ -271,6 +271,31 @@ export class BrushPanel extends NitrateProcess {
         });
     }
 
+    /** Sets the brush type, updating the control UI and BrushManager. */
+    public SetBrushType(type: BrushType): void {
+        if (!this.typeElement || !this.typeSetting) { return; }
+        const group = this.typeElement as HTMLDivElement;
+        group.dataset.value = type;
+        group.querySelectorAll<HTMLButtonElement>('button').forEach(btn => {
+            const selected = btn.dataset.value === type;
+            btn.classList.toggle('is-selected', selected);
+            btn.setAttribute('aria-checked', String(selected));
+        });
+        this.SyncPaletteVisibility();
+        BrushManager.Instance?.state.SetType(type);
+    }
+
+    /** Sets the active palette color variant, updating the control UI and BrushManager. */
+    public SetColorVariant(index: number): void {
+        if (!this.paletteElement) { return; }
+        const group = this.paletteElement as HTMLDivElement;
+        group.dataset.value = String(index);
+        group.querySelectorAll<HTMLElement>('.palette-swatch').forEach((swatch, i) => {
+            swatch.classList.toggle('is-selected', i === index);
+        });
+        BrushManager.Instance?.state.SetColor(index);
+    }
+
     /** Returns the currently selected palette color variant index, or 0 if no palette exists. */
     public GetColorVariant(): number {
         if (!this.paletteElement) { return 0; }

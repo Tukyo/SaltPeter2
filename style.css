@@ -525,6 +525,55 @@ button.action-button--warn:hover {
 #brush-preview.is-visible { opacity: 1; }
 #brush-preview.is-erase   { border-color: rgba(255, 90, 90, 0.85); }
 
+/* ─── Eyedropper Tooltip ──────────────────────────────────────────────────── */
+
+#eyedropper-tooltip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    pointer-events: none;
+    min-width: 160px;
+    border-radius: 8px;
+    background: rgba(20, 20, 20, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.08s;
+}
+
+#eyedropper-tooltip.is-visible { opacity: 1; }
+
+.eyedropper-color {
+    width: 100%;
+    height: 32px;
+}
+
+.eyedropper-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+}
+
+.eyedropper-label {
+    font-size: 10px;
+    letter-spacing: 0.6px;
+    color: rgba(255, 255, 255, 0.38);
+    text-transform: uppercase;
+}
+
+.eyedropper-name {
+    font-size: 11px;
+    color: #c8c8c8;
+    flex: 1;
+}
+
+.eyedropper-id {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.3);
+}
+
 /* ─── Analytics Overlay ───────────────────────────────────────────────────── */
 
 .analytics-overlay {

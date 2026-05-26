@@ -203,6 +203,14 @@ export class MaterialsPanel extends NitrateProcess {
         this.UpdateVariants(initialId);
     }
 
+    /** Sets the active material by ID, updating the control UI and BrushManager. */
+    public SetActiveMaterialById(id: MaterialId): void {
+        if (!this.materialElement) { return; }
+        this.materialElement.value = String(id);
+        BrushManager.Instance?.SetMaterial(id);
+        this.UpdateVariants(id);
+    }
+
     /** Returns the currently selected material ID, or 0 if no material control exists. */
     public GetMaterialId(): MaterialId {
         if (!this.materialElement) { return 0; }

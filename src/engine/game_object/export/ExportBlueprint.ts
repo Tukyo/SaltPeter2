@@ -1,6 +1,6 @@
 import { Blueprint } from '../../component/definitions/blueprint/Blueprint';
 import { Export } from './Export';
-import { MaterialVisualSchema } from '../../materials/MaterialVisualSchema';
+import { MaterialQuery } from '../../materials/MaterialQuery';
 import { Metadata } from '../Metadata';
 import { SimulationManager } from '../../simulation/SimulationManager';
 
@@ -31,7 +31,6 @@ export class ExportBlueprint extends Export {
         if (!pingPong || !texturePixelReader) { return; }
 
         const { width, height } = pingPong;
-        const colorsPerMaterial = MaterialVisualSchema.GetColorsPerMaterial();
 
         const { data, bytesPerRow } = await texturePixelReader.ReadRegion({
             texture: pingPong.currentIdentity,
@@ -49,7 +48,7 @@ export class ExportBlueprint extends Export {
                 for (let cx = 0; cx < width; cx++) {
                     const byteOffset = (height - 1 - cy) * bytesPerRow + cx * 4;
                     if (data[byteOffset] === 0) { continue; }
-                    const colorVariant = Math.floor((data[byteOffset + 1] / 255) * colorsPerMaterial);
+                    const colorVariant = MaterialQuery.DecodeColorIndex(data[byteOffset + 1]);
                     blueprint.cells.push({ pos: { x: cx, y: cy }, colorVariant });
                 }
             }

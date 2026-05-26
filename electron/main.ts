@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import { join } from 'path';
 import fs from 'fs';
 import { deflateSync, inflateSync } from 'zlib';
@@ -114,6 +115,7 @@ function registerIpcHandlers(): void {
 
 function createWindow(): void {
     const win = new BrowserWindow({
+        title: `SaltPeter v${app.getVersion()}`,
         width: 1280,
         height: 800,
         webPreferences: {
@@ -129,7 +131,9 @@ function createWindow(): void {
         win.loadFile(join(__dirname, '../renderer/index.html'));
     }
 
-    win.webContents.openDevTools();
+    if (process.env['ELECTRON_RENDERER_URL']) {
+        win.webContents.openDevTools();
+    }
 
     win.webContents.on('before-input-event', (_e, input) => {
         if (input.type === 'keyDown' && input.key === 'F12') {
@@ -138,9 +142,30 @@ function createWindow(): void {
     });
 }
 
+function initAutoUpdater(): void {
+    if (process.env['ELECTRON_RENDERER_URL'] || process.env['STEAM_APPID']) { return; }
+    autoUpdater.autoDownload = false;
+    autoUpdater.on('update-available', (info) => {
+        const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
+        dialog.showMessageBox(win, {
+            type: 'info',
+            title: 'Update Available',
+            message: `SaltPeter ${info.version} is available. Would you like to download and install it?`,
+            buttons: ['Update', 'Later'],
+            defaultId: 0,
+            cancelId: 1,
+        }).then(({ response }) => {
+            if (response === 0) { void autoUpdater.downloadUpdate(); }
+        });
+    });
+    autoUpdater.on('update-downloaded', () => { autoUpdater.quitAndInstall(true, true); });
+    void autoUpdater.checkForUpdates();
+}
+
 app.whenReady().then(() => {
     registerIpcHandlers();
     createWindow();
+    initAutoUpdater();
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) { createWindow(); }

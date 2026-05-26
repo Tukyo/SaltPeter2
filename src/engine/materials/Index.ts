@@ -1,5 +1,6 @@
 export * from './definitions/Index';
 export * from './MaterialPhysicsBuffer';
+export * from './MaterialQuery';
 export * from './MaterialPhysicsSchema';
 export * from './MaterialRegistry';
 export * from './MaterialSimulation';

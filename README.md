@@ -16,6 +16,9 @@ Nitrate is the simulation engine powering this project — released separately u
 
 → [`src/engine/`](src/engine/README.md)
 
+## Changelog
+→ [`CHANGELOG.md`](CHANGELOG.md)
+
 ## License
 | Scope | License |
 |-------|---------|
