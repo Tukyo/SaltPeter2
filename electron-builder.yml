@@ -1,0 +1,28 @@
+appId: com.pixelsim.app
+productName: PixelSim
+copyright: Copyright © 2025
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - out/**/*
+  - src/game/resources/**/*
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch: x64
+  icon: build/icon.ico
+
+mac:
+  target:
+    - target: dmg
+      arch: x64
+  icon: build/icon.icns
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

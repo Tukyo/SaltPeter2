@@ -1,0 +1,7 @@
+This repository contains two separately licensed components:
+
+  engine/   — CC0 1.0 Universal (Public Domain)
+              See src/engine/LICENSE
+
+  game/     — All Rights Reserved
+              See src/game/LICENSE

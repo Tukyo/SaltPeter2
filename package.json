@@ -1,0 +1,26 @@
+{
+  "name": "saltpeter",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "main": "out/main/main.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit && electron-vite build",
+    "package": "electron-vite build && electron-builder",
+    "docs": "node docs.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@electron-toolkit/preload": "^3.0.2",
+    "@types/node": "^25.9.0",
+    "@webgpu/types": "^0.1.69",
+    "electron": "^42.2.0",
+    "electron-builder": "^26.8.1",
+    "electron-vite": "^5.0.0",
+    "typescript": "^6.0.3",
+    "vite": "^7.3.3"
+  }
+}

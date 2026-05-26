@@ -1,0 +1,169 @@
+{
+  "name": "TestGO",
+  "components": [
+    {
+      "enabled": true,
+      "type": "Transform",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "scale": {
+        "x": 1,
+        "y": 1
+      },
+      "parentId": null
+    },
+    {
+      "enabled": true,
+      "type": "PixelData",
+      "size": {
+        "width": 5,
+        "height": 3
+      },
+      "pivot": {
+        "x": 2,
+        "y": 1
+      },
+      "cells": [
+        {
+          "pos": {
+            "x": 0,
+            "y": 0
+          },
+          "materialId": 0,
+          "colorVariant": 0
+        },
+        {
+          "pos": {
+            "x": 1,
+            "y": 0
+          },
+          "materialId": 1,
+          "colorVariant": 0
+        },
+        {
+          "pos": {
+            "x": 2,
+            "y": 0
+          },
+          "materialId": 1,
+          "colorVariant": 0
+        },
+        {
+          "pos": {
+            "x": 3,
+            "y": 0
+          },
+          "materialId": 1,
+          "colorVariant": 0
+        },
+        {
+          "pos": {
+            "x": 4,
+            "y": 0
+          },
+          "materialId": 0,
+          "colorVariant": 0
+        },
+        {
+          "pos": {
+            "x": 0,
+            "y": 1
+          },
+          "materialId": 1,
+          "colorVariant": 0
+        },
+        {
+          "pos": {
+            "x": 1,
+            "y": 1
+          },
+          "materialId": 1,
+          "colorVariant": 0
+        },
+        {
+          "pos": {
+            "x": 2,
+            "y": 1
+          },
+          "materialId": 0,
+          "colorVariant": 0
+        },
+        {
+          "pos": {
+            "x": 3,
+            "y": 1
+          },
+          "materialId": 1,
+          "colorVariant": 0
+        },
+        {
+          "pos": {
+            "x": 4,
+            "y": 1
+          },
+          "materialId": 1,
+          "colorVariant": 0
+        },
+        {
+          "pos": {
+            "x": 0,
+            "y": 2
+          },
+          "materialId": 0,
+          "colorVariant": 0
+        },
+        {
+          "pos": {
+            "x": 1,
+            "y": 2
+          },
+          "materialId": 1,
+          "colorVariant": 0
+        },
+        {
+          "pos": {
+            "x": 2,
+            "y": 2
+          },
+          "materialId": 1,
+          "colorVariant": 0
+        },
+        {
+          "pos": {
+            "x": 3,
+            "y": 2
+          },
+          "materialId": 1,
+          "colorVariant": 0
+        },
+        {
+          "pos": {
+            "x": 4,
+            "y": 2
+          },
+          "materialId": 0,
+          "colorVariant": 0
+        }
+      ]
+    },
+    {
+      "enabled": true,
+      "type": "Rigidbody",
+      "bodyType": "Kinematic",
+      "mass": 2,
+      "gravityScale": 3,
+      "drag": 0,
+      "angularDrag": 0,
+      "friction": 0.5,
+      "bounciness": 0.2,
+      "velocity": {
+        "x": 0,
+        "y": 0
+      },
+      "angularVelocity": 0
+    }
+  ]
+}
