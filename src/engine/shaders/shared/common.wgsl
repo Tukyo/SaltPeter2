@@ -31,6 +31,14 @@ fn hash(p: vec2f) -> f32 {
     return fract(q.x * q.y);
 }
 
+fn timeHash(coord: vec2f, time: f32) -> f32 {
+    return hash(coord + vec2f(time * 1.6180339887, time * 2.6457513111));
+}
+
+fn displacementHash(coord: vec2f, time: f32) -> f32 {
+    return hash(coord + vec2f(time * 1.6180339887, time * 2.6457513111));
+}
+
 // --- Coordinate helpers ---
 
 fn inBounds(coord: vec2f, res: vec2f) -> bool {

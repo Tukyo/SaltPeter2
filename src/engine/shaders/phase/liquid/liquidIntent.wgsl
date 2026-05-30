@@ -40,7 +40,7 @@ fn chooseLiquidIntentForState(
     }
     let pushMag = length(vec2f(pushX, pushY));
     if pushMag > VELOCITY_ACCELERATION {
-        let splashRoll = hash(coord + vec2f(fract(time * 13.7), fract(time * 17.3)));
+        let splashRoll = timeHash(coord, time);
         if splashRoll < clamp(pushMag / MAX_VELOCITY * sim.turbulenceStrength, 0.0, 0.95) {
             let pushTarget = coord + round(normalize(vec2f(pushX, pushY)));
             if inBounds(pushTarget, res) && isAirCoord(pushTarget, res) {
@@ -81,24 +81,6 @@ fn chooseLiquidIntentForState(
             }
         }
         return MATERIAL_INTENT_FALL;
-    }
-
-    // Diagonal rise — slosh upward into air when blocked and under pressure
-    let up           = vec2f(0.0, gravityDirection);
-    let aboveLeft    = coord + up + CELL_LEFT;
-    let aboveRight   = coord + up + CELL_RIGHT;
-    let canRiseLeft  = isAirCoord(aboveLeft,  res);
-    let canRiseRight = isAirCoord(aboveRight, res);
-
-    if (canRiseLeft || canRiseRight || weaklyBonded) {
-        let sloshRoll = hash(coord + vec2f(flowSeed * 3.17, fallSeed * 5.83));
-        if sloshRoll < sim.turbulenceChance {
-            if canRiseLeft && canRiseRight {
-                return select(MATERIAL_INTENT_DIAGONAL_RISE_RIGHT, MATERIAL_INTENT_DIAGONAL_RISE_LEFT, dirRoll > velBias);
-            }
-            if canRiseLeft  { return MATERIAL_INTENT_DIAGONAL_RISE_LEFT; }
-            if canRiseRight { return MATERIAL_INTENT_DIAGONAL_RISE_RIGHT; }
-        }
     }
 
     // Diagonal down
@@ -144,11 +126,37 @@ fn chooseLiquidIntentForState(
                 var canSink = true;
                 if allowRise {
                     let liquidSim = getLiquidSimulation(getStateMaterialId(belowState));
-                    let roll      = hash(coord + vec2f(fract(time * 7.3), fract(time * 11.9)));
+                    let roll      = displacementHash(coord, time);
                     canSink = roll >= liquidSim.thickness;
                 }
                 if canSink { return MATERIAL_INTENT_FALL; }
             }
+        }
+    }
+
+    // Diagonal rise — slosh upward into air when blocked and under pressure
+    let up           = vec2f(0.0, gravityDirection);
+    let aboveLeft    = coord + up + CELL_LEFT;
+    let aboveRight   = coord + up + CELL_RIGHT;
+    let canRiseLeft  = isAirCoord(aboveLeft,  res);
+    let canRiseRight = isAirCoord(aboveRight, res);
+
+    if (canRiseLeft || canRiseRight || weaklyBonded) {
+        let sloshRoll = hash(coord + vec2f(flowSeed * 3.17, fallSeed * 5.83));
+        if sloshRoll < sim.turbulenceChance {
+            if canRiseLeft && canRiseRight {
+                return select(MATERIAL_INTENT_DIAGONAL_RISE_RIGHT, MATERIAL_INTENT_DIAGONAL_RISE_LEFT, dirRoll > velBias);
+            }
+            if canRiseLeft  { return MATERIAL_INTENT_DIAGONAL_RISE_LEFT; }
+            if canRiseRight { return MATERIAL_INTENT_DIAGONAL_RISE_RIGHT; }
+        }
+    }
+
+    // Pressure-driven displacement escape — propagates outward from displacement site each physics tick
+    if displacementHash(coord, time) < pressure * sim.dispersion {
+        let escapeTarget = chooseDisplacementEscapeTarget(coord, res, gravityDirection, true);
+        if !sameCoord(escapeTarget, coord) {
+            return getMaterialIntentCodeForTarget(coord, escapeTarget, gravityDirection);
         }
     }
 

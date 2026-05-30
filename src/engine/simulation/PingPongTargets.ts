@@ -16,6 +16,8 @@ export class PingPongTargets {
     public nextPhysics: GPUTexture;
     public currentState: GPUTexture;
     public nextState: GPUTexture;
+    public currentOwnership: GPUTexture;
+    public nextOwnership: GPUTexture;
 
     constructor(
         device: GPUDevice,
@@ -31,6 +33,8 @@ export class PingPongTargets {
         this.nextPhysics = TextureFactory.Create2D(device, width, height, 'rgba32float');
         this.currentState = TextureFactory.Create2D(device, width, height, 'rgba32float');
         this.nextState = TextureFactory.Create2D(device, width, height, 'rgba32float');
+        this.currentOwnership = TextureFactory.Create2D(device, width, height, 'r32uint');
+        this.nextOwnership = TextureFactory.Create2D(device, width, height, 'r32uint');
     }
 
     /**
@@ -78,6 +82,19 @@ export class PingPongTargets {
         this.nextState = temp;
     }
 
+    /**
+     * Swaps the ownership texture pair.
+     * Allows simulation subsystems to claim a cell.
+     * Type: r32uint
+     * R: GameObjectId (0 = unowned)
+     */
+    // @omitfromdocs
+    public SwapOwnership(): void {
+        const temp = this.currentOwnership;
+        this.currentOwnership = this.nextOwnership;
+        this.nextOwnership = temp;
+    }
+
     public OnDestroy(): void {
         this.currentIdentity.destroy();
         this.nextIdentity.destroy();
@@ -85,5 +102,7 @@ export class PingPongTargets {
         this.nextPhysics.destroy();
         this.currentState.destroy();
         this.nextState.destroy();
+        this.currentOwnership.destroy();
+        this.nextOwnership.destroy();
     }
 }

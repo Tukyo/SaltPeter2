@@ -1453,6 +1453,18 @@ button.action-button--warn:hover {
     font-family: monospace;
 }
 
+.inspector-field-slider input[type=range] {
+    flex: 1;
+}
+
+.inspector-slider-value {
+    flex: 0 0 32px;
+    font-size: 11px;
+    color: #888;
+    font-family: monospace;
+    text-align: right;
+}
+
 /* ─── Add Component ───────────────────────────────────────────────────────── */
 
 .inspector-add-component {

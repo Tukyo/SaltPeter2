@@ -59,7 +59,7 @@ fn chooseSolidTarget(
                 var canSink = true;
                 if allowRise {
                     let liquidSim = getLiquidSimulation(getStateMaterialId(belowState));
-                    let roll      = hash(sourceCoord + vec2f(fract(time * 7.3), fract(time * 11.9)));
+                    let roll      = displacementHash(sourceCoord, time);
                     canSink = roll >= liquidSim.thickness;
                 }
                 if canSink { return below; }

@@ -56,17 +56,14 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
     }
 
     if shouldPlace {
-        let matIdx            = clamp(i32(floor(brush.materialId + 0.5)), 0, MATERIAL_COUNT - 1);
-        let restingTemp       = physicsMaterials[matIdx].restingTemperature;
-        let normalizedDensity = physicsMaterials[matIdx].density / MAX_DENSITY;
-        let stateBase     = getMaterialStateBase(brush.materialId);
-        let spawnLifetime = select(0.0, 1.0, materialStates[stateBase].lifetime > 0.0);
-        let colorSeed   = select(chooseMaterialColorSeed(brush.materialId, coord), (brush.colorVariant + 0.5) / COLORS_PER_MATERIAL, brush.brushType >= 0.5);
-        var newIdentity = select(AIR_STATE, makeStateWithVariant(brush.materialId, colorSeed, brush.variantId), !isAirMaterial(brush.materialId));
-        if !isAirMaterial(brush.materialId) { newIdentity.a = brush.occupancy / 255.0; }
-        textureStore(nextIdentityTexture,  vec2i(id.xy), newIdentity);
-        textureStore(nextPhysicsTexture,   vec2i(id.xy), vec4f(restingTemp, normalizedDensity, 0.0, 0.0));
-        textureStore(nextCellStateTexture, vec2i(id.xy), vec4f(1.0, spawnLifetime, 0.0, 0.0));
+        let colorSeed = select(chooseMaterialColorSeed(brush.materialId, coord), (brush.colorVariant + 0.5) / COLORS_PER_MATERIAL, brush.brushType >= 0.5);
+        if isAirMaterial(brush.materialId) {
+            textureStore(nextIdentityTexture,  vec2i(id.xy), AIR_STATE);
+            textureStore(nextPhysicsTexture,   vec2i(id.xy), vec4f(0.0));
+            textureStore(nextCellStateTexture, vec2i(id.xy), vec4f(0.0));
+        } else {
+            instantiateCell(vec2i(id.xy), brush.materialId, brush.occupancy, brush.variantId, colorSeed);
+        }
     } else {
         textureStore(nextIdentityTexture,  vec2i(id.xy), currentState);
         textureStore(nextPhysicsTexture,   vec2i(id.xy), currentPhysics);

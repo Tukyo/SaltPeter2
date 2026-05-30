@@ -5,6 +5,11 @@ import { ShaderFactory } from './ShaderFactory';
 import {
     analyticsWgsl,
     commonWgsl,
+    gameObjectCollisionWgsl,
+    gameObjectEraseWgsl,
+    gameObjectPhysicsWgsl,
+    gameObjectStampWgsl,
+    instantiateCellWgsl,
     diffusionWgsl,
     displacementWgsl,
     displayWgsl,
@@ -200,6 +205,7 @@ export class ShaderAssembler {
             commonWgsl,
             identityWgsl,
             stateWgsl,
+            instantiateCellWgsl,
             brushOutputWgsl,
             brushWgsl,
         ].join('\n');
@@ -214,6 +220,56 @@ export class ShaderAssembler {
             ShaderFactory.GenerateVisualEntryStruct(),
             commonWgsl,
             displayWgsl,
+        ].join('\n');
+    }
+    //#endregion
+
+    //#region GAME OBJECT
+    // @omitfromdocs
+    public static GameObjectErase(workgroupSize: number): string {
+        return [
+            ShaderFactory.GenerateWorkgroupSize(workgroupSize),
+            ShaderFactory.GenerateGameObjectStateStruct(),
+            ShaderFactory.GenerateGameObjectCellStruct(),
+            ShaderFactory.GenerateGameObjectPassUniformStruct(),
+            commonWgsl,
+            gameObjectEraseWgsl,
+        ].join('\n');
+    }
+
+    // @omitfromdocs
+    public static GameObjectStamp(workgroupSize: number): string {
+        return [
+            ShaderFactory.GenerateWorkgroupSize(workgroupSize),
+            ShaderFactory.GenerateGameObjectStateStruct(),
+            ShaderFactory.GenerateGameObjectCellStruct(),
+            ShaderFactory.GenerateGameObjectPassUniformStruct(),
+            commonWgsl,
+            gameObjectStampWgsl,
+        ].join('\n');
+    }
+
+    // @omitfromdocs
+    public static GameObjectPhysics(workgroupSize: number): string {
+        return [
+            ShaderFactory.GenerateWorkgroupSize(workgroupSize),
+            ShaderFactory.GenerateGameObjectStateStruct(),
+            ShaderFactory.GenerateGameObjectPhysicsUniformStruct(),
+            ShaderFactory.GenerateGameObjectBodyTypeConstants(),
+            gameObjectPhysicsWgsl,
+        ].join('\n');
+    }
+
+    // @omitfromdocs
+    public static GameObjectCollision(workgroupSize: number): string {
+        return [
+            ShaderFactory.GenerateWorkgroupSize(workgroupSize),
+            ShaderFactory.GenerateGameObjectStateStruct(),
+            ShaderFactory.GenerateGameObjectColliderStruct(),
+            ShaderFactory.GenerateGameObjectCollisionUniformStruct(),
+            ShaderFactory.GenerateGameObjectBodyTypeConstants(),
+            commonWgsl,
+            gameObjectCollisionWgsl,
         ].join('\n');
     }
     //#endregion

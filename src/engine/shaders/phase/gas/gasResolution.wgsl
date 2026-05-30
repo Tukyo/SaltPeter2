@@ -71,7 +71,7 @@ fn resolveGasCell(
 
     // Dissipation only fires once lifetime has expired (or for immortal gases with no lifetime).
     if !lifetimeActive {
-        let dissipRoll = hash(coord + vec2f(fract(time * 7.3), fract(time * 11.9)));
+        let dissipRoll = timeHash(coord, time);
         let probability = 1.0 - exp(-sim.dissipationChance * uniforms.deltaTime);
         if dissipRoll < probability {
             return ResolvedCell(AIR_STATE, coord);

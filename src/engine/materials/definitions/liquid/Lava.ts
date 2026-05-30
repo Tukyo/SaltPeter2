@@ -34,7 +34,7 @@ export const Lava: MaterialDefinition = {
     transitions: {
         freezes: {
             to: 'basalt',
-            condition: { temperature: 0.75 }
+            condition: { temperature: 0.725 }
         }
     },
 };

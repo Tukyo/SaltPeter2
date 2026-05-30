@@ -14,7 +14,7 @@ export class RigidbodyField extends ComponentField<Rigidbody> {
         container.appendChild(this.NumberField('Gravity Scale', this.component.gravityScale, v => { this.component.gravityScale = v; }));
         container.appendChild(this.NumberField('Drag', this.component.drag, v => { this.component.drag = v; }));
         container.appendChild(this.NumberField('Angular Drag', this.component.angularDrag, v => { this.component.angularDrag = v; }));
-        container.appendChild(this.NumberField('Friction', this.component.friction, v => { this.component.friction = v; }));
-        container.appendChild(this.NumberField('Bounciness', this.component.bounciness, v => { this.component.bounciness = v; }));
+        container.appendChild(this.SliderField('Friction',   this.component.friction,   0, 1, 0.01, v => { this.component.friction   = v; }));
+        container.appendChild(this.SliderField('Bounciness', this.component.bounciness, 0, 1, 0.01, v => { this.component.bounciness = v; }));
     }
 }

@@ -180,7 +180,7 @@ export class Hierarchy extends NitrateProcess {
         input.select();
     }
 
-    /** Wires drag-and-drop reorder behaviour onto a rendered set of entry elements. */
+    /** Wires drag-and-drop reorder behavior onto a rendered set of entry elements. */
     private SetupDragReorder(elements: HTMLElement[]): void {
         if (elements.length <= 1) { return; }
 

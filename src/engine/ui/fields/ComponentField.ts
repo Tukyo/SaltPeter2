@@ -1,6 +1,6 @@
 import type { AnyComponent } from '../../component/Component';
 import type { ComponentConstructor } from '../../component/ComponentRegistry';
-import type { Vec2 } from '../../definitions/Primitives';
+import type { Size2D, Vec2 } from '../../definitions/Primitives';
 
 /** 
  * Abstract base class for all component inspector fields.
@@ -19,7 +19,11 @@ export abstract class ComponentField<T extends AnyComponent = AnyComponent> {
 
         const header = document.createElement('div');
         header.className = 'inspector-component-header';
-        header.addEventListener('click', () => { section.classList.toggle('is-collapsed'); });
+        header.addEventListener('click', () => {
+            const fieldsEl = section.querySelector('.inspector-component-fields');
+            if (!fieldsEl || fieldsEl.childElementCount === 0) { return; }
+            section.classList.toggle('is-collapsed');
+        });
 
         const icon = document.createElement('span');
         icon.className = 'inspector-component-icon';
@@ -57,6 +61,7 @@ export abstract class ComponentField<T extends AnyComponent = AnyComponent> {
         const fields = document.createElement('div');
         fields.className = 'inspector-component-fields';
         this.BuildFields(fields);
+        if (fields.childElementCount === 0) { section.classList.add('is-collapsed'); }
         section.appendChild(fields);
 
         this.element = section;
@@ -120,6 +125,47 @@ export abstract class ComponentField<T extends AnyComponent = AnyComponent> {
         return row;
     }
 
+    /** Builds a labeled two-axis size input row (width / height). */
+    protected Size2DField(
+        label: string,
+        value: Size2D,
+        onChange: (v: Size2D) => void,
+    ): HTMLElement {
+        const row = document.createElement('div');
+        row.className = 'inspector-field inspector-field-vec2';
+
+        const lbl = document.createElement('label');
+        lbl.textContent = label;
+
+        const wl = document.createElement('span');
+        wl.className = 'inspector-axis-label';
+        wl.textContent = 'W';
+
+        const w = document.createElement('input');
+        w.type = 'number'; w.value = String(value.width); w.step = 'any';
+
+        const hl = document.createElement('span');
+        hl.className = 'inspector-axis-label';
+        hl.textContent = 'H';
+
+        const h = document.createElement('input');
+        h.type = 'number'; h.value = String(value.height); h.step = 'any';
+
+        const update = () => {
+            onChange({ width: parseFloat(w.value) || 0, height: parseFloat(h.value) || 0 });
+        };
+        w.addEventListener('input', update);
+        h.addEventListener('input', update);
+
+        row.appendChild(lbl);
+        row.appendChild(wl);
+        row.appendChild(w);
+        row.appendChild(hl);
+        row.appendChild(h);
+
+        return row;
+    }
+
     /** Builds a labeled dropdown select row. */
     protected SelectField(label: string, value: string, options: string[], onChange: (v: string) => void,): HTMLElement {
         const row = document.createElement('div');
@@ -159,6 +205,49 @@ export abstract class ComponentField<T extends AnyComponent = AnyComponent> {
 
         row.appendChild(lbl);
         row.appendChild(input);
+
+        return row;
+    }
+
+    /** Builds a labeled slider row clamped to [min, max] with a live value readout. */
+    protected SliderField(
+        label: string,
+        value: number,
+        min: number,
+        max: number,
+        step: number,
+        onChange: (v: number) => void,
+    ): HTMLElement {
+        const row = document.createElement('div');
+        row.className = 'inspector-field inspector-field-slider';
+
+        const lbl = document.createElement('label');
+        lbl.textContent = label;
+
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.min = String(min);
+        slider.max = String(max);
+        slider.step = String(step);
+        slider.value = String(Math.min(max, Math.max(min, value)));
+
+        const fillPercent = (v: number) => `${((v - min) / (max - min)) * 100}%`;
+        slider.style.setProperty('--value', fillPercent(parseFloat(slider.value)));
+
+        const readout = document.createElement('span');
+        readout.className = 'inspector-slider-value';
+        readout.textContent = parseFloat(slider.value).toFixed(2);
+
+        slider.addEventListener('input', () => {
+            const parsed = parseFloat(slider.value);
+            slider.style.setProperty('--value', fillPercent(parsed));
+            readout.textContent = parsed.toFixed(2);
+            onChange(parsed);
+        });
+
+        row.appendChild(lbl);
+        row.appendChild(slider);
+        row.appendChild(readout);
 
         return row;
     }

@@ -1,4 +1,5 @@
-import type { AssetMetadata } from '../Metadata';
+import type { AssetType } from '../Metadata';
+import type { Size2D, Vec2 } from '../../definitions/Primitives';
 import type { GameObject } from '../GameObject';
 
 import { LogManager } from '../../debug/LogManager';
@@ -8,9 +9,11 @@ import { NitrateProcess } from '../../NitrateProcess';
 
 /** Abstract base for game object export. Subclasses implement Run() to define the export target and format. */
 export abstract class Export extends NitrateProcess {
+    // @omitfromdocs
     protected gameObjectProvider: (() => GameObject | null) | null = null;
 
     /** Sets the function used to retrieve the game object to export. */
+    // @omitfromdocs
     public SetGameObjectProvider(fn: () => GameObject | null): void { this.gameObjectProvider = fn; }
 
     /** Executes the export. Implemented by subclasses. @internal */
@@ -19,8 +22,8 @@ export abstract class Export extends NitrateProcess {
     /** Returns the output filename for the given game object. Defaults to `{name}.json`. */
     protected GetFilename(go: GameObject): string { return go.name + '.json'; }
 
-    /** Serializes the game object and writes both the asset JSON and its .meta file to disk. */
-    protected async WriteFile(go: GameObject, meta: AssetMetadata): Promise<void> {
+    /** Serializes the game object and writes both the asset JSON and its .meta file to disk. Preserves the existing GUID on re-export. */
+    protected async WriteFile(go: GameObject, type: AssetType, editor: { size: Size2D, pos?: Vec2 }): Promise<void> {
         const filename = this.GetFilename(go);
         const dir = filename.includes('/') ? filename.split('/').slice(0, -1).join('/') : null;
         if (dir) { await window.api.resources.mkdir(dir).catch(() => null); }
@@ -34,7 +37,7 @@ export abstract class Export extends NitrateProcess {
         const output = { name: go.name, components: go.components };
         try {
             await window.api.resources.write(filename, JSON.stringify(output, null, 2));
-        } catch (error) {
+        } catch {
             LogManager.Instance?.LogWarning({
                 text: `Failed to write ${filename}.`,
                 options: { tags: ['Export'] }
@@ -42,9 +45,10 @@ export abstract class Export extends NitrateProcess {
             return;
         }
 
+        const meta = await Metadata.GenerateOrPreserve(filename, type, editor);
         try {
             await window.api.resources.write(Metadata.GetMetaPath(filename), JSON.stringify(meta, null, 2));
-        } catch (error) {
+        } catch {
             LogManager.Instance?.LogWarning({
                 text: `Failed to write meta for ${filename}.`,
                 options: { tags: ['Export'] }
@@ -52,6 +56,7 @@ export abstract class Export extends NitrateProcess {
             return;
         }
 
+        Metadata.InvalidateGuidCache();
         LogManager.Instance?.Log({
             text: `Exported ${filename}.`,
             options: { tags: ['Export'] }

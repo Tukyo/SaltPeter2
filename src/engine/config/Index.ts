@@ -1,3 +1,4 @@
+export * from './GameObjectConfig'
 export * from './PhysicsConfig'
 export * from './KeybindConfig'
 export * from './SimulationConfig'

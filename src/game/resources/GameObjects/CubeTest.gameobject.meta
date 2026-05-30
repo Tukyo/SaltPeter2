@@ -1,5 +1,5 @@
 {
-  "guid": "58e5b7be-af88-4472-ae60-f7678111bdda",
+  "guid": "2b0880e2-e3d1-4db6-a758-a2a5306253b4",
   "type": "gameobject",
   "editor": {
     "size": {
@@ -7,8 +7,8 @@
       "height": 32
     },
     "pos": {
-      "x": 21,
-      "y": 18
+      "x": 15,
+      "y": 12
     }
   }
 }

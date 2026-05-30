@@ -44,6 +44,13 @@ new Nitrate.DebugOverlay();
 
 ---
 
+### [`GameObjectOverlay`](GameObjectOverlay.ts)
+Debug overlay for visualising GameObject state in the simulation.
+Driven by [`DebugOverlay`](DebugOverlay.ts) — do not instantiate directly.
+
+
+---
+
 ### [`LogManager`](LogManager.ts)
 Singleton logger that routes all engine console output through a tag-based
 filter and colour formatter before forwarding to the browser console.

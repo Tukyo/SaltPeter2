@@ -19,9 +19,9 @@ export class ImportBlueprint extends Import {
      */
     public async Run(filename?: string): Promise<void> {
         const go = this.gameObjectProvider?.() ?? null;
-        const data = await this.ReadFile(filename);
+        const data = await this.ReadFileEditor(filename);
         if (!go || !data) { return; }
-        this.HydrateGameObject(go, data);
+        Import.HydrateGameObject(go, data);
     }
 
     public OnDestroy(): void {

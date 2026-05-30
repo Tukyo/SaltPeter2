@@ -65,5 +65,14 @@ export { default as stateWgsl } from './state/state.wgsl?raw';
 // Debug
 export { default as analyticsWgsl } from './analytics/analytics.wgsl?raw';
 
+// Instantiation
+export { default as instantiateCellWgsl } from './instantiation/instantiateCell.wgsl?raw';
+
 // Visual
 export { default as displayWgsl } from './visual/display.wgsl?raw';
+
+// Game object
+export { default as gameObjectEraseWgsl } from './game_object/gameObjectErase.wgsl?raw';
+export { default as gameObjectStampWgsl } from './game_object/gameObjectStamp.wgsl?raw';
+export { default as gameObjectPhysicsWgsl } from './game_object/gameObjectPhysics.wgsl?raw';
+export { default as gameObjectCollisionWgsl } from './game_object/gameObjectCollision.wgsl?raw';

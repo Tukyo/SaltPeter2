@@ -9,6 +9,7 @@ import { Analytics } from '../debug/Analytics';
 import { AnalyticsPass } from '../debug/AnalyticsPass';
 import { LogManager } from '../debug/LogManager';
 import { DiffusionPass } from './DiffusionPass';
+import { GameObjectPass } from '../game_object/GameObjectPass';
 import { IntentPass } from './IntentPass';
 import { PhysicsPass } from './PhysicsPass';
 
@@ -62,6 +63,7 @@ export class SimulationManager extends NitrateProcess {
 
     public analyticsPass: AnalyticsPass | null = null;
     public diffusionPass: DiffusionPass | null = null;
+    public gameObjectPass: GameObjectPass | null = null;
     public intentPass: IntentPass | null = null;
     public physicsPass: PhysicsPass | null = null;
     public simPass: SimulationPass | null = null;
@@ -76,6 +78,10 @@ export class SimulationManager extends NitrateProcess {
 
     private Register<T extends { OnDestroy?(): void }>(process: T): T {
         this.processes.push(process);
+        LogManager.Instance?.Log({
+            text: `Registered process: ${process.constructor.name}`,
+            options: { tags: ['Sim', 'PassRegistry'] }
+        });
         return process;
     }
 
@@ -152,7 +158,7 @@ export class SimulationManager extends NitrateProcess {
         this.materialSimBuffer = this.Register(new MaterialSimulationBuffer(device));
         this.reactionBuffer = this.Register(new ReactionLookupBuffer(device));
 
-        const [intentPass, simPass, diffusionPass, physicsPass, analyticsPass]
+        const [intentPass, simPass, diffusionPass, physicsPass, analyticsPass, gameObjectPass]
             = await Promise.all([
                 IntentPass.Create({
                     device,
@@ -182,6 +188,7 @@ export class SimulationManager extends NitrateProcess {
                     physicsBuffer: this.materialPhysicsBuffer
                 }),
                 AnalyticsPass.Create(device),
+                GameObjectPass.Create({ device, targets: this.pingPong }),
             ]);
 
         this.intentPass = this.Register(intentPass);
@@ -189,9 +196,11 @@ export class SimulationManager extends NitrateProcess {
         this.diffusionPass = this.Register(diffusionPass);
         this.physicsPass = this.Register(physicsPass);
         this.analyticsPass = this.Register(analyticsPass);
+        this.gameObjectPass = this.Register(gameObjectPass);
 
         Analytics.Init(this.analyticsPass);
         SimulationManager.Instance = this;
+
         LogManager.Instance?.Log({
             text: 'Simulation ready.',
             options: { tags: ['Sim', 'NitrateProcessInit'] }
@@ -201,9 +210,9 @@ export class SimulationManager extends NitrateProcess {
 
     /** Dispatches all simulation passes for the current frame. Returns step counts for profiling. @internal */
     public Simulate(now: number): { simulationSteps: number; physicsSteps: number } {
-        const { pingPong, intentPass, simPass, diffusionPass, physicsPass } = this;
+        const { pingPong, intentPass, simPass, diffusionPass, physicsPass, gameObjectPass } = this;
         const webgpu = Renderer.Instance?.GetWebGPU();
-        if (!pingPong || !intentPass || !simPass || !diffusionPass || !physicsPass || !webgpu) {
+        if (!pingPong || !intentPass || !simPass || !diffusionPass || !physicsPass || !gameObjectPass || !webgpu) {
             return { simulationSteps: 0, physicsSteps: 0 };
         }
 
@@ -223,14 +232,19 @@ export class SimulationManager extends NitrateProcess {
         let physicsSteps = 0;
 
         for (let i = 0; i < stepInfo.simulationSteps; i++) {
-            state.SetSimTime(state.GetSimTime() + 1 / baseTickRate);
+            const simStepDuration = 1 / baseTickRate;
+            state.SetSimTime(state.GetSimTime() + simStepDuration);
+
             const enc = device.createCommandEncoder();
             intentPass.Run({ encoder: enc, time: state.GetSimTime(), gravity });
             simPass.Run({ encoder: enc, time: state.GetSimTime(), gravity });
+            gameObjectPass.Run({ encoder: enc, gravity, simStepDuration });
             device.queue.submit([enc.finish()]);
+            gameObjectPass.ReadbackPositions();
             pingPong.SwapIdentity();
             pingPong.SwapPhysics();
             pingPong.SwapState();
+            pingPong.SwapOwnership();
 
             const diffEnc = device.createCommandEncoder();
             diffusionPass.Run(diffEnc, state.GetSimStepCount() % 2);
@@ -294,6 +308,7 @@ export class SimulationManager extends NitrateProcess {
         this.intentPass = null;
         this.simPass = null;
         this.diffusionPass = null;
+        this.gameObjectPass = null;
         this.physicsPass = null;
         this.analyticsPass = null;
 

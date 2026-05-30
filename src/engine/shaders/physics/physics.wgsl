@@ -16,9 +16,10 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 
     if !inBounds(coord, res) { return; }
 
-    let existing    = textureLoad(physicsTexture, vec2i(id.xy));
-    let temperature = propagateTemperature(coord, res);
-    let pressure    = computePressure(coord, res, physicsUniforms.gravity);
+    let existing      = textureLoad(physicsTexture, vec2i(id.xy));
+    let gravityDir    = getGravityDirection(physicsUniforms.gravity);
+    let temperature   = propagateTemperature(coord, res);
+    let pressure      = computePressure(coord, res, gravityDir);
 
     let identityState = textureLoad(identityTexture, vec2i(id.xy));
     let occupied      = isOccupiedState(identityState);

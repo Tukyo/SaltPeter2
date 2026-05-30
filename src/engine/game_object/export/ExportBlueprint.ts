@@ -1,7 +1,6 @@
 import { Blueprint } from '../../component/definitions/blueprint/Blueprint';
 import { Export } from './Export';
 import { MaterialQuery } from '../../materials/MaterialQuery';
-import { Metadata } from '../Metadata';
 import { SimulationManager } from '../../simulation/SimulationManager';
 
 /**
@@ -54,8 +53,7 @@ export class ExportBlueprint extends Export {
             }
         }
 
-        const meta = Metadata.Generate('blueprint', { size: { width, height } });
-        await this.WriteFile(go, meta);
+        await this.WriteFile(go, 'blueprint', { size: { width, height } });
     }
 
     public OnDestroy(): void {

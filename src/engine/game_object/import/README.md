@@ -13,10 +13,6 @@ Internal pipeline for deserialising game objects and blueprints from disk. Wired
 ### [`Import`](Import.ts)
  Abstract base for game object import. Subclasses implement Run() to define the import source and target.
 
-| Method | Description |
-|--------|-------------|
-| [`SetGameObjectProvider(fn: () => GameObject \| null): void`](Import.ts) | Sets the function used to retrieve the target game object to hydrate. |
-| [`SetFilenameProvider(fn: () => string \| null): void`](Import.ts) | Sets the function used to retrieve the filename to import from. |
 
 ---
 

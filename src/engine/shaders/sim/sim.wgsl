@@ -12,6 +12,7 @@
 @group(0) @binding(10) var<storage, read> materialStates: array<MaterialStateEntry>;
 @group(0) @binding(11) var<storage, read> reactionLookup: array<f32>;
 @compute @workgroup_size(WG_SIZE, WG_SIZE)
+
 fn main(@builtin(global_invocation_id) id: vec3u) {
     let res   = vec2f(textureDimensions(identityTexture));
     let coord = vec2f(f32(id.x), f32(id.y));
@@ -20,19 +21,6 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 
     let currentIdentityState = textureLoad(identityTexture, vec2i(id.xy));
     let currentPhysics       = textureLoad(physicsTexture, vec2i(id.xy));
-
-    if isStaticCell(currentIdentityState) {
-        let reactionResult = checkReactions(coord, res, currentIdentityState, uniforms.time);
-        let finalState     = select(currentIdentityState, reactionResult.state, reactionResult.state.a >= 0.0);
-        var cellState      = textureLoad(cellStateTexture, vec2i(id.xy));
-        if reactionResult.state.a >= 0.0 && isOccupiedState(finalState) {
-            cellState = reactionResult.cellState;
-        }
-        textureStore(nextIdentityTexture,  vec2i(id.xy), finalState);
-        textureStore(nextPhysicsTexture,   vec2i(id.xy), currentPhysics);
-        textureStore(nextCellStateTexture, vec2i(id.xy), select(vec4f(0.0), cellState, isOccupiedState(finalState)));
-        return;
-    }
 
     let resolvedCell         = resolveCellForState(
         coord,

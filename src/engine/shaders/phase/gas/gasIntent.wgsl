@@ -25,7 +25,7 @@ fn chooseGasIntentForState(
         if isOccupiedState(belowState) && canDisplace(myState, belowState) && isGasPhaseCoord(below, res) {
             if hasDisplacementEscapeRoute(below, res, gravityDirection, true) {
                 let belowSim  = getGasSimulation(getStateMaterialId(belowState));
-                let sinkRoll  = hash(below + vec2f(fract(time * 3.7), fract(time * 5.3)));
+                let sinkRoll  = displacementHash(below, time);
                 let sinkProb  = 1.0 - exp(-belowSim.upwardRiseChance * uniforms.deltaTime);
                 if sinkRoll < sinkProb { return MATERIAL_INTENT_FALL; }
             }

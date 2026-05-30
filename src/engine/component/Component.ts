@@ -2,6 +2,7 @@ import type { Blueprint } from './definitions/blueprint/Blueprint';
 import type { BoxCollider } from './definitions/collider/boxcollider/BoxCollider';
 import type { CircleCollider } from './definitions/collider/circlecollider/CircleCollider';
 import type { PixelData } from './definitions/pixeldata/PixelData';
+import type { PixelBodyCollider } from './definitions/collider/pixelbodycollider/PixelBodyCollider';
 import type { Rigidbody } from './definitions/rigidbody/Rigidbody';
 import type { Transform } from './definitions/transform/Transform';
 
@@ -11,6 +12,7 @@ export type ComponentType =
     | 'BoxCollider'
     | 'CircleCollider'
     | 'PixelData'
+    | 'PixelBodyCollider'
     | 'Blueprint';
 
 // @omitfromdocs
@@ -20,6 +22,7 @@ export type AnyComponent =
     | BoxCollider
     | CircleCollider
     | PixelData
+    | PixelBodyCollider
     | Blueprint;
 
 /** Shared base for all component types. */

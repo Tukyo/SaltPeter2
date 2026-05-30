@@ -17,6 +17,8 @@ The shader pipeline has two layers: **generated fragments** and **raw WGSL sourc
 | `analytics/` | [`analytics`](analytics/analytics.wgsl) |
 | `brush/` | [`brush`](brush/brush.wgsl), [`brushOutput`](brush/brushOutput.wgsl) |
 | `diffusion/` | [`diffusion`](diffusion/diffusion.wgsl) |
+| `game_object/` | [`gameObjectCollision`](game_object/gameObjectCollision.wgsl), [`gameObjectErase`](game_object/gameObjectErase.wgsl), [`gameObjectPhysics`](game_object/gameObjectPhysics.wgsl), [`gameObjectStamp`](game_object/gameObjectStamp.wgsl) |
+| `instantiation/` | [`instantiateCell`](instantiation/instantiateCell.wgsl) |
 | `phase/` | [`phase`](phase/phase.wgsl), [`phaseIntent`](phase/phaseIntent.wgsl), [`phaseResolution`](phase/phaseResolution.wgsl) |
 | `phase/fire/` | [`fireIntent`](phase/fire/fireIntent.wgsl), [`fireResolution`](phase/fire/fireResolution.wgsl), [`fireSimulation`](phase/fire/fireSimulation.wgsl) |
 | `phase/gas/` | [`gasIntent`](phase/gas/gasIntent.wgsl), [`gasResolution`](phase/gas/gasResolution.wgsl), [`gasSimulation`](phase/gas/gasSimulation.wgsl) |

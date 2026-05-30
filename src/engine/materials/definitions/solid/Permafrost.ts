@@ -25,8 +25,8 @@ export const Permafrost: MaterialDefinition = {
         durability: 3,
         temperature: {
             specificHeat: 3,
-            restingTemperature: 0.1,
-            restingStrength: 0.7
+            restingTemperature: 0.175,
+            restingStrength: 0.65
         }
     },
     transitions: {

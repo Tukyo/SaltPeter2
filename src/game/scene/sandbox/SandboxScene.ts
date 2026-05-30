@@ -22,6 +22,7 @@ export class SandboxScene extends Nitrate.Scene {
         new Nitrate.Input(this.renderer.canvas);
         new Nitrate.BrushPreview();
 
+        new Nitrate.GameObjectManager();
         new Nitrate.SimulationManager();
         new Nitrate.RenderingManager();
         new Nitrate.BrushManager();
@@ -61,6 +62,34 @@ export class SandboxScene extends Nitrate.Scene {
 
         new Nitrate.AnalyticsOverlay();
         new Nitrate.DebugOverlay();
+
+        // TEST - Specific amount of GOs
+        // TODO: remove hardcoded spawn — replace with resources panel drag-and-drop
+        // Nitrate.NitrateProcess.OnInit(Nitrate.SimulationManager, async () => {
+        //     await Nitrate.GameObject.Instantiate('2240650c-f4d7-46ea-982d-b62b94c3a00c', { x: 100, y: 100 });
+        // });
+
+        // TEST - Many GOs
+        // Nitrate.NitrateProcess.OnInit(Nitrate.SimulationManager, async () => {
+        //     const spawnCount: number = 100;
+        //     const spawnedObjects: Nitrate.GameObject[] = [];
+
+        //     for (let i: number = 0; i < spawnCount; i++) {
+        //         const randomX: number = Math.random() * window.innerWidth;
+        //         const randomY: number = Math.random() * window.innerHeight;
+
+        //         const gameObject = await Nitrate.GameObject.Instantiate(
+        //             '53720933-b597-4b87-952e-7bc6ebba9c9c',
+        //             {
+        //                 x: randomX,
+        //                 y: randomY
+        //             }
+        //         );
+
+        //         if (!gameObject) continue;
+        //         spawnedObjects.push(gameObject);
+        //     }
+        // });
     }
 
     public Update(now: number): void { }

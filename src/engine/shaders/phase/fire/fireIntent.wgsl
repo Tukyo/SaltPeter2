@@ -73,7 +73,7 @@ fn chooseFireTarget(
     let belowRight = sourceCoord + down + CELL_RIGHT;
 
     // Cling to any adjacent solid surface — chance controlled by settleStayChance.
-    let clingRoll = hash(sourceCoord + vec2f(fract(time * 7.31), fract(time * 11.93)));
+    let clingRoll = timeHash(sourceCoord, time);
     let fireId    = getStateMaterialId(textureLoad(identityTexture, vec2i(sourceCoord)));
     let neighbors = array<vec2f, 4>(
         below,
@@ -96,7 +96,7 @@ fn chooseFireTarget(
     }
 
     if isAirCoord(below, res) {
-        let fallRoll = hash(sourceCoord + vec2f(fract(time * 7.3), fract(time * 11.9)));
+        let fallRoll = timeHash(sourceCoord, time);
         let prob     = 1.0 - exp(-material.fallRandomRate * uniforms.deltaTime);
         if fallRoll < prob { return below; }
     }
@@ -107,7 +107,7 @@ fn chooseFireTarget(
 
     // On top of fire: spread aggressively to flatten pile
     if isFirePhaseCoord(below, res) {
-        let fireRoll = hash(sourceCoord + vec2f(fract(time * 13.7), fract(time * 17.3)));
+        let fireRoll = timeHash(sourceCoord, time);
         let prob     = 1.0 - exp(-material.fallRandomRate * uniforms.deltaTime);
         if fireRoll >= prob { return sourceCoord; }
         let sideRoll   = clamp(hash(sourceCoord + vec2f(fallSeed * 2.17, fallSeed * 3.31)) - vxBias, 0.0, 1.0);

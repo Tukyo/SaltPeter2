@@ -5,12 +5,18 @@
 # Config
 Static configuration for all engine subsystems.
 
-All values flow into shaders and compute passes via uniforms. Nothing in this module is intended to be modified at runtime.
-
 <!-- API_START -->
 ---
 
 ## API
+
+### [`GameObjectConfig`](GameObjectConfig.ts)
+
+| Method | Description |
+|--------|-------------|
+| [`static GetConfig()`](GameObjectConfig.ts) | Returns the GameObject configuration. |
+
+---
 
 ### [`KeybindConfig`](KeybindConfig.ts)
  Keyboard shortcuts used across engine features.

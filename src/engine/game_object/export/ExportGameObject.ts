@@ -3,7 +3,6 @@ import type { Rect2D, Vec2 } from '../../definitions/Primitives';
 
 import { Export } from './Export';
 import { MaterialQuery } from '../../materials/MaterialQuery';
-import { Metadata } from '../Metadata';
 import { PixelData } from '../../component/definitions/pixeldata/PixelData';
 import { SimulationManager } from '../../simulation/SimulationManager';
 
@@ -22,9 +21,9 @@ export class ExportGameObject extends Export {
         ExportGameObject.Instance = this;
     }
 
-    /** Sets the function used to retrieve the current selection rect. */
+    /** Sets the function used to retrieve the current selection rect. @internal */
     public SetSelectionProvider(fn: () => Rect2D | null): void { this.selectionProvider = fn; }
-    /** Sets the function used to retrieve the anchor position within the selection. */
+    /** Sets the function used to retrieve the anchor position within the selection. @internal */
     public SetAnchorProvider(fn: () => Vec2 | null): void { this.anchorProvider = fn; }
 
     /** Routes the output to the GameObjects directory with a `.gameobject.json` extension. */
@@ -72,8 +71,7 @@ export class ExportGameObject extends Export {
             }
         }
 
-        const meta = Metadata.Generate('gameobject', { size: { width: gridSize, height: gridSize }, pos: { x: x1, y: y1 } });
-        await this.WriteFile(go, meta);
+        await this.WriteFile(go, 'gameobject', { size: { width: gridSize, height: gridSize }, pos: { x: x1, y: y1 } });
     }
 
     public OnDestroy(): void {

@@ -25,8 +25,14 @@ export const Basalt: MaterialDefinition = {
         durability: 6,
         temperature: {
             specificHeat: 1.25,
-            restingTemperature: 0.525,
+            restingTemperature: 0.725,
             restingStrength: 0.5
+        }
+    },
+    transitions: {
+        boils: {
+            to: 'lava',
+            condition: { temperature: 0.95 }
         }
     },
 };

@@ -15,17 +15,17 @@ export abstract class Import extends NitrateProcess {
     protected gameObjectProvider: (() => GameObject | null) | null = null;
     protected filenameProvider: (() => string | null) | null = null;
 
-    /** Sets the function used to retrieve the target game object to hydrate. */
+    /** Sets the function used to retrieve the target game object to hydrate. @internal */
     public SetGameObjectProvider(fn: () => GameObject | null): void { this.gameObjectProvider = fn; }
 
-    /** Sets the function used to retrieve the filename to import from. */
+    /** Sets the function used to retrieve the filename to import from. @internal*/
     public SetFilenameProvider(fn: () => string | null): void { this.filenameProvider = fn; }
 
     /** Executes the import. Implemented by subclasses. @internal */
     public abstract Run(filename?: string): Promise<void>;
 
     /** Reads and parses a serialized game object from the given path, falling back to the filename provider. Returns null if the file cannot be read or parsed. */
-    protected async ReadFile(filename?: string): Promise<SerializedGameObject | null> {
+    protected async ReadFileEditor(filename?: string): Promise<SerializedGameObject | null> {
         const path = filename ?? this.filenameProvider?.() ?? null;
         if (!path) { return null; }
 
@@ -51,15 +51,45 @@ export abstract class Import extends NitrateProcess {
         }
     }
 
+    /** Reads and parses a serialized game object from an explicit path. Returns null if the file cannot be read or parsed. @internal */
+    public static async ReadFile(path: string): Promise<SerializedGameObject | null> {
+        let json: string;
+        try {
+            json = await window.api.resources.read(path);
+        } catch {
+            LogManager.Instance?.LogWarning({
+                text: `Failed to read ${path}.`,
+                options: { tags: ['Import'] }
+            });
+            return null;
+        }
+        try {
+            return JSON.parse(json) as SerializedGameObject;
+        } catch {
+            LogManager.Instance?.LogWarning({
+                text: `Failed to parse ${path}.`,
+                options: { tags: ['Import'] }
+            });
+            return null;
+        }
+    }
+
+    /** Reads a game object file by path and hydrates the given GameObject with its component data. @internal */
+    public static async HydrateFromFile(go: GameObject, path: string): Promise<void> {
+        const data = await Import.ReadFile(path);
+        if (!data) { return; }
+        Import.HydrateGameObject(go, data);
+    }
+
     /** Applies serialized component data to the given game object, adding unknown components from the registry and patching their fields. */
-    protected HydrateGameObject(go: GameObject, data: SerializedGameObject): void {
+    protected static HydrateGameObject(go: GameObject, data: SerializedGameObject): void {
         go.name = data.name;
         for (const raw of data.components) {
             const typeName = raw['type'];
             if (typeof typeName !== 'string') { continue; }
             let component: AnyComponent | undefined = go.components.find(c => c.type === typeName);
             if (!component) {
-                const ComponentClass = ComponentRegistry.Components.find(C => C.label === typeName);
+                const ComponentClass = ComponentRegistry.GetByType(typeName);
                 if (ComponentClass) {
                     component = go.AddComponent(ComponentClass as new () => AnyComponent);
                 } else {

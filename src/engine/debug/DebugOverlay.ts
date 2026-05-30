@@ -2,10 +2,11 @@ import { ChunkOverlay } from './ChunkOverlay';
 import { KeybindConfig } from '../config/KeybindConfig';
 import { LogManager } from './LogManager';
 import { NitrateProcess } from '../NitrateProcess';
+import { GameObjectOverlay } from './GameObjectOverlay';
 import { PressureOverlay } from './PressureOverlay';
 import { TemperatureOverlay } from './TemperatureOverlay';
 
-type DebugLayer = 'chunk' | 'pressure' | 'temperature';
+type DebugLayer = 'chunk' | 'pressure' | 'temperature' | 'gameObject';
 
 /**
  * Toggles debug visualisation overlays for the active scene.
@@ -20,6 +21,7 @@ export class DebugOverlay extends NitrateProcess {
     public static Instance: DebugOverlay | null = null;
 
     private readonly chunk = new ChunkOverlay();
+    private readonly gameObject = new GameObjectOverlay();
     private readonly pressure = new PressureOverlay();
     private readonly temperature = new TemperatureOverlay();
     private readonly handleKey: (e: KeyboardEvent) => void;
@@ -31,10 +33,11 @@ export class DebugOverlay extends NitrateProcess {
         DebugOverlay.Instance = this;
 
         this.handleKey = (e) => {
-            const { chunk, pressure, temperature } = KeybindConfig.GetConfig().debug.overlay;
+            const { chunk, pressure, temperature, gameObject } = KeybindConfig.GetConfig().debug.overlay;
             if (e.key === chunk) { this.SetLayer('chunk'); }
             else if (e.key === pressure) { this.SetLayer('pressure'); }
             else if (e.key === temperature) { this.SetLayer('temperature'); }
+            else if (e.key === gameObject) { this.SetLayer('gameObject'); }
         };
 
         window.addEventListener('keydown', this.handleKey);
@@ -58,8 +61,9 @@ export class DebugOverlay extends NitrateProcess {
     }
 
     /** Returns the overlay instance for the given layer. */
-    private GetOverlay(layer: DebugLayer): ChunkOverlay | PressureOverlay | TemperatureOverlay {
+    private GetOverlay(layer: DebugLayer): ChunkOverlay | GameObjectOverlay | PressureOverlay | TemperatureOverlay {
         if (layer === 'chunk') { return this.chunk; }
+        if (layer === 'gameObject') { return this.gameObject; }
         if (layer === 'pressure') { return this.pressure; }
         return this.temperature;
     }
@@ -71,6 +75,7 @@ export class DebugOverlay extends NitrateProcess {
 
     public OnResize(): void {
         this.chunk.OnResize();
+        this.gameObject.OnResize();
         this.pressure.OnResize();
         this.temperature.OnResize();
         LogManager.Instance?.Log({
@@ -82,6 +87,7 @@ export class DebugOverlay extends NitrateProcess {
     public OnDestroy(): void {
         window.removeEventListener('keydown', this.handleKey);
         this.chunk.OnDestroy();
+        this.gameObject.OnDestroy();
         this.pressure.OnDestroy();
         this.temperature.OnDestroy();
 

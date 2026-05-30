@@ -117,7 +117,7 @@ export class Inspector extends NitrateProcess {
         this.SetupDragReorder(elements);
     }
 
-    /** Wires drag-and-drop reorder behaviour onto rendered component field elements. Transform is always locked to index 0. */
+    /** Wires drag-and-drop reorder behavior onto rendered component field elements. Transform is always locked to index 0. */
     private SetupDragReorder(elements: HTMLElement[]): void {
         if (elements.length <= 1) return;
 
@@ -140,15 +140,18 @@ export class Inspector extends NitrateProcess {
         for (let i = 1; i < elements.length; i++) {
             const el = elements[i];
             const idx = i;
-            el.draggable = true;
+            const header = el.querySelector('.inspector-component-header') as HTMLElement | null;
+            if (!header) { continue; }
 
-            el.addEventListener('dragstart', (e) => {
+            header.draggable = true;
+
+            header.addEventListener('dragstart', (e) => {
                 dragSrcIndex = idx;
                 if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; }
                 setTimeout(() => { el.classList.add('is-dragging'); }, 0);
             });
 
-            el.addEventListener('dragend', () => {
+            header.addEventListener('dragend', () => {
                 el.classList.remove('is-dragging');
                 clearHighlight();
                 dragSrcIndex = -1;

@@ -27,6 +27,8 @@ type LogTag =
     | "Export"
     | "Import"
     | "Metadata"
+    | "GameObject"
+    | "PassRegistry"
 
 const TAG_COLORS: Record<LogTag, string> = {
     Camera: '#4fc3f7',
@@ -49,7 +51,9 @@ const TAG_COLORS: Record<LogTag, string> = {
     Inspector: '#8a9f3e',
     Export: '#e573ed',
     Import: '#1f6cb4',
-    Metadata: '#b26f0a'
+    Metadata: '#b26f0a',
+    GameObject: '#b4017e',
+    PassRegistry: '#ff0000'
 };
 
 export interface LogManagerOptions {

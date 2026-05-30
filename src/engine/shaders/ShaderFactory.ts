@@ -1,6 +1,12 @@
 import { BrushSchema } from '../brush/BrushSchema';
 import { PhysicsConfig } from '../config/PhysicsConfig';
 
+import { GameObjectCellSchema } from '../game_object/GameObjectCellSchema';
+import { GameObjectColliderSchema } from '../game_object/GameObjectColliderSchema';
+import { GameObjectStateSchema } from '../game_object/GameObjectStateSchema';
+
+import { Rigidbody } from '../component/definitions/rigidbody/Rigidbody';
+
 import { MaterialPhaseIds } from '../materials/definitions/MaterialPhases';
 import { MaterialPhysicsSchema } from '../materials/MaterialPhysicsSchema';
 import { MaterialSimulationSchema } from '../materials/MaterialSimulationSchema';
@@ -236,6 +242,84 @@ export class ShaderFactory {
             `    return (a * u32(MATERIAL_COUNT) + b) * REACTION_FLOATS_PER_ENTRY;`,
             `}`,
         ].join('\n');
+    }
+    //#endregion
+
+    //#region INSTANTIATION
+    // @omitfromdocs
+    public static GenerateInstantiationUniformStruct(): string {
+        return this.GenerateStruct('InstantiationUniforms', [
+            ['x', 'f32'],
+            ['y', 'f32'],
+            ['materialId', 'f32'],
+            ['occupancy', 'f32'],
+            ['variantId', 'f32'],
+            ['colorSeed', 'f32'],
+        ]);
+    }
+    //#endregion
+
+    //#region GAME OBJECT
+    // @omitfromdocs
+    public static GenerateGameObjectStateStruct(): string {
+        return this.GenerateStruct('GameObjectState', GameObjectStateSchema.GetFields());
+    }
+
+    // @omitfromdocs
+    public static GenerateGameObjectCellStruct(): string {
+        return this.GenerateStruct('GameObjectCell', GameObjectCellSchema.GetFields());
+    }
+
+    // @omitfromdocs
+    public static GenerateGameObjectColliderStruct(): string {
+        return this.GenerateStruct('GameObjectBoundaryPoint', GameObjectColliderSchema.GetFields());
+    }
+
+    // @omitfromdocs
+    public static GenerateGameObjectPassUniformStruct(): string {
+        return this.GenerateStruct('GameObjectPassUniforms', [
+            ['totalCells', 'u32'],
+            ['simWidth', 'u32'],
+            ['simHeight', 'u32'],
+            ['pad0', 'u32'],
+        ]);
+    }
+
+    // @omitfromdocs
+    public static GenerateGameObjectPhysicsUniformStruct(): string {
+        return this.GenerateStruct('GameObjectPhysicsUniforms', [
+            ['gravity', 'f32'],
+            ['simStepDuration', 'f32'],
+            ['gameObjectCount', 'u32'],
+            ['maxSpeed', 'f32'],
+            ['maxAngularSpeed', 'f32'],
+        ]);
+    }
+
+    // @omitfromdocs
+    public static GenerateGameObjectCollisionUniformStruct(): string {
+        return this.GenerateStruct('GameObjectCollisionUniforms', [
+            ['simWidth', 'u32'],
+            ['simHeight', 'u32'],
+            ['gameObjectCount', 'u32'],
+            ['sleepDelay', 'u32'],
+            ['gravity', 'f32'],
+            ['simStepDuration', 'f32'],
+            ['depenetrationForce', 'f32'],
+            ['depenetrationHardness', 'f32'],
+            ['detectionThreshold', 'f32'],
+            ['settleThreshold', 'f32'],
+            ['sleepVelocityThreshold', 'f32'],
+            ['wakeTolerance', 'f32'],
+            ['sleepAngularThreshold', 'f32'],
+        ]);
+    }
+
+    // @omitfromdocs
+    public static GenerateGameObjectBodyTypeConstants(): string {
+        return (Object.entries(Rigidbody.BodyTypeValue) as [string, number][])
+            .map(([name, value]) => `const GAMEOBJECT_BODY_${name.toUpperCase()}: u32 = ${value}u;`)
+            .join('\n');
     }
     //#endregion
 

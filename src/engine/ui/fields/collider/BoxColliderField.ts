@@ -7,7 +7,7 @@ export class BoxColliderField extends ComponentField<BoxCollider> {
 
     protected BuildFields(container: HTMLElement): void {
         container.appendChild(this.Vec2Field('Offset', this.component.offset, v => { this.component.offset = v; }));
-        container.appendChild(this.Vec2Field('Size', this.component.size, v => { this.component.size = v; }));
+        container.appendChild(this.Size2DField('Size', this.component.size, v => { this.component.size = v; }));
         container.appendChild(this.BoolField('Is Trigger', this.component.isTrigger, v => { this.component.isTrigger = v; }));
     }
 }
