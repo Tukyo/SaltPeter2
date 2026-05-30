@@ -1,6 +1,6 @@
 {
   "name": "saltpeter",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "main": "out/main/main.js",
   "scripts": {

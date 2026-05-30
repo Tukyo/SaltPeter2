@@ -2,6 +2,13 @@
 
 ---
 
+## [0.0.4] - 05/29/2026
+### Updates & Changes
+
+### Bug Fixes
+
+---
+
 ## [0.0.3] - Patch - 05/29/2026
 ### Updates & Changes
 
