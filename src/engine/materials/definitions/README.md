@@ -67,14 +67,16 @@ The optional `neighborMask` restricts which of the 8 surrounding cells are check
 | Meat Cooked | Sand | Milk |  |  |
 | Meat Rotten | Sawdust | Oil |  |  |
 | Milk Frozen | Silver Powder | Peat |  |  |
-| Mud | Snow | Poison |  |  |
-| Permafrost | Soil | Saltwater |  |  |
-| Poison Frozen | Sugar | Silver Molten |  |  |
-| Red | Tin Powder | Steel Molten |  |  |
-| Rust |  | Tin Molten |  |  |
-| Sandstone |  | Urine |  |  |
-| Silver |  | Vomit |  |  |
-| Steel |  | Water |  |  |
+| Mud | Snow | Plastic Molten |  |  |
+| Obsidian | Soil | Poison |  |  |
+| Permafrost | Sugar | Saltwater |  |  |
+| Plastic | Tin Powder | Silver Molten |  |  |
+| Poison Frozen |  | Steel Molten |  |  |
+| Red |  | Tin Molten |  |  |
+| Rust |  | Urine |  |  |
+| Sandstone |  | Vomit |  |  |
+| Silver |  | Water |  |  |
+| Steel |  |  |  |  |
 | Stone |  |  |  |  |
 | Terracotta |  |  |  |  |
 | Tin |  |  |  |  |
@@ -229,6 +231,10 @@ interface FireBehavior {
 | Interfaces & Types |
 |--------------------|
 ```ts
+type MaterialReactionProduct = MaterialName | 'self';
+```
+
+```ts
 interface MaterialReactionReagent {
     materials?: MaterialName[];
     tags?: MaterialTag[];
@@ -238,7 +244,7 @@ interface MaterialReactionReagent {
 ```ts
 interface MaterialReaction {
     reagents: MaterialReactionReagent[];
-    product: MaterialName[];
+    product: MaterialReactionProduct[];
     biproduct?: MaterialName;
     reactionRate: number;
     neighborMask?: number;
@@ -269,8 +275,11 @@ const MaterialTags = {
     dev: 0, // Materials tagged with this are for development purposes and not available during gameplay
     burns: 1, // Anything tagged with this will be consumed by fire
     corrodes: 2, // Anything tagged with this will be destroyed by acid
-    meat: 3, // Meat variants, currently used to allow substances to rot meat,
-    rusts: 4 // Anything tags with this can rust
+    meat: 3, // Meat variants, currently used to allow substances to rot meat
+    rots_meat: 4, // Anything that rots meat
+    rustable: 5, // Anything tags with this can rust
+    rusts: 6, // Something that causes rust
+    extinguishes: 7, // Materials that extinguish fire
 } as const;
 ```
 

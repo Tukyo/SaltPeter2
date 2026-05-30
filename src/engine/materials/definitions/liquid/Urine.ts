@@ -31,5 +31,5 @@ export const Urine: MaterialDefinition = {
             restingStrength: 0.5
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'rots_meat', 'extinguishes']
 };

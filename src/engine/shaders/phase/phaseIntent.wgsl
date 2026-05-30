@@ -22,6 +22,11 @@ fn chooseIntentForState(
 
             // Gas rises directly into the displacing gas above, gated by its own rise chance.
             if isMaterialPhaseId(phaseId, MATERIAL_PHASE_GAS) {
+                // TODO: Promote to config variable — buoyancy through liquid always fires (no probability gate)
+                if isMaterialPhaseId(abovePhaseId, MATERIAL_PHASE_LIQUID) ||
+                isMaterialPhaseId(abovePhaseId, MATERIAL_PHASE_SOLID) {
+                    return getMaterialIntentCodeForTarget(coord, above, gravityDirection);
+                }
                 let gasSim    = getGasSimulation(getStateMaterialId(currentState));
                 let riseRoll  = displacementHash(coord, time);
                 let riseProb  = 1.0 - exp(-gasSim.upwardRiseChance * uniforms.deltaTime);

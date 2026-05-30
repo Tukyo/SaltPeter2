@@ -164,19 +164,25 @@ export class ShaderFactory {
         const physicsConfig = PhysicsConfig.GetConfig();
         return [
             `const PRESSURE_STEP_SCALE: f32 = ${physicsConfig.pressure.stepScale};`,
-            `const PRESSURE_VERTICAL_WEIGHT: f32 = 0.5;`,
-            `const PRESSURE_LATERAL_WEIGHT: f32 = 0.25;`,
+            `const PRESSURE_VERTICAL_WEIGHT: f32 = ${physicsConfig.pressure.weight.vertical};`,
+            `const PRESSURE_LATERAL_WEIGHT: f32 = ${physicsConfig.pressure.weight.lateral};`,
         ].join('\n');
     }
 
     // @omitfromdocs
     public static GenerateVelocityConstants(): string {
-        const v = PhysicsConfig.GetConfig().velocity;
+        const { max, liquid, powder, solid } = PhysicsConfig.GetConfig().velocity;
         return [
-            `const MAX_VELOCITY: f32 = ${v.max};`,
-            `const VELOCITY_ACCELERATION: f32 = ${v.acceleration};`,
-            `const VELOCITY_DAMPING: f32 = ${v.damping};`,
-            `const VELOCITY_PROPAGATION: f32 = ${v.propagation};`,
+            `const MAX_VELOCITY: f32 = ${max};`,
+            `const VELOCITY_ACCELERATION_LIQUID: f32 = ${liquid.acceleration};`,
+            `const VELOCITY_DAMPING_LIQUID: f32 = ${liquid.damping};`,
+            `const VELOCITY_PROPAGATION_LIQUID: f32 = ${liquid.propagation};`,
+            `const VELOCITY_ACCELERATION_POWDER: f32 = ${powder.acceleration};`,
+            `const VELOCITY_DAMPING_POWDER: f32 = ${powder.damping};`,
+            `const VELOCITY_PROPAGATION_POWDER: f32 = ${powder.propagation};`,
+            `const VELOCITY_ACCELERATION_SOLID: f32 = ${solid.acceleration};`,
+            `const VELOCITY_DAMPING_SOLID: f32 = ${solid.damping};`,
+            `const VELOCITY_PROPAGATION_SOLID: f32 = ${solid.propagation};`,
             `fn encodeVelocity(v: f32) -> f32 { return clamp(v, -MAX_VELOCITY, MAX_VELOCITY); }`,
             `fn decodeVelocity(encoded: f32) -> f32 { return encoded; }`,
         ].join('\n');

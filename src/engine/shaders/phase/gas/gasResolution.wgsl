@@ -85,6 +85,9 @@ fn resolveGasCell(
         if sameCoord(winningSource, coord) {
             let targetState = textureLoad(identityTexture, vec2i(intentTarget));
             if isOccupiedState(targetState) {
+                if isLiquidPhaseCoord(intentTarget, res) {
+                    return ResolvedCell(targetState, intentTarget);
+                }
                 return resolveDisplacerVacation(coord, intentTarget, currentIdentityState, res, gravityDirection);
             }
             return ResolvedCell(AIR_STATE, coord);

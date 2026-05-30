@@ -37,5 +37,5 @@ export const IronPowder: MaterialDefinition = {
             condition: { temperature: 0.8 }
         }
     },
-    tags: ['corrodes', 'rusts']
+    tags: ['corrodes', 'rustable']
 };

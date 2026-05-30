@@ -35,5 +35,5 @@ export const Steel: MaterialDefinition = {
             condition: { temperature: 0.825 }
         }
     },
-    tags: ['corrodes', 'rusts']
+    tags: ['corrodes', 'rustable']
 };

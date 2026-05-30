@@ -37,5 +37,5 @@ export const Diarrhea: MaterialDefinition = {
             condition: { temperature: 0.335 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'rots_meat']
 };

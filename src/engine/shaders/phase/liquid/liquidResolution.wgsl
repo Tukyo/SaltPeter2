@@ -88,6 +88,18 @@ fn resolveLiquidCell(
 ) -> ResolvedCell {
     if gravityDirection == 0.0 { return ResolvedCell(currentIdentityState, coord); }
 
+    let down = vec2f(0.0, -gravityDirection);
+    let gasBelow = coord + down;
+    if inBounds(gasBelow, res) && isGasPhaseCoord(gasBelow, res) {
+        let gasIntentTarget = getMaterialIntentTargetAtCoord(gasBelow, res, gravityDirection);
+        if sameCoord(gasIntentTarget, coord) {
+            let winningGasSource = chooseIncomingGasSourceFromIntent(coord, res, gravityDirection, time);
+            if sameCoord(winningGasSource, gasBelow) {
+                return ResolvedCell(textureLoad(identityTexture, vec2i(gasBelow)), gasBelow);
+            }
+        }
+    }
+
     let intentTarget = getMaterialIntentTargetAtCoord(coord, res, gravityDirection);
 
     if !sameCoord(intentTarget, coord) {
@@ -107,9 +119,6 @@ fn resolveLiquidCell(
             if !isRegisteredMaterialState(vacation.identityState) {
                 let fillSource = chooseIncomingLiquidSourceFromIntent(coord, res, gravityDirection, time);
                 if isValidCoord(fillSource) { return ResolvedCell(textureLoad(identityTexture, vec2i(fillSource)), fillSource); }
-                // We were escaping into an occupied cell but the displacer went elsewhere — stay rather than vanish.
-                let targetIdentityState2 = textureLoad(identityTexture, vec2i(intentTarget));
-                if isOccupiedState(targetIdentityState2) { return ResolvedCell(currentIdentityState, coord); }
             }
             return vacation;
         }

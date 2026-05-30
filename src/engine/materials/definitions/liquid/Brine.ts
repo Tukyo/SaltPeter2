@@ -34,7 +34,8 @@ export const Brine: MaterialDefinition = {
     transitions: {
         boils: {
             to: 'steam',
-            condition: { temperature: 0.62 }
+            condition: { temperature: 0.85 }
         }
-    }
+    },
+    tags: ['rusts', 'extinguishes']
 };

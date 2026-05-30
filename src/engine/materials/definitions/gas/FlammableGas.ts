@@ -25,7 +25,7 @@ export const FlammableGas: MaterialDefinition = {
     },
     physics: {
         density: 0.04,
-        durability: 0,
+        durability: 0.01,
         temperature: {
             specificHeat: 0.7,
             restingTemperature: 0.6,

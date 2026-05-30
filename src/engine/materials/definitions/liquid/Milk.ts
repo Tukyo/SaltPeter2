@@ -37,5 +37,5 @@ export const Milk: MaterialDefinition = {
             condition: { temperature: 0.325 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'extinguishes']
 };

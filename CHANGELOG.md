@@ -2,10 +2,57 @@
 
 ---
 
-## [0.0.4] - 05/29/2026
+## [0.0.4] - Patch - 05/30/2026
 ### Updates & Changes
 
+#### New Materials
+- Added `Obsidian` — high-durability solid (durability 14, health 500); melts to lava at 0.9 temperature
+- Added `Plastic` — flammable, corrodible solid; melts to `plastic_molten` at 0.785 temperature
+- Added `MoltenPlastic` — viscous liquid phase of plastic; burns and corrodes; re-freezes to plastic below 0.6 temperature
+
+#### Materials
+- Added `rots_meat` tag — materials that rot meat; applied to: Diarrhea, Poison, Urine, Vomit, Feces, RottenMeat
+- Added `extinguishes` tag — materials that put out fire; applied to: Water, Saltwater, Brine, Blood, Milk, Urine
+- Added `rusts` tag (causes rust) and renamed old `rusts` to `rustable` (can be rusted); Iron, Steel, and IronPowder updated to `rustable`; Water, Saltwater, and Brine updated to `rusts`
+- Adjusted boiling temperatures upward: Water 0.6 → 0.8, Saltwater 0.61 → 0.825, Brine 0.62 → 0.85
+- Adjusted Basalt melt temperature: 0.95 → 0.975
+- Fixed FlammableGas durability from 0 to 0.01 so reaction rate scaling doesn't divide by zero
+
+#### Reactions System
+- Added `MaterialReactionProduct` union type (`MaterialName | 'self'`) — reactions can now declare that one or both products retain the original reagent's material, removing the need to enumerate each reagent explicitly
+- `ReactionLookupBuffer` resolves `'self'` at build time by substituting the reagent's own ID, so no WGSL changes are needed per-reaction
+- Removed durability scaling from reaction rate baking — rates are now authored as pure probability (`1 / reactionRate`) without multiplying by durability
+- Consolidated 5 individual meat-rotting reactions (poison, diarrhea, feces, urine, vomit + meat) into one tag-pair reaction: `rots_meat` + `meat` → `['self', 'meat_rotten']`
+- Consolidated 3 rust reactions (water, saltwater, brine + rusts) into one tag-pair reaction: `rusts` + `rustable` → `['self', 'rust']`, rate 100
+- Removed separate `meat_rotten + meat` spread reaction
+- Added `extinguishes + fire` reaction → `['self', 'smoke']`, rate 1
+- Changed lava + water reaction: products `['steam', 'stone']` → `['stone', 'stone']`, rate 45 → 1
+- Changed lava + burns reaction: product A changed from `'lava'` → `'self'`
+- Changed water + soil reaction: product order corrected to `['self', 'mud']`
+- Increased acid + corrodes reaction rate: 0.1 → 0.5
+
+#### Physics & Config
+- `PhysicsConfig` velocity block split per-phase: `liquid`, `powder`, and `solid` each have independent `acceleration`, `damping`, and `propagation` values (previously a single shared set)
+- `PhysicsConfig` pressure block gains a `weight` object (`lateral`, `vertical`) — previously hardcoded as constants in the shaders
+- `ShaderFactory` generates separate WGSL constants per phase: `VELOCITY_ACCELERATION_LIQUID/POWDER/SOLID`, `VELOCITY_DAMPING_*`, `VELOCITY_PROPAGATION_*`; pressure weight constants now sourced from config
+
+#### Shaders
+- `reactions.wgsl` rewritten with a two-loop structure — Chebyshev offsets handle fire reactions, cardinal offsets handle all other reactions; fire reactions are kept separate to support fire-specific surface-scaling logic
+- Diagonal fire spread now requires at least one cardinal bridge cell to be open, preventing fire from spreading through the corners of solid fuel
+- Fuel-catching-fire reactions scale probability by durability and the minimum air exposure of fuel and fire cells; non-fuel fire reactions (e.g. extinguishing) use flat probability with no air scaling
+- Reactive neighbor counting scales reaction probability down proportionally when a cell has fewer reactive contacts
+- `velocityPropagation.wgsl`: `propagateLiquidVelocity` renamed to `propagateVelocity` and extended to cover liquid, powder, and solid phases; each phase only receives velocity from same-phase neighbors; influence is direction-weighted (dot-product toward receiver) rather than a simple average
+- `physics.wgsl` and `sim.wgsl`: velocity acceleration and damping are now selected per-phase via switch statements using the new per-phase constants
+- `phaseIntent.wgsl`: gas beneath a liquid or solid now always intends to rise (buoyancy is deterministic; no probability gate)
+- `liquidResolution.wgsl`: detects rising gas directly below the liquid cell and performs the swap to allow gas bubbles to push through
+- `gasResolution.wgsl`: gas blocked above by liquid falls through to the liquid's position
+- `fireResolution.wgsl`: fire now requires both adjacent fuel and adjacent air to sustain; fire cells neighboring only other fire are not treated as fueling each other; extinguishing reactions are excluded from the fuel check
+- `diffusion.wgsl`: uses `VELOCITY_ACCELERATION_LIQUID` instead of the removed shared constant
+- `common.wgsl`: `displacementHash` inputs changed to `fract(time * 7.3)` / `fract(time * 11.9)` to reduce low-frequency correlation with `timeHash`
+
 ### Bug Fixes
+- Fixed bug causing higher density liquids to duplicate lower density liquids when passing through them
+- Gas bouancy addition fixed bug causing gas to be trapped underneath liquids (acid behaves much better now)
 
 ---
 

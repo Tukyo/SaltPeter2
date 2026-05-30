@@ -15,6 +15,9 @@ export const NeighborMask = {
     UpLeft: 1 << 7,  // (-1, -1)
 } as const;
 
+/** Material reaction products can be explicit or maintain the original material. */
+export type MaterialReactionProduct = MaterialName | 'self';
+
 export interface MaterialReactionReagent {
     materials?: MaterialName[];
     tags?: MaterialTag[];
@@ -22,7 +25,7 @@ export interface MaterialReactionReagent {
 
 export interface MaterialReaction {
     reagents: MaterialReactionReagent[];
-    product: MaterialName[];
+    product: MaterialReactionProduct[];
     biproduct?: MaterialName;
     reactionRate: number;
     neighborMask?: number;
@@ -69,8 +72,8 @@ export const Reactions: MaterialReaction[] = [
     },
     {
         reagents: [{ materials: ['water'] }, { materials: ['lava'] }],
-        product: ['steam', 'stone'],
-        reactionRate: 45
+        product: ['stone', 'stone'],
+        reactionRate: 1
     },
     {
         reagents: [{ materials: ['saltwater'] }, { materials: ['lava'] }],
@@ -134,13 +137,18 @@ export const Reactions: MaterialReaction[] = [
         reactionRate: 1,
     },
     {
+        reagents: [{ tags: ['extinguishes'] }, { materials: ['fire'] }],
+        product: ['self', 'smoke'],
+        reactionRate: 1
+    },
+    {
         reagents: [{ materials: ['acid'] }, { tags: ['corrodes'] }],
         product: ['flammable_gas', 'flammable_gas'],
-        reactionRate: 0.1
+        reactionRate: 0.5
     },
     {
         reagents: [{ materials: ['lava'] }, { tags: ['burns'] }],
-        product: ['lava', 'fire'],
+        product: ['self', 'fire'],
         biproduct: 'smoke',
         reactionRate: 2,
     },
@@ -162,49 +170,14 @@ export const Reactions: MaterialReaction[] = [
         reactionRate: 2,
     },
     {
-        reagents: [{ materials: ['poison'] }, { tags: ['meat'] }],
-        product: ['poison', 'meat_rotten'],
+        reagents: [{ tags: ['rots_meat'] }, { tags: ['meat'] }],
+        product: ['self', 'meat_rotten'],
         reactionRate: 10,
     },
     {
-        reagents: [{ materials: ['diarrhea'] }, { tags: ['meat'] }],
-        product: ['diarrhea', 'meat_rotten'],
-        reactionRate: 15,
-    },
-    {
-        reagents: [{ materials: ['feces'] }, { tags: ['meat'] }],
-        product: ['feces', 'meat_rotten'],
-        reactionRate: 15,
-    },
-    {
-        reagents: [{ materials: ['urine'] }, { tags: ['meat'] }],
-        product: ['urine', 'meat_rotten'],
-        reactionRate: 20,
-    },
-    {
-        reagents: [{ materials: ['vomit'] }, { tags: ['meat'] }],
-        product: ['vomit', 'meat_rotten'],
-        reactionRate: 10,
-    },
-    {
-        reagents: [{ materials: ['meat_rotten'] }, { tags: ['meat'] }],
-        product: ['meat_rotten', 'meat_rotten'],
-        reactionRate: 60,
-    },
-    {
-        reagents: [{ materials: ['water'] }, { tags: ['rusts'] }],
-        product: ['water', 'rust'],
-        reactionRate: 30,
-    },
-    {
-        reagents: [{ materials: ['saltwater'] }, { tags: ['rusts'] }],
-        product: ['saltwater', 'rust'],
-        reactionRate: 25,
-    },
-    {
-        reagents: [{ materials: ['brine'] }, { tags: ['rusts'] }],
-        product: ['brine', 'rust'],
-        reactionRate: 20,
+        reagents: [{ tags: ['rusts'] }, { tags: ['rustable'] }],
+        product: ['self', 'rust'],
+        reactionRate: 100,
     },
     {
         reagents: [{ materials: ['ice'] }, { materials: ['salt'] }],
@@ -243,7 +216,7 @@ export const Reactions: MaterialReaction[] = [
     },
     {
         reagents: [{ materials: ['water'] }, { materials: ['soil'] }],
-        product: ['mud', 'water'],
+        product: ['self', 'mud'],
         reactionRate: 90
     },
 ];

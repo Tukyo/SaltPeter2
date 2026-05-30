@@ -16,10 +16,9 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 
     if !inBounds(coord, res) { return; }
 
-    let existing      = textureLoad(physicsTexture, vec2i(id.xy));
-    let gravityDir    = getGravityDirection(physicsUniforms.gravity);
-    let temperature   = propagateTemperature(coord, res);
-    let pressure      = computePressure(coord, res, gravityDir);
+    let existing    = textureLoad(physicsTexture, vec2i(id.xy));
+    let temperature = propagateTemperature(coord, res);
+    let pressure    = computePressure(coord, res, physicsUniforms.gravity);
 
     let identityState = textureLoad(identityTexture, vec2i(id.xy));
     let occupied      = isOccupiedState(identityState);
@@ -30,7 +29,15 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
     let isGravityAffected = occupied && !isStatic &&
         !isMaterialPhaseId(phaseId, MATERIAL_PHASE_GAS) &&
         !isMaterialPhaseId(phaseId, MATERIAL_PHASE_FIRE);
-    let propVel = propagateLiquidVelocity(coord, res);
+    let propVel  = propagateVelocity(coord, res);
+    var accel   = 0.0;
+    var damping = 1.0;
+    switch i32(phaseId) {
+        case 0: { accel = VELOCITY_ACCELERATION_SOLID;  damping = VELOCITY_DAMPING_SOLID; }
+        case 1: { accel = VELOCITY_ACCELERATION_POWDER; damping = VELOCITY_DAMPING_POWDER; }
+        case 2: { accel = VELOCITY_ACCELERATION_LIQUID; damping = VELOCITY_DAMPING_LIQUID; }
+        default: {}
+    }
     var vx = decodeVelocity(propVel.x);
     var vy = decodeVelocity(propVel.y);
     if !occupied || isStatic {
@@ -38,14 +45,14 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
         vy = 0.0;
     } else if isGravityAffected {
         if belowIsAir {
-            vy = (vy - VELOCITY_ACCELERATION) * VELOCITY_DAMPING;
+            vy = (vy - accel) * damping;
         } else {
-            vy = vy * VELOCITY_DAMPING;
+            vy = vy * damping;
         }
-        vx = vx * VELOCITY_DAMPING;
+        vx = vx * damping;
     } else {
-        vx = vx * VELOCITY_DAMPING;
-        vy = vy * VELOCITY_DAMPING;
+        vx = vx * damping;
+        vy = vy * damping;
     }
 
     textureStore(

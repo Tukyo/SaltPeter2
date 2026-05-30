@@ -2,10 +2,9 @@ import type { MaterialName } from './definitions/MaterialIdentity';
 import type { MaterialReactionReagent } from './definitions/MaterialReactions';
 
 import { MaterialRegistry } from './MaterialRegistry';
-import { MaterialIds } from './definitions/Materials';
 import { Reactions } from './definitions/MaterialReactions';
 
-const FLOATS_PER_ENTRY = 5; // productIdA, productIdB, reactionRate, biproductId, neighborMask  (-1 = none, 0 = all)
+const FLOATS_PER_ENTRY = 5; // productIdA, productIdB, invertedRate, biproductId, neighborMask  (-1 = none, 0 = all)
 
 /**
  * GPU storage buffer containing a flattened N×N reaction lookup table for every material pair.
@@ -22,13 +21,6 @@ export class ReactionLookupBuffer {
     constructor(device: GPUDevice) {
         const count = Object.keys(MaterialRegistry.Materials).length;
         const data = new Float32Array(count * count * FLOATS_PER_ENTRY).fill(-1);
-
-        const nameById = Object.fromEntries(
-            Object.entries(MaterialIds).map(([name, id]) => [id, name as MaterialName])
-        ) as Record<number, MaterialName>;
-
-        const getDurability = (id: number) =>
-            Math.max(MaterialRegistry.Materials[nameById[id]].physics.durability, 1);
 
         const resolveId = (name: MaterialName): number =>
             MaterialRegistry.Materials[name].id;
@@ -55,25 +47,25 @@ export class ReactionLookupBuffer {
             const idsA = getIds(reagents[0]);
             const idsB = getIds(reagents[1]);
 
-            const productIdA  = product[0] !== undefined ? resolveId(product[0]) : 0;
-            const productIdB  = product[1] !== undefined ? resolveId(product[1]) : 0;
             const biproductId = reaction.biproduct !== undefined ? resolveId(reaction.biproduct) : -1;
 
             for (const idA of idsA) {
                 for (const idB of idsB) {
+                    const productIdA = product[0] === 'self' ? idA : (product[0] !== undefined ? resolveId(product[0]) : 0);
+                    const productIdB = product[1] === 'self' ? idB : (product[1] !== undefined ? resolveId(product[1]) : 0);
                     const baseAB = (idA * count + idB) * FLOATS_PER_ENTRY;
                     const mask = reaction.neighborMask ?? 0;
 
                     data[baseAB + 0] = productIdA;
                     data[baseAB + 1] = productIdB;
-                    data[baseAB + 2] = 1 / (reactionRate * getDurability(idA));
+                    data[baseAB + 2] = 1 / reactionRate;
                     data[baseAB + 3] = biproductId;
                     data[baseAB + 4] = mask;
 
                     const baseBA = (idB * count + idA) * FLOATS_PER_ENTRY;
                     data[baseBA + 0] = productIdB;
                     data[baseBA + 1] = productIdA;
-                    data[baseBA + 2] = 1 / (reactionRate * getDurability(idB));
+                    data[baseBA + 2] = 1 / reactionRate;
                     data[baseBA + 3] = -1;
                     data[baseBA + 4] = mask;
                 }

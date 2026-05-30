@@ -31,5 +31,5 @@ export const Blood: MaterialDefinition = {
             restingStrength: 0.5
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'extinguishes']
 };

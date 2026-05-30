@@ -38,7 +38,8 @@ export const Saltwater: MaterialDefinition = {
         },
         boils: {
             to: 'steam',
-            condition: { temperature: 0.61 }
+            condition: { temperature: 0.825 }
         }
     },
+    tags: ['rusts', 'extinguishes']
 };

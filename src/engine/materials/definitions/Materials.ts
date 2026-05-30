@@ -90,5 +90,8 @@ export const MaterialIds = {
     soil: 87,
     permafrost: 88,
     terracotta: 89,
-    blueprint: 90 // Dev material for building blueprints
+    blueprint: 90, // Dev material for building blueprints
+    obsidian: 91,
+    plastic: 92,
+    plastic_molten: 93
 } as const;

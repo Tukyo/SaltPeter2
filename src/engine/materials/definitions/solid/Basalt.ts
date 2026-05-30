@@ -32,7 +32,7 @@ export const Basalt: MaterialDefinition = {
     transitions: {
         boils: {
             to: 'lava',
-            condition: { temperature: 0.95 }
+            condition: { temperature: 0.975 }
         }
     },
 };

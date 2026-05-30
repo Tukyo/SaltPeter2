@@ -38,7 +38,8 @@ export const Water: MaterialDefinition = {
         },
         boils: {
             to: 'steam',
-            condition: { temperature: 0.6 }
+            condition: { temperature: 0.8 }
         }
     },
+    tags: ['rusts', 'extinguishes']
 };

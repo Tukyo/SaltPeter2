@@ -97,7 +97,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         let rightCoord = coord + CELL_RIGHT;
         if inBounds(rightCoord, res) && shouldDiffuseSwap(coord, rightCoord) {
             let srcPhysics = textureLoad(physicsTexture, vec2i(rightCoord));
-            let newVx = clamp(srcPhysics.b - VELOCITY_ACCELERATION, -MAX_VELOCITY, MAX_VELOCITY);
+            let newVx = clamp(srcPhysics.b - VELOCITY_ACCELERATION_LIQUID, -MAX_VELOCITY, MAX_VELOCITY);
             textureStore(outputTexture,      vec2i(coord), textureLoad(identityTexture, vec2i(rightCoord)));
             textureStore(nextPhysicsTexture, vec2i(coord), vec4f(srcPhysics.r, currentPhysics.g, newVx, srcPhysics.a));
             return;
@@ -106,7 +106,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         let leftCoord = coord + CELL_LEFT;
         if inBounds(leftCoord, res) && shouldDiffuseSwap(leftCoord, coord) {
             let srcPhysics = textureLoad(physicsTexture, vec2i(leftCoord));
-            let newVx = clamp(srcPhysics.b + VELOCITY_ACCELERATION, -MAX_VELOCITY, MAX_VELOCITY);
+            let newVx = clamp(srcPhysics.b + VELOCITY_ACCELERATION_LIQUID, -MAX_VELOCITY, MAX_VELOCITY);
             textureStore(outputTexture,      vec2i(coord), textureLoad(identityTexture, vec2i(leftCoord)));
             textureStore(nextPhysicsTexture, vec2i(coord), vec4f(srcPhysics.r, currentPhysics.g, newVx, srcPhysics.a));
             return;

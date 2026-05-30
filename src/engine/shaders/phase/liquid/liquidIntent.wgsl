@@ -39,7 +39,7 @@ fn chooseLiquidIntentForState(
         pushY += toMe.y * speed * (nDensity / myDensity);
     }
     let pushMag = length(vec2f(pushX, pushY));
-    if pushMag > VELOCITY_ACCELERATION {
+    if pushMag > VELOCITY_ACCELERATION_LIQUID {
         let splashRoll = timeHash(coord, time);
         if splashRoll < clamp(pushMag / MAX_VELOCITY * sim.turbulenceStrength, 0.0, 0.95) {
             let pushTarget = coord + round(normalize(vec2f(pushX, pushY)));
@@ -149,14 +149,6 @@ fn chooseLiquidIntentForState(
             }
             if canRiseLeft  { return MATERIAL_INTENT_DIAGONAL_RISE_LEFT; }
             if canRiseRight { return MATERIAL_INTENT_DIAGONAL_RISE_RIGHT; }
-        }
-    }
-
-    // Pressure-driven displacement escape — propagates outward from displacement site each physics tick
-    if displacementHash(coord, time) < pressure * sim.dispersion {
-        let escapeTarget = chooseDisplacementEscapeTarget(coord, res, gravityDirection, true);
-        if !sameCoord(escapeTarget, coord) {
-            return getMaterialIntentCodeForTarget(coord, escapeTarget, gravityDirection);
         }
     }
 

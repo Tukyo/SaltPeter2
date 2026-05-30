@@ -1,6 +1,6 @@
 {
   "name": "saltpeter",
-  "version": "0.0.4",
+  "version": "0.0.3",
   "type": "module",
   "main": "out/main/main.js",
   "scripts": {
@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit && electron-vite build",
     "package": "electron-vite build && electron-builder",
     "release": "electron-vite build && electron-builder --publish always",
-    "version": "node changelog.mjs && git add CHANGELOG.md",
+    "changelog": "node changelog.mjs",
     "docs": "node docs.mjs"
   },
   "keywords": [],

@@ -41,5 +41,5 @@ export const Poison: MaterialDefinition = {
             condition: { temperature: 0.585 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'rots_meat']
 };

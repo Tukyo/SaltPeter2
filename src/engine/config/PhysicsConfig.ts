@@ -28,13 +28,29 @@ export class PhysicsConfig {
                 powder: 0.135,
                 solid: 0.135,
             },
-            stepScale: 0.95 // Controls how gradual pressure scaling is
+            stepScale: 0.95, // Controls how gradual pressure scaling is
+            weight: {
+                lateral: 0.25,
+                vertical: 0.5
+            }
         },
         velocity: {
-            acceleration: 0.02,
-            damping: 0.98,
-            propagation: 0.75,
             max: 1.0,
+            liquid: {
+                acceleration: 0.02,
+                damping: 0.98,
+                propagation: 0.75
+            },
+            powder: {
+                acceleration: 0.01,
+                damping: 0.85,
+                propagation: 0.25
+            },
+            solid: {
+                acceleration: 0.01,
+                damping: 0.8,
+                propagation: 0.2
+            }
         }
     }
 

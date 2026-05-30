@@ -42,10 +42,18 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
     var finalVx = sourcePhysics.b;
     var finalVy = sourcePhysics.a;
     if isNewArrival {
-        let moveDir = vec2f(id.xy) - vec2f(resolvedCell.source);
+        let moveDir      = vec2f(id.xy) - vec2f(resolvedCell.source);
+        let resolvedPhase = getMaterialPhaseId(getStateMaterialId(resolved));
+        var accel         = 0.0;
+        switch i32(resolvedPhase) {
+            case 0: { accel = VELOCITY_ACCELERATION_SOLID; }
+            case 1: { accel = VELOCITY_ACCELERATION_POWDER; }
+            case 2: { accel = VELOCITY_ACCELERATION_LIQUID; }
+            default: {}
+        }
         if moveDir.y != 0.0 {
-            finalVx = clamp(sourcePhysics.b + moveDir.x * VELOCITY_ACCELERATION, -MAX_VELOCITY, MAX_VELOCITY);
-            finalVy = clamp(sourcePhysics.a + moveDir.y * VELOCITY_ACCELERATION, -MAX_VELOCITY, MAX_VELOCITY);
+            finalVx = clamp(sourcePhysics.b + moveDir.x * accel, -MAX_VELOCITY, MAX_VELOCITY);
+            finalVy = clamp(sourcePhysics.a + moveDir.y * accel, -MAX_VELOCITY, MAX_VELOCITY);
         }
     }
     textureStore(nextPhysicsTexture, vec2i(id.xy), vec4f(sourceTemp, currentPhysics.g, finalVx, finalVy));

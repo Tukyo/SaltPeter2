@@ -35,5 +35,5 @@ export const Feces: MaterialDefinition = {
             condition: { temperature: 0.575 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'rots_meat']
 };

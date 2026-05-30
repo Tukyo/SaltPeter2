@@ -68,17 +68,22 @@ fn resolveFireCell(
         return ResolvedCell(AIR_STATE, coord);
     }
 
-    let fireId  = getStateMaterialId(currentIdentityState);
-    var hasFuel = false;
+    let fireId        = getStateMaterialId(currentIdentityState);
+    var hasFuel       = false;
+    var hasAir        = false;
     let dissipOffsets = cardinalOffsets();
     for (var i = 0u; i < 4u; i++) {
-        let n = coord + dissipOffsets[i];
-        if !inBounds(n, res) { continue; }
-        let nState = textureLoad(identityTexture, vec2i(n));
-        if !isOccupiedState(nState) { continue; }
-        let rBase = getReactionBase(fireId, getStateMaterialId(nState));
-        if reactionLookup[rBase + 2u] >= 0.0 { hasFuel = true; break; }
+        let n      = coord + dissipOffsets[i];
+        let nState = select(vec4f(0.0), textureLoad(identityTexture, vec2i(n)), inBounds(n, res));
+        if !isOccupiedState(nState) { hasAir = true; continue; }
+        let nId = getStateMaterialId(nState);
+        if isMaterialPhaseId(getMaterialPhaseId(nId), MATERIAL_PHASE_FIRE) { continue; }
+        let rBase     = getReactionBase(fireId, nId);
+        let rChance   = reactionLookup[rBase + 2u];
+        let rProductA = reactionLookup[rBase + 0u];
+        if rChance >= 0.0 && abs(rProductA - fireId) < 0.5 { hasFuel = true; }
     }
+    if !hasAir { hasFuel = false; }
 
     if !hasFuel {
         let dissipRoll  = timeHash(coord, time);

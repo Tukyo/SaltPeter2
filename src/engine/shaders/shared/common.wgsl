@@ -36,7 +36,7 @@ fn timeHash(coord: vec2f, time: f32) -> f32 {
 }
 
 fn displacementHash(coord: vec2f, time: f32) -> f32 {
-    return hash(coord + vec2f(time * 1.6180339887, time * 2.6457513111));
+    return hash(coord + vec2f(fract(time * 7.3), fract(time * 11.9)));
 }
 
 // --- Coordinate helpers ---
