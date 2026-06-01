@@ -1,3 +1,4 @@
+import type { MaterialDefinition } from './definitions/MaterialModel';
 import type { MaterialName } from './definitions/MaterialIdentity';
 import { MaterialRegistry } from './MaterialRegistry';
 import { MaterialVisualSchema } from './MaterialVisualSchema';
@@ -9,6 +10,17 @@ export interface MaterialFilter {
 
 /** Helpers for reading and filtering materials. */
 export class MaterialQuery {
+    private static readonly byId: ReadonlyArray<MaterialDefinition | undefined> = (() => {
+        const table: Array<MaterialDefinition | undefined> = [];
+        for (const material of Object.values(MaterialRegistry.Materials)) {
+            table[material.id] = material;
+        }
+        return table;
+    })();
+
+    /** Allows fetching of a specific material by ID. */
+    public static GetById(id: number): MaterialDefinition | undefined { return MaterialQuery.byId[id]; }
+
     /** Returns all unique non-air material phases, formatted as value/label pairs. */
     public static GetPhaseOptions(): ReadonlyArray<{ value: string; label: string }> {
         const all = Object.values(MaterialRegistry.Materials).filter(m => m.name !== 'air');

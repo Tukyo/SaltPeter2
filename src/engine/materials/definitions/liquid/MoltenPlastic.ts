@@ -27,8 +27,8 @@ export const MoltenPlastic: MaterialDefinition = {
         durability: 0,
         temperature: {
             specificHeat: 3,
-            restingTemperature: 0.92,
-            restingStrength: 0.4
+            restingTemperature: 0.875,
+            restingStrength: 0.65
         }
     },
     transitions: {
@@ -37,5 +37,5 @@ export const MoltenPlastic: MaterialDefinition = {
             condition: { temperature: 0.6 }
         }
     },
-    tags: ['burns', 'corrodes'],
+    tags: ['burns', 'corrodes', 'molten'],
 };

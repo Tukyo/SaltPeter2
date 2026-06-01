@@ -188,7 +188,12 @@ export class SimulationManager extends NitrateProcess {
                     physicsBuffer: this.materialPhysicsBuffer
                 }),
                 AnalyticsPass.Create(device),
-                GameObjectPass.Create({ device, targets: this.pingPong }),
+                GameObjectPass.Create({
+                    device,
+                    targets: this.pingPong,
+                    physicsBuffer: this.materialPhysicsBuffer,
+                    stateBuffer: this.materialStateBuffer,
+                }),
             ]);
 
         this.intentPass = this.Register(intentPass);
@@ -235,12 +240,21 @@ export class SimulationManager extends NitrateProcess {
             const simStepDuration = 1 / baseTickRate;
             state.SetSimTime(state.GetSimTime() + simStepDuration);
 
-            const enc = device.createCommandEncoder();
-            intentPass.Run({ encoder: enc, time: state.GetSimTime(), gravity });
-            simPass.Run({ encoder: enc, time: state.GetSimTime(), gravity });
-            gameObjectPass.Run({ encoder: enc, gravity, simStepDuration });
-            device.queue.submit([enc.finish()]);
+            const encSim = device.createCommandEncoder();
+            encSim.clearBuffer(gameObjectPass.transitionBuffer);
+            intentPass.Run({ encoder: encSim, time: state.GetSimTime(), gravity });
+            simPass.Run({ encoder: encSim, time: state.GetSimTime(), gravity, transitionBuffer: gameObjectPass.transitionBuffer });
+            device.queue.submit([encSim.finish()]);
+
+            const encErase = device.createCommandEncoder();
+            gameObjectPass.RunErase({ encoder: encErase, gravity, simStepDuration });
+            device.queue.submit([encErase.finish()]);
+
+            const encGameObjects = device.createCommandEncoder();
+            gameObjectPass.RunStamp({ encoder: encGameObjects, gravity, simStepDuration });
+            device.queue.submit([encGameObjects.finish()]);
             gameObjectPass.ReadbackPositions();
+
             pingPong.SwapIdentity();
             pingPong.SwapPhysics();
             pingPong.SwapState();

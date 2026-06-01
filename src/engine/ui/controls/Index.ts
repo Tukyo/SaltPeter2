@@ -6,3 +6,4 @@ export * from './RangeControl';
 export * from './SelectControl';
 export * from './TextControl';
 export * from './ToggleGroupControl';
+export * from './ToggleListControl';

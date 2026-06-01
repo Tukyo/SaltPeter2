@@ -1,3 +1,5 @@
+import type { MaterialPhysicsBuffer } from '../materials/MaterialPhysicsBuffer';
+import type { MaterialStateBuffer } from '../materials/MaterialStateBuffer';
 import type { PingPongTargets } from '../simulation/PingPongTargets';
 
 import { ColliderGenerator } from '../component/ColliderGenerator';
@@ -14,6 +16,7 @@ import { PixelBodyCollider } from '../component/definitions/collider/pixelbodyco
 import { PixelData } from '../component/definitions/pixeldata/PixelData';
 import { Rigidbody } from '../component/definitions/rigidbody/Rigidbody';
 import { Transform } from '../component/definitions/transform/Transform';
+import { MaterialQuery } from '../materials/MaterialQuery';
 import { MaterialVisualSchema } from '../materials/MaterialVisualSchema';
 import { ShaderAssembler } from '../shaders/ShaderAssembler';
 import { SimulationConfig } from '../config/SimulationConfig';
@@ -22,6 +25,8 @@ import { GameObject } from './GameObject';
 interface GameObjectPassParams {
     device: GPUDevice;
     targets: PingPongTargets;
+    physicsBuffer: MaterialPhysicsBuffer;
+    stateBuffer: MaterialStateBuffer;
 }
 
 interface GameObjectRunParams {
@@ -65,7 +70,19 @@ export class GameObjectPass {
     private readonly gameObjectBuffers: GameObjectBuffers;
     private readonly physicsPass: GameObjectPhysicsPass;
     private readonly collisionPass: GameObjectCollisionPass;
+    private readonly materialPhysicsBuffer: MaterialPhysicsBuffer;
+    private readonly materialStateBuffer: MaterialStateBuffer;
     private readonly workgroupSize: number;
+
+    public get transitionBuffer(): GPUBuffer { return this.gameObjectBuffers.transitionBuffer; }
+    public get colliderBuffer(): GPUBuffer { return this.gameObjectBuffers.colliderBuffer; }
+    public get stateBuffer(): GPUBuffer { return this.gameObjectBuffers.stateBuffer; }
+    public get cellBuffer(): GPUBuffer { return this.gameObjectBuffers.cellBuffer; }
+
+    // @omitfromdocs
+    public GetTotalSlots(): number { return this.nextSlot; }
+    // @omitfromdocs
+    public GetTotalBoundaryPoints(): number { return this.totalBoundaryPoints; }
 
     // Slot tracking — persists for the lifetime of the pass
     private readonly gameObjectSlots = new Map<number, number>(); // GameObject id → state buffer slot index
@@ -73,6 +90,10 @@ export class GameObjectPass {
     private totalCells: number = 0;
     private totalBoundaryPoints: number = 0;
     private readbackInFlight: boolean = false;
+
+    // Collider rebuild tracking
+    private readonly maxBoundaryCounts = new Map<number, number>();   // slot → max points (original alloc)
+    private readonly previousDeadCounts = new Map<number, number>();  // slot → last seen dead count
 
     private constructor(
         params: GameObjectPassParams,
@@ -90,13 +111,15 @@ export class GameObjectPass {
         this.gameObjectBuffers = gameObjectBuffers;
         this.physicsPass = physicsPass;
         this.collisionPass = collisionPass;
+        this.materialPhysicsBuffer = params.physicsBuffer;
+        this.materialStateBuffer = params.stateBuffer;
         this.workgroupSize = workgroupSize;
     }
 
     /** Compiles erase and stamp shaders, creates sub-passes, and returns a ready-to-use pass. @internal */
     public static async Create(params: GameObjectPassParams): Promise<GameObjectPass> {
         const workgroupSize = SimulationConfig.GetConfig().performance.workgroupSize;
-        const gameObjectBuffers = new GameObjectBuffers(params.device);
+        const gameObjectBuffers = new GameObjectBuffers(params.device, params.targets.width, params.targets.height);
 
         const [erasePipeline, stampPipeline, physicsPass, collisionPass] = await Promise.all([
             params.device.createComputePipelineAsync({
@@ -117,12 +140,24 @@ export class GameObjectPass {
                     entryPoint: 'main',
                 },
             }),
-            GameObjectPhysicsPass.Create({ device: params.device, buffers: gameObjectBuffers }),
-            GameObjectCollisionPass.Create({ device: params.device, buffers: gameObjectBuffers }),
+            GameObjectPhysicsPass.Create({
+                device: params.device,
+                buffers: gameObjectBuffers
+            }),
+            GameObjectCollisionPass.Create({
+                device: params.device,
+                buffers: gameObjectBuffers,
+            }),
         ]);
 
         return new GameObjectPass(
-            params, erasePipeline, stampPipeline, gameObjectBuffers, physicsPass, collisionPass, workgroupSize
+            params,
+            erasePipeline,
+            stampPipeline,
+            gameObjectBuffers,
+            physicsPass,
+            collisionPass,
+            workgroupSize
         );
     }
 
@@ -231,6 +266,9 @@ export class GameObjectPass {
         const mass = rigidbody ? rigidbody.mass : 1;
         sf[28] = Math.max(0.001, mass * sumSquaredRadius / Math.max(1, filledCells.length));
 
+        const totalDensity = filledCells.reduce((sum, c) => sum + (MaterialQuery.GetById(c.materialId)?.physics.density ?? 1.0), 0);
+        sf[29] = Math.max(0.001, totalDensity / Math.max(1, filledCells.length));
+
         this.device.queue.writeBuffer(
             this.gameObjectBuffers.stateBuffer,
             slot * GameObjectStateSchema.byteStride,
@@ -265,11 +303,12 @@ export class GameObjectPass {
         );
 
         this.gameObjectSlots.set(gameObject.id, slot);
+        this.maxBoundaryCounts.set(slot, boundaryCount);
         this.totalCells += filledCells.length;
     }
 
-    /** Runs erase, physics, and stamp passes for all active game objects. @internal */
-    public Run(params: GameObjectRunParams): void {
+    /** Uploads new GOs and dispatches the erase pass. Call before submitting encoder A. @internal */
+    public RunErase(params: GameObjectRunParams): void {
         const manager = GameObjectManager.Instance;
         if (!manager) { return; }
 
@@ -288,19 +327,14 @@ export class GameObjectPass {
 
         if (this.totalCells === 0) { return; }
 
-        const { encoder, gravity, simStepDuration } = params;
+        const { encoder } = params;
         const { targets, device, gameObjectBuffers } = this;
 
         device.queue.writeBuffer(
             gameObjectBuffers.eraseUniformBuffer, 0,
             new Uint32Array([this.totalCells, targets.width, targets.height, 0])
         );
-        device.queue.writeBuffer(
-            gameObjectBuffers.stampUniformBuffer, 0,
-            new Uint32Array([this.totalCells, targets.width, targets.height, 0])
-        );
 
-        // Pass 1: erase — clear previous cell positions from identity and ownership
         const eraseBindGroup = device.createBindGroup({
             layout: this.erasePipeline.getBindGroupLayout(0),
             entries: [
@@ -317,14 +351,27 @@ export class GameObjectPass {
         erasePass.setBindGroup(0, eraseBindGroup);
         erasePass.dispatchWorkgroups(Math.ceil(this.totalCells / this.workgroupSize));
         erasePass.end();
+    }
 
-        // Pass 2: physics — save prevPos, integrate velocity, update positions in state buffer
+    /** Dispatches physics, collision, and stamp passes. Call after encoder A is submitted and textures are swapped. @internal */
+    public RunStamp(params: GameObjectRunParams): void {
+        if (this.totalCells === 0) { return; }
+
+        const { encoder, gravity, simStepDuration } = params;
+        const { targets, device, gameObjectBuffers } = this;
+
+        device.queue.writeBuffer(
+            gameObjectBuffers.stampUniformBuffer, 0,
+            new Uint32Array([this.totalCells, targets.width, targets.height, 0])
+        );
+
+        // Physics — save prevPos, integrate velocity, update positions in state buffer
         this.physicsPass.Run({ encoder, gravity, simStepDuration });
 
-        // Pass 3: collision — reflect velocity away from occupied sim cells
+        // Collision — reflect velocity away from occupied sim cells
         this.collisionPass.Run({ encoder, targets, gravity, simStepDuration });
 
-        // Pass 4: stamp — carry full cell state (identity, physics, state) from prevPos to new pos
+        // Stamp — carry full cell state (identity, physics, state) from prevPos to new pos
         const stampBindGroup = device.createBindGroup({
             layout: this.stampPipeline.getBindGroupLayout(0),
             entries: [
@@ -339,6 +386,10 @@ export class GameObjectPass {
                 { binding: 8, resource: targets.nextPhysics.createView() },
                 { binding: 9, resource: targets.currentState.createView() },
                 { binding: 10, resource: targets.nextState.createView() },
+                { binding: 11, resource: { buffer: gameObjectBuffers.transitionBuffer } },
+                { binding: 12, resource: { buffer: gameObjectBuffers.deadCellBuffer } },
+                { binding: 13, resource: { buffer: this.materialPhysicsBuffer.buffer } },
+                { binding: 14, resource: { buffer: this.materialStateBuffer.buffer } },
             ],
         });
         const stampPass = encoder.beginComputePass();
@@ -350,12 +401,20 @@ export class GameObjectPass {
         // Queue a copy of the state buffer into the readback buffer so ReadbackPositions()
         // can map it after this encoder is submitted. Skipped if a readback is already in-flight.
         if (!this.readbackInFlight) {
-            const copySize = this.nextSlot * GameObjectStateSchema.byteStride;
-            if (copySize > 0) {
+            const stateCopySize = this.nextSlot * GameObjectStateSchema.byteStride;
+            if (stateCopySize > 0) {
                 encoder.copyBufferToBuffer(
                     gameObjectBuffers.stateBuffer, 0,
                     gameObjectBuffers.stateReadbackBuffer, 0,
-                    copySize
+                    stateCopySize
+                );
+            }
+            const deadCopySizeBytes = this.totalCells * 4;
+            if (deadCopySizeBytes > 0) {
+                encoder.copyBufferToBuffer(
+                    gameObjectBuffers.deadCellBuffer, 0,
+                    gameObjectBuffers.deadCellReadbackBuffer, 0,
+                    deadCopySizeBytes
                 );
             }
         }
@@ -370,17 +429,40 @@ export class GameObjectPass {
         if (this.readbackInFlight || this.nextSlot === 0) { return; }
         this.readbackInFlight = true;
 
-        const { stateReadbackBuffer } = this.gameObjectBuffers;
-        await stateReadbackBuffer.mapAsync(GPUMapMode.READ);
+        const { stateReadbackBuffer, deadCellReadbackBuffer } = this.gameObjectBuffers;
+        await Promise.all([
+            stateReadbackBuffer.mapAsync(GPUMapMode.READ),
+            deadCellReadbackBuffer.mapAsync(GPUMapMode.READ),
+        ]);
 
-        const mappedRange = stateReadbackBuffer.getMappedRange(0, this.nextSlot * GameObjectStateSchema.byteStride);
-        const dataF32 = new Float32Array(mappedRange);
-        const dataU32 = new Uint32Array(mappedRange);
+        const stateMappedRange = stateReadbackBuffer.getMappedRange(0, this.nextSlot * GameObjectStateSchema.byteStride);
+        const dataF32 = new Float32Array(stateMappedRange);
+        const dataU32 = new Uint32Array(stateMappedRange);
+
+        const deadMappedRange = deadCellReadbackBuffer.getMappedRange(0, this.totalCells * 4);
+        const deadCellData = new Uint32Array(deadMappedRange);
+
+        const toDestroy: number[] = [];
 
         for (const [gameObjectId, slot] of this.gameObjectSlots) {
             const base = slot * GameObjectStateSchema.stride;
             const gameObject = GameObjectManager.Instance?.Get(gameObjectId);
             if (!gameObject) { continue; }
+
+            const cellOffset = dataU32[base + 11];
+            const cellCount = dataU32[base + 12];
+            if (cellCount > 0) {
+                let deadCount = 0;
+                for (let c = cellOffset; c < cellOffset + cellCount; c++) {
+                    if (deadCellData[c] !== 0) { deadCount++; }
+                }
+                if (deadCount === cellCount) {
+                    toDestroy.push(gameObjectId);
+                } else if (deadCount > 0 && deadCount !== (this.previousDeadCounts.get(slot) ?? 0)) {
+                    this.previousDeadCounts.set(slot, deadCount);
+                    this.RebuildPixelBodyCollider(gameObject, slot, cellOffset, deadCellData, dataU32, base);
+                }
+            }
 
             const transform = gameObject.GetComponent(Transform);
             if (transform) {
@@ -397,7 +479,60 @@ export class GameObjectPass {
         }
 
         stateReadbackBuffer.unmap();
+        deadCellReadbackBuffer.unmap();
         this.readbackInFlight = false;
+
+        for (const gameObjectId of toDestroy) {
+            const slot = this.gameObjectSlots.get(gameObjectId);
+            if (slot === undefined) { continue; }
+            this.gameObjectSlots.delete(gameObjectId);
+            GameObjectManager.Instance?.Get(gameObjectId)?.Destroy();
+            const inactiveOffset = slot * GameObjectStateSchema.byteStride + 14 * 4;
+            this.device.queue.writeBuffer(
+                this.gameObjectBuffers.stateBuffer, inactiveOffset, new Uint32Array([0])
+            );
+        }
+    }
+
+    private RebuildPixelBodyCollider(
+        gameObject: GameObject,
+        slot: number,
+        cellOffset: number,
+        deadCellData: Uint32Array,
+        stateU32: Uint32Array,
+        stateBase: number,
+    ): void {
+        const pixelBodyCollider = gameObject.GetComponent(PixelBodyCollider);
+        const pixelData = gameObject.GetComponent(PixelData);
+        if (!pixelBodyCollider || pixelBodyCollider.isTrigger || !pixelData) { return; }
+
+        const filledCells = pixelData.cells.filter(c => c.materialId !== 0);
+        const boundaryOffset = stateU32[stateBase + 16];
+        const maxPoints = this.maxBoundaryCounts.get(slot) ?? 0;
+
+        const newPoints = ColliderGenerator.RebuildPixelBodyBoundary(filledCells, deadCellData, cellOffset);
+        const newCount = Math.min(newPoints.length, maxPoints);
+
+        if (newCount > 0) {
+            const pointBuf = new ArrayBuffer(newCount * GameObjectColliderSchema.byteStride);
+            const pi = new Int32Array(pointBuf);
+            for (let i = 0; i < newCount; i++) {
+                pi[i * GameObjectColliderSchema.stride] = newPoints[i].x;
+                pi[i * GameObjectColliderSchema.stride + 1] = -newPoints[i].y;
+            }
+            this.device.queue.writeBuffer(
+                this.gameObjectBuffers.colliderBuffer,
+                boundaryOffset * GameObjectColliderSchema.byteStride,
+                pointBuf
+            );
+        }
+
+        const boundaryCountOffset = slot * GameObjectStateSchema.byteStride + 17 * 4;
+        this.device.queue.writeBuffer(
+            this.gameObjectBuffers.stateBuffer,
+            boundaryCountOffset,
+            new Uint32Array([newCount])
+        );
     }
 
     public OnDestroy(): void {

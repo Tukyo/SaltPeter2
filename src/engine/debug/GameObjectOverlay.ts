@@ -1,5 +1,7 @@
 import { Camera } from '../camera/Camera';
+import { GameObjectColliderSchema } from '../game_object/GameObjectColliderSchema';
 import { GameObjectManager } from '../game_object/GameObjectManager';
+import { GameObjectStateSchema } from '../game_object/GameObjectStateSchema';
 import { Renderer } from '../rendering/Renderer';
 import { Renderer2D } from '../rendering/Renderer2D';
 import { Rigidbody } from '../component/definitions/rigidbody/Rigidbody';
@@ -66,8 +68,9 @@ export class GameObjectOverlay {
     }
 
     /**
-     * Reads the ownership texture and repaints the overlay.
-     * Lazy-creates the canvas on first call. @internal
+     * Reads the ownership texture plus the live colliderBuffer and stateBuffer, then repaints
+     * the overlay. Yellow = ownership boundary pixels. Cyan = actual collision boundary points
+     * transformed to world space from the static colliderBuffer. @internal
      */
     public Update(): void {
         if (!this.visible || this.readPending) { return; }
@@ -102,28 +105,74 @@ export class GameObjectOverlay {
 
         this.readPending = true;
 
-        const gpuBuffer = device.createBuffer({
+        const ownershipBuffer = device.createBuffer({
             size: bytesPerRow * contentH,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
         });
 
+        const gameObjectPass = sim.gameObjectPass;
+        const totalSlots = gameObjectPass?.GetTotalSlots() ?? 0;
+        const totalBoundaryPoints = gameObjectPass?.GetTotalBoundaryPoints() ?? 0;
+
+        let stateReadbackBuffer: GPUBuffer | null = null;
+        let colliderReadbackBuffer: GPUBuffer | null = null;
+
+        if (gameObjectPass && totalSlots > 0) {
+            stateReadbackBuffer = device.createBuffer({
+                size: totalSlots * GameObjectStateSchema.byteStride,
+                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+            });
+        }
+        if (gameObjectPass && totalBoundaryPoints > 0) {
+            colliderReadbackBuffer = device.createBuffer({
+                size: totalBoundaryPoints * GameObjectColliderSchema.byteStride,
+                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+            });
+        }
+
         const enc = device.createCommandEncoder();
         enc.copyTextureToBuffer(
             { texture: pingPong.currentOwnership, origin: [camOriginX, camOriginY] },
-            { buffer: gpuBuffer, bytesPerRow },
+            { buffer: ownershipBuffer, bytesPerRow },
             [contentW, contentH]
         );
+        if (gameObjectPass && stateReadbackBuffer) {
+            enc.copyBufferToBuffer(
+                gameObjectPass.stateBuffer, 0,
+                stateReadbackBuffer, 0,
+                totalSlots * GameObjectStateSchema.byteStride
+            );
+        }
+        if (gameObjectPass && colliderReadbackBuffer) {
+            enc.copyBufferToBuffer(
+                gameObjectPass.colliderBuffer, 0,
+                colliderReadbackBuffer, 0,
+                totalBoundaryPoints * GameObjectColliderSchema.byteStride
+            );
+        }
         device.queue.submit([enc.finish()]);
 
-        void gpuBuffer.mapAsync(GPUMapMode.READ).then(() => {
-            if (!this.ctx || !this.renderer2D || !this.tmpCanvas) { return; }
+        const mapPromises: Promise<void>[] = [ownershipBuffer.mapAsync(GPUMapMode.READ)];
+        if (stateReadbackBuffer) { mapPromises.push(stateReadbackBuffer.mapAsync(GPUMapMode.READ)); }
+        if (colliderReadbackBuffer) { mapPromises.push(colliderReadbackBuffer.mapAsync(GPUMapMode.READ)); }
 
-            const u32s = new Uint32Array(gpuBuffer.getMappedRange());
+        void Promise.all(mapPromises).then(() => {
+            const cleanUp = (): void => {
+                ownershipBuffer.unmap();
+                ownershipBuffer.destroy();
+                stateReadbackBuffer?.unmap();
+                stateReadbackBuffer?.destroy();
+                colliderReadbackBuffer?.unmap();
+                colliderReadbackBuffer?.destroy();
+            };
+
+            if (!this.ctx || !this.renderer2D || !this.tmpCanvas) { cleanUp(); return; }
+
+            // --- Ownership pixel pass: tint owned cells, yellow on boundary ---
+            const u32s = new Uint32Array(ownershipBuffer.getMappedRange());
             const u32sPerRow = bytesPerRow / 4;
             const imageData = this.ctx.createImageData(contentW, contentH);
             const pixels = imageData.data;
-
-            // Cache colours for each owner seen this frame to avoid re-computing
             const colorCache = new Map<number, [number, number, number, number]>();
 
             for (let y = 0; y < contentH; y++) {
@@ -131,14 +180,11 @@ export class GameObjectOverlay {
                     const owner = u32s[y * u32sPerRow + x];
                     if (owner === 0) { continue; }
 
-                    let color = colorCache.get(owner);
-                    if (!color) {
-                        color = GameObjectOverlay.OwnerColor(owner);
-                        colorCache.set(owner, color);
-                    }
+                    const color = colorCache.get(owner) ?? GameObjectOverlay.OwnerColor(owner);
+                    if (!colorCache.has(owner)) { colorCache.set(owner, color); }
 
                     const dst = ((Utils.FlipY(y, contentH) - 1) * contentW + x) * 4;
-                    pixels[dst] = color[0];
+                    pixels[dst]     = color[0];
                     pixels[dst + 1] = color[1];
                     pixels[dst + 2] = color[2];
                     pixels[dst + 3] = color[3];
@@ -149,20 +195,58 @@ export class GameObjectOverlay {
             this.tmpCanvas.height = contentH;
             this.tmpCanvas.getContext('2d')?.putImageData(imageData, 0, 0);
             this.ctx.clearRect(0, 0, this.renderer2D.canvas.width, this.renderer2D.canvas.height);
-            this.ctx.drawImage(
-                this.tmpCanvas,
-                0, 0,
-                this.renderer2D.canvas.width,
-                this.renderer2D.canvas.height
-            );
+            this.ctx.drawImage(this.tmpCanvas, 0, 0, this.renderer2D.canvas.width, this.renderer2D.canvas.height);
 
-            // Draw transform gizmos — red X axis (right), green Y axis (up in sim = up on screen)
+            const scaleX = this.renderer2D.canvas.width  / contentW;
+            const scaleY = this.renderer2D.canvas.height / contentH;
+
+            // --- Collider boundary pass: cyan squares at each transformed boundary point ---
+            if (stateReadbackBuffer && colliderReadbackBuffer) {
+                const stateRaw   = stateReadbackBuffer.getMappedRange();
+                const stateF32   = new Float32Array(stateRaw);
+                const stateU32   = new Uint32Array(stateRaw);
+                const colliderI32 = new Int32Array(colliderReadbackBuffer.getMappedRange());
+
+                this.ctx.fillStyle = 'rgba(0, 200, 255, 1.0)';
+                for (let slot = 0; slot < totalSlots; slot++) {
+                    const base = slot * GameObjectStateSchema.stride;
+                    if (stateU32[base + 14] === 0) { continue; } // inactive
+
+                    const posX           = stateF32[base + 0];
+                    const posY           = stateF32[base + 1];
+                    const pivotX         = stateF32[base + 8];
+                    const pivotY         = stateF32[base + 9];
+                    const theta          = stateF32[base + 23];
+                    const boundaryOffset = stateU32[base + 16];
+                    const boundaryCount  = stateU32[base + 17];
+
+                    const cosTheta = Math.cos(theta);
+                    const sinTheta = Math.sin(theta);
+
+                    for (let b = 0; b < boundaryCount; b++) {
+                        const pointBase = (boundaryOffset + b) * GameObjectColliderSchema.stride;
+                        const localX = colliderI32[pointBase];
+                        const localY = colliderI32[pointBase + 1];
+
+                        const localFX = localX - pivotX;
+                        const localFY = localY - pivotY;
+                        const wx = Math.floor(posX + cosTheta * localFX - sinTheta * localFY);
+                        const wy = Math.floor(posY + sinTheta * localFX + cosTheta * localFY);
+
+                        const canvasX = (wx - camOriginX) * scaleX;
+                        const canvasY = ((height - 1 - wy) - camOriginY) * scaleY;
+                        this.ctx.fillRect(
+                            Math.floor(canvasX), Math.floor(canvasY),
+                            Math.ceil(scaleX), Math.ceil(scaleY)
+                        );
+                    }
+                }
+            }
+
+            // --- Transform gizmos: red X axis, green Y axis, dot at anchor ---
             const manager = GameObjectManager.Instance;
             if (manager) {
-                const arrowLength = 16; // canvas pixels
-                const scaleX = this.renderer2D.canvas.width / contentW;
-                const scaleY = this.renderer2D.canvas.height / contentH;
-
+                const arrowLength = 16;
                 this.ctx.lineWidth = 2;
 
                 for (const gameObject of manager.GetAll()) {
@@ -172,21 +256,18 @@ export class GameObjectOverlay {
                     const canvasX = (transform.position.x - camOriginX) * scaleX;
                     const canvasY = ((height - 1 - transform.position.y) - camOriginY) * scaleY;
 
-                    // Dot at anchor — black when sleeping, white when awake
                     const rigidbody = gameObject.GetComponent(Rigidbody);
                     this.ctx.fillStyle = rigidbody?.isSleeping ? 'black' : 'white';
                     this.ctx.beginPath();
                     this.ctx.arc(canvasX, canvasY, 3, 0, Math.PI * 2);
                     this.ctx.fill();
 
-                    // X axis — red, pointing right
                     this.ctx.strokeStyle = 'rgba(255, 60, 60, 1.0)';
                     this.ctx.beginPath();
                     this.ctx.moveTo(canvasX, canvasY);
                     this.ctx.lineTo(canvasX + arrowLength, canvasY);
                     this.ctx.stroke();
 
-                    // Y axis — green, pointing up (sim Y-up = canvas Y-up after flip)
                     this.ctx.strokeStyle = 'rgba(60, 255, 60, 1.0)';
                     this.ctx.beginPath();
                     this.ctx.moveTo(canvasX, canvasY);
@@ -195,8 +276,7 @@ export class GameObjectOverlay {
                 }
             }
 
-            gpuBuffer.unmap();
-            gpuBuffer.destroy();
+            cleanUp();
         }).finally(() => {
             this.readPending = false;
         });

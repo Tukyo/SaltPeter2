@@ -157,6 +157,7 @@ type UISetting =
     | PaletteSetting
     | TextSetting
     | ToggleGroupSetting
+    | ToggleListSetting
 ```
 
 ```ts
@@ -234,6 +235,14 @@ interface TextSetting extends BaseSetting {
 ```ts
 interface ToggleGroupSetting extends BaseSetting {
     type: 'toggleGroup';
+    options: ReadonlyArray<{ value: string; label: string }>;
+    default: readonly string[];
+}
+```
+
+```ts
+interface ToggleListSetting extends BaseSetting {
+    type: 'toggleList';
     options: ReadonlyArray<{ value: string; label: string }>;
     default: readonly string[];
 }

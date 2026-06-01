@@ -26,14 +26,14 @@ export const FrozenPoison: MaterialDefinition = {
         temperature: {
             specificHeat: 2,
             restingTemperature: 0.25,
-            restingStrength: 0.5
+            restingStrength: 0.25
         }
     },
     transitions: {
         melts: {
             to: 'poison',
-            condition: { temperature: 0.475 }
+            condition: { temperature: 0.45 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'frozen']
 };

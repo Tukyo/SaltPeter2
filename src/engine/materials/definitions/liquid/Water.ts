@@ -5,10 +5,10 @@ export const Water: MaterialDefinition = {
     id: MaterialIds.water,
     name: 'water',
     colors: [
-        { r: 89, g: 133, b: 217, a: 1 },
-        { r: 82, g: 143, b: 230, a: 1 },
-        { r: 43, g: 128, b: 242, a: 1 },
-        { r: 66, g: 122, b: 209, a: 1 },
+        { r: 89, g: 133, b: 217, a: 0.75 },
+        { r: 82, g: 143, b: 230, a: 0.75 },
+        { r: 43, g: 128, b: 242, a: 0.75 },
+        { r: 66, g: 122, b: 209, a: 0.75 },
     ],
     state: {
         health: 100,

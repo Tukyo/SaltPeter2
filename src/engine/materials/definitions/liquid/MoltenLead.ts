@@ -28,7 +28,7 @@ export const MoltenLead: MaterialDefinition = {
         temperature: {
             specificHeat: 4,
             restingTemperature: 0.82,
-            restingStrength: 0.4
+            restingStrength: 0.8
         }
     },
     transitions: {
@@ -37,5 +37,5 @@ export const MoltenLead: MaterialDefinition = {
             condition: { temperature: 0.61 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'molten']
 };

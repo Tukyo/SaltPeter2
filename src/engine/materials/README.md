@@ -50,6 +50,7 @@ interface MaterialFilter {
 
 | Method | Description |
 |--------|-------------|
+| [`static GetById(id: number): MaterialDefinition \| undefined`](MaterialQuery.ts) | Allows fetching of a specific material by ID. |
 | [`static GetPhaseOptions(): ReadonlyArray<{ value: string; label: string }>`](MaterialQuery.ts) | Returns all unique non-air material phases, formatted as value/label pairs. |
 | [`static GetTagOptions(): ReadonlyArray<{ value: string; label: string }>`](MaterialQuery.ts) | Returns all unique non-air material tags, formatted as value/label pairs. |
 | [`static DecodeColorIndex(seedByte: number): number`](MaterialQuery.ts) | Decodes the G-channel seed byte from an rgba8unorm identity texture pixel into a 0-based color index. |

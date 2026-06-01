@@ -14,6 +14,7 @@ export type UISetting =
     | PaletteSetting
     | TextSetting
     | ToggleGroupSetting
+    | ToggleListSetting
 
 // @omitfromdocs
 export interface ControlEntry {
@@ -81,6 +82,12 @@ export interface TextSetting extends BaseSetting {
 
 export interface ToggleGroupSetting extends BaseSetting {
     type: 'toggleGroup';
+    options: ReadonlyArray<{ value: string; label: string }>;
+    default: readonly string[];
+}
+
+export interface ToggleListSetting extends BaseSetting {
+    type: 'toggleList';
     options: ReadonlyArray<{ value: string; label: string }>;
     default: readonly string[];
 }

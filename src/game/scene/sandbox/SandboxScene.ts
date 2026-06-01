@@ -66,7 +66,8 @@ export class SandboxScene extends Nitrate.Scene {
         // TEST - Specific amount of GOs
         // TODO: remove hardcoded spawn — replace with resources panel drag-and-drop
         // Nitrate.NitrateProcess.OnInit(Nitrate.SimulationManager, async () => {
-        //     await Nitrate.GameObject.Instantiate('2240650c-f4d7-46ea-982d-b62b94c3a00c', { x: 100, y: 100 });
+        //     await Nitrate.GameObject.Instantiate('53720933-b597-4b87-952e-7bc6ebba9c9c', { x: 100, y: 300 });
+        //     await Nitrate.GameObject.Instantiate('53720933-b597-4b87-952e-7bc6ebba9c9c', { x: 100, y: 400 });
         // });
 
         // TEST - Many GOs

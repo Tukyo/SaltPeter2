@@ -29,7 +29,7 @@ The shader pipeline has two layers: **generated fragments** and **raw WGSL sourc
 | `shared/` | [`common`](shared/common.wgsl), [`displacement`](shared/displacement.wgsl), [`identity`](shared/identity.wgsl), [`identityQueries`](shared/identityQueries.wgsl), [`intent`](shared/intent.wgsl), [`intentRead`](shared/intentRead.wgsl) |
 | `sim/` | [`intent`](sim/intent.wgsl), [`reactions`](sim/reactions.wgsl), [`sim`](sim/sim.wgsl) |
 | `state/` | [`state`](state/state.wgsl) |
-| `visual/` | [`display`](visual/display.wgsl) |
+| `visual/` | [`composite`](visual/composite.wgsl), [`display`](visual/display.wgsl), [`gameObjectRender`](visual/gameObjectRender.wgsl), [`simRender`](visual/simRender.wgsl) |
 
 <!-- SHADERS_END -->
 

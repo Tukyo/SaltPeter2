@@ -26,14 +26,14 @@ export const FrozenMilk: MaterialDefinition = {
         temperature: {
             specificHeat: 2,
             restingTemperature: 0.2,
-            restingStrength: 0.5
+            restingStrength: 0.2
         }
     },
     transitions: {
         melts: {
             to: 'milk',
-            condition: { temperature: 0.435 }
+            condition: { temperature: 0.45 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'frozen']
 };

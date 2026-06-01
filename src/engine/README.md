@@ -31,6 +31,7 @@ import { Nitrate } from '@Nitrate';
 [`materials/`](materials/README.md)  
 &nbsp;&nbsp;&nbsp;&nbsp;↳ [`definitions/`](materials/definitions/README.md)  
 [`rendering/`](rendering/README.md)  
+&nbsp;&nbsp;&nbsp;&nbsp;↳ [`passes/`](rendering/passes/README.md)  
 [`scene/`](scene/README.md)  
 [`shaders/`](shaders/README.md)  
 [`simulation/`](simulation/README.md)  

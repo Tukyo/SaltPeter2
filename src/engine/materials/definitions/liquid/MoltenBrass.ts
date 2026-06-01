@@ -28,7 +28,7 @@ export const MoltenBrass: MaterialDefinition = {
         temperature: {
             specificHeat: 4,
             restingTemperature: 0.88,
-            restingStrength: 0.4
+            restingStrength: 0.75
         }
     },
     transitions: {
@@ -37,5 +37,5 @@ export const MoltenBrass: MaterialDefinition = {
             condition: { temperature: 0.74 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'molten']
 };

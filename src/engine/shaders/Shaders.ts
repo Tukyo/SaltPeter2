@@ -69,7 +69,10 @@ export { default as analyticsWgsl } from './analytics/analytics.wgsl?raw';
 export { default as instantiateCellWgsl } from './instantiation/instantiateCell.wgsl?raw';
 
 // Visual
+export { default as compositeWgsl } from './visual/composite.wgsl?raw';
 export { default as displayWgsl } from './visual/display.wgsl?raw';
+export { default as gameObjectRenderWgsl } from './visual/gameObjectRender.wgsl?raw';
+export { default as simRenderWgsl } from './visual/simRender.wgsl?raw';
 
 // Game object
 export { default as gameObjectEraseWgsl } from './game_object/gameObjectErase.wgsl?raw';

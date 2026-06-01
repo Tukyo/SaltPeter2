@@ -10,7 +10,10 @@ import {
     gameObjectPhysicsWgsl,
     gameObjectStampWgsl,
     instantiateCellWgsl,
+    compositeWgsl,
     diffusionWgsl,
+    gameObjectRenderWgsl,
+    simRenderWgsl,
     displacementWgsl,
     displayWgsl,
     fireSimulationWgsl,
@@ -222,6 +225,34 @@ export class ShaderAssembler {
             displayWgsl,
         ].join('\n');
     }
+
+    // @omitfromdocs
+    public static Composite(): string {
+        return compositeWgsl;
+    }
+
+    // @omitfromdocs
+    public static SimulationRender(workgroupSize: number): string {
+        return [
+            ShaderFactory.GenerateColorsPerMaterial(),
+            ShaderFactory.GenerateVisualEntryStruct(),
+            ShaderFactory.GenerateWorkgroupSize(workgroupSize),
+            commonWgsl,
+            simRenderWgsl,
+        ].join('\n');
+    }
+
+    // @omitfromdocs
+    public static GameObjectRender(workgroupSize: number): string {
+        return [
+            ShaderFactory.GenerateColorsPerMaterial(),
+            ShaderFactory.GenerateVisualEntryStruct(),
+            ShaderFactory.GenerateWorkgroupSize(workgroupSize),
+            ShaderFactory.GenerateGameObjectStateStruct(),
+            ShaderFactory.GenerateGameObjectCellStruct(),
+            gameObjectRenderWgsl,
+        ].join('\n');
+    }
     //#endregion
 
     //#region GAME OBJECT
@@ -240,7 +271,12 @@ export class ShaderAssembler {
     // @omitfromdocs
     public static GameObjectStamp(workgroupSize: number): string {
         return [
+            ShaderFactory.GenerateMaterialCount(),
             ShaderFactory.GenerateWorkgroupSize(workgroupSize),
+            ShaderFactory.GenerateMaxDensity(),
+            ShaderFactory.GenerateMaterialPhysicsEntryStruct(),
+            ShaderFactory.GenerateMaterialStateEntryStruct(),
+            ShaderFactory.GenerateMaterialStateIndexHelper(),
             ShaderFactory.GenerateGameObjectStateStruct(),
             ShaderFactory.GenerateGameObjectCellStruct(),
             ShaderFactory.GenerateGameObjectPassUniformStruct(),
@@ -263,12 +299,14 @@ export class ShaderAssembler {
     // @omitfromdocs
     public static GameObjectCollision(workgroupSize: number): string {
         return [
+            ShaderFactory.GenerateMaterialCount(),
             ShaderFactory.GenerateWorkgroupSize(workgroupSize),
             ShaderFactory.GenerateGameObjectStateStruct(),
             ShaderFactory.GenerateGameObjectColliderStruct(),
             ShaderFactory.GenerateGameObjectCollisionUniformStruct(),
             ShaderFactory.GenerateGameObjectBodyTypeConstants(),
             commonWgsl,
+            identityWgsl,
             gameObjectCollisionWgsl,
         ].join('\n');
     }

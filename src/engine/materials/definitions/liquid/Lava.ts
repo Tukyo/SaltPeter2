@@ -28,7 +28,7 @@ export const Lava: MaterialDefinition = {
         temperature: {
             specificHeat: 10,
             restingTemperature: 1.0,
-            restingStrength: 0.5
+            restingStrength: 0.8
         }
     },
     transitions: {

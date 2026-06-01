@@ -3,6 +3,15 @@ import type { Size2D, Vec2 } from "../definitions/Primitives";
 
 /** Generates colliders for GameObjects. */
 export class ColliderGenerator {
+    /**
+     * Filters out dead cells then returns the boundary of the survivors.
+     * `deadMask[offset + i]` non-zero means cells[i] is dead. @internal
+     */
+    public static RebuildPixelBodyBoundary(cells: PixelCell[], deadMask: Uint32Array, offset: number): Vec2[] {
+        const surviving = cells.filter((_, i) => deadMask[offset + i] === 0);
+        return ColliderGenerator.BuildPixelBodyBoundary(surviving);
+    }
+
     /** Returns the integer cell positions of all outermost filled cells in a PixelBody. @internal */
     public static BuildPixelBodyBoundary(cells: PixelCell[]): Vec2[] {
         const filled = cells.filter(c => c.materialId !== 0);

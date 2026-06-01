@@ -1,4 +1,4 @@
-import type { ChoiceSetting, SelectSetting, ToggleGroupSetting } from '../UserInterfaceTypes';
+import type { ChoiceSetting, SelectSetting, ToggleGroupSetting, ToggleListSetting } from '../UserInterfaceTypes';
 import type { MaterialId, MaterialName, MaterialOccupancy } from '../../materials/definitions/MaterialIdentity';
 import type { MaterialPhase } from '../../materials/definitions/MaterialPhases';
 
@@ -10,6 +10,7 @@ import { MaterialRegistry } from '../../materials/MaterialRegistry';
 import { NitrateProcess } from '../../NitrateProcess';
 import { SelectControl } from '../controls/SelectControl';
 import { ToggleGroupControl } from '../controls/ToggleGroupControl';
+import { ToggleListControl } from '../controls/ToggleListControl';
 import { UserInterfaceManager } from '../UserInterfaceManager';
 
 export interface MaterialsPanelParams {
@@ -49,7 +50,7 @@ export class MaterialsPanel extends NitrateProcess {
     private phaseElement: HTMLDivElement | null = null;
     private phaseSetting: ToggleGroupSetting | null = null;
     private tagElement: HTMLDivElement | null = null;
-    private tagSetting: ToggleGroupSetting | null = null;
+    private tagSetting: ToggleListSetting | null = null;
     private occupancyElement: HTMLDivElement | null = null;
     private occupancySetting: ChoiceSetting | null = null;
     private variantSection: HTMLElement | null = null;
@@ -155,11 +156,11 @@ export class MaterialsPanel extends NitrateProcess {
         this.tagSetting = {
             id: 'mat-tag-filter',
             label: 'Tags',
-            type: 'toggleGroup',
+            type: 'toggleList',
             options: [...tags],
             default: [],
         };
-        const { wrapper: tagWrapper, element: tagEl } = ToggleGroupControl.Instance.Build(
+        const { wrapper: tagWrapper, element: tagEl } = ToggleListControl.Instance.Build(
             'mat-tag-filter',
             this.tagSetting
         );
@@ -187,7 +188,7 @@ export class MaterialsPanel extends NitrateProcess {
                 () => { this.UpdateMaterialOptions(); }, null);
         }
         if (this.tagElement) {
-            ToggleGroupControl.Instance.Bind('mat-tag-filter', this.tagElement, {},
+            ToggleListControl.Instance.Bind('mat-tag-filter', this.tagElement, {},
                 () => { this.UpdateMaterialOptions(); }, null);
         }
         if (this.materialElement) {
@@ -265,7 +266,7 @@ export class MaterialsPanel extends NitrateProcess {
         if (!this.phaseElement || !this.phaseSetting || !this.tagElement || !this.tagSetting || !this.materialElement) { return; }
 
         const phases = ToggleGroupControl.Instance.GetRawValue(this.phaseElement, this.phaseSetting).split(',').filter(Boolean);
-        const tags = ToggleGroupControl.Instance.GetRawValue(this.tagElement, this.tagSetting).split(',').filter(Boolean);
+        const tags = ToggleListControl.Instance.GetRawValue(this.tagElement, this.tagSetting).split(',').filter(Boolean);
         const options = MaterialQuery.GetFilteredOptions({ phases, tags });
 
         const currentId = this.GetMaterialId();

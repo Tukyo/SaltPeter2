@@ -39,6 +39,16 @@ fn displacementHash(coord: vec2f, time: f32) -> f32 {
     return hash(coord + vec2f(fract(time * 7.3), fract(time * 11.9)));
 }
 
+// --- Ownership helpers ---
+
+fn isOwnedCell(ownerValue: u32) -> bool {
+    return ownerValue > 0u;
+}
+
+fn releaseOwnership() -> vec4<u32> {
+    return vec4<u32>(0u, 0u, 0u, 0u);
+}
+
 // --- Coordinate helpers ---
 
 fn inBounds(coord: vec2f, res: vec2f) -> bool {

@@ -58,4 +58,10 @@ Control handler implementations for the UI registry. Each control handles a spec
 
 ---
 
+### [`ToggleListControl`](ToggleListControl.ts)
+ Control handler for `ToggleListSetting`. Renders a scrollable vertical list of toggle rows with multi-selection.
+
+
+---
+
 <!-- API_END -->

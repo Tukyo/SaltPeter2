@@ -23,6 +23,7 @@ interface SimulationRunParams {
     encoder: GPUCommandEncoder;
     time: number;
     gravity: number;
+    transitionBuffer: GPUBuffer;
 }
 
 /**
@@ -78,7 +79,7 @@ export class SimulationPass {
     /** Encodes a simulation compute dispatch into the provided command encoder. @internal */
     public Run(params: SimulationRunParams): void {
         const { device } = this;
-        const { encoder, time, gravity } = params;
+        const { encoder, time, gravity, transitionBuffer } = params;
 
         const gravityStrength = Math.max(1, Math.abs(gravity));
         const deltaTime = 1 / (SimulationConfig.GetConfig().time.baseTickRate * gravityStrength);
@@ -99,6 +100,9 @@ export class SimulationPass {
                 { binding: 9, resource: this.targets.nextState.createView() },
                 { binding: 10, resource: { buffer: this.stateBuffer.buffer } },
                 { binding: 11, resource: { buffer: this.reactionBuffer.buffer } },
+                { binding: 12, resource: this.targets.currentOwnership.createView() },
+                { binding: 13, resource: this.targets.nextOwnership.createView() },
+                { binding: 14, resource: { buffer: transitionBuffer } },
             ],
         });
 

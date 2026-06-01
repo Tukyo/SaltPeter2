@@ -2,6 +2,54 @@
 
 ---
 
+## [0.0.5] - Patch - 06/01/2026
+### Updates & Changes
+
+#### Rendering
+- Replaced the single display pass with a layered forward rendering pipeline: `SimulationRenderPass`, `GameObjectRenderPass`, and `CompositePass`
+- Added `RenderingLayers` — owns one GPU texture per renderable layer (`simTexture`, `gameObjectsTexture`); passed by reference to each render pass
+- `RenderingManager` now drives three separate encoders per frame (sim render, GO render, composite) and recreates layers on resize
+
+#### Simulation
+- `sim.wgsl` now reads ownership texture — owned cells skip movement entirely (other systems are responsible for them)
+- When an owned cell's material changes (transition), ownership is released and the new material ID is written to a `transitionBuffer` so the GO stamp pass can react
+- Sim pipeline split into three separate command encoder submissions per step: sim+intent, GO erase, GO stamp — ensuring correct ordering across passes
+- `SimulationPass` now takes a `transitionBuffer` parameter and binds ownership read/write (bindings 12–14)
+- Added `isOwnedCell` and `releaseOwnership` helpers to `common.wgsl`
+
+#### Game Objects
+- GO pass split into `RunErase` and `RunStamp` — erase runs before the sim, stamp runs after
+- Stamp carry-over now guards on ownership confirmation — GOs no longer reset to resting physics/state values when the previous cell was occupied by a sim cell
+- Material transitions now detected in stamp pass via `transitionBuffer` — affected GO cells are marked dead and replaced with a dynamic sim cell
+- Dead cell tracking with GPU readback — when all cells in a GO are dead it is destroyed; partial death triggers a collider rebuild
+- Pixel body collider rebuilds dynamically as cells are consumed by transitions
+- `GameObjectBuffers` gains `transitionBuffer`, `deadCellBuffer`, and `deadCellReadbackBuffer`; constructor now takes sim dimensions for transition buffer sizing
+- `GameObjectStateSchema` gains `density` field — average material density uploaded at spawn time
+
+#### Materials
+- Added `frozen` and `molten` material tags
+- Applied `molten` tag to all existing molten metal variants
+- Applied `frozen` tag to Frozen Milk and Frozen Poison
+- Adjusted `restingStrength` on molten metals (0.4 → 0.75) and frozen materials to reduce temperature pull
+- Adjusted melt temperatures for Frozen Milk (0.435 → 0.45) and Frozen Poison (0.475 → 0.45)
+- Lava `restingStrength` increased: 0.5 → 0.8
+- Water color alpha reduced to 0.75
+
+#### UI
+- Editor panels restructured into left docket (inspector, hierarchy, resources) and right docket (tools), each with an independent collapse toggle button
+- UI hide keybind now toggles both dockets independently rather than a single body class
+- Added `ToggleListControl` — scrollable toggle list for large option sets
+- `ToggleListSetting` type added to `UISetting`
+- Materials panel tag filter switched from `ToggleGroupControl` to `ToggleListControl`
+- CSS refactored to use CSS custom properties (`--font-ui`, `--font-mono`, `--font-size-*`, `--color-*`) throughout; all hardcoded hex values and font strings replaced
+
+#### Installer
+- Added custom NSIS installer page (`build/installer.nsh`) — presents desktop and start menu shortcut options during install; shortcuts are skipped on update
+- `electron-builder.yml` updated to include the custom NSIS script
+- Auto-updater now shows download progress in the window title bar and taskbar progress indicator; update-downloaded prompt allows deferring restart
+
+---
+
 ## [0.0.4] - Patch - 05/30/2026
 ### Updates & Changes
 

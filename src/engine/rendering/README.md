@@ -82,13 +82,24 @@ interface RendererWebGPUParams {
 
 ---
 
-### [`RenderingManager`](RenderingManager.ts)
-Drives the main WebGPU display pass each frame.
+### [`RenderingLayers`](RenderingLayers.ts)
+Owns one GPU texture per renderable layer. Every subsystem writes its resolved
+RGBA output into its designated texture via `RunRender`.
 
-Waits for [`SimulationManager`](../simulation/SimulationManager.ts) to initialize, then builds a render pipeline using the
-display shader and binds the simulation's ping-pong texture, material visual buffer, and a
-crop/camera uniform. Each `Update` recomputes the crop UV from the active [`Camera`](../camera/Camera.ts) and
-submits a fullscreen triangle pass to the WebGPU canvas.
+Created and owned by [`RenderingManager`](RenderingManager.ts). Passed by reference to each
+subsystem's `RunRender` so they can write into their designated texture.
+
+
+---
+
+### [`RenderingManager`](RenderingManager.ts)
+Drives the forward rendering pipeline each frame.
+
+Waits for [`SimulationManager`](../simulation/SimulationManager.ts) to initialize, then creates
+[`RenderingLayers`](RenderingLayers.ts) and all render passes. Each `Update` dispatches
+passes in layer order and composites the results to the canvas.
+
+Layer order (bottom → top): GOs → Sim
 
 
 ---

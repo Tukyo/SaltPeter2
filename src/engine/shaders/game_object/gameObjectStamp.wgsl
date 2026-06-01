@@ -9,6 +9,10 @@
 @group(0) @binding(8)  var               nextPhysics:      texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9)  var               currentState:     texture_2d<f32>;
 @group(0) @binding(10) var               nextState:        texture_storage_2d<rgba32float, write>;
+@group(0) @binding(11) var<storage, read>       transitionBuffer:  array<u32>;
+@group(0) @binding(12) var<storage, read_write> deadCells:         array<u32>;
+@group(0) @binding(13) var<storage, read>       physicsMaterials:  array<MaterialPhysicsEntry>;
+@group(0) @binding(14) var<storage, read>       materialStates:    array<MaterialStateEntry>;
 
 // Stamps identity/physics/state at a single world coord if it is in bounds and not occupied
 // by a sim cell or a different game object. Used for each corner of the rotated cell footprint.
@@ -35,6 +39,7 @@ fn stampAt(
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let cellIdx = id.x;
     if (cellIdx >= uniforms.totalCells) { return; }
+    if (deadCells[cellIdx] != 0u) { return; }
 
     let cell  = gameObjectCells[cellIdx];
     let state = gameObjectStates[cell.gameObjectIdx];
@@ -73,16 +78,34 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let prevWx = i32(floor(state.prevPosX + cosPrevTheta * localFX - sinPrevTheta * localFY));
     let prevWy = i32(floor(state.prevPosY + sinPrevTheta * localFX + cosPrevTheta * localFY));
 
-    var physicsSample = vec4<f32>(0.0, 0.0, 0.0, 0.0);
-    var stateSample   = vec4<f32>(0.0, 0.0, 0.0, 0.0);
+    let matIdx        = clamp(i32(cell.materialId), 0, MATERIAL_COUNT - 1);
+    let restingTemp   = physicsMaterials[matIdx].restingTemperature;
+    let density       = physicsMaterials[matIdx].density / MAX_DENSITY;
+    let stateBase     = getMaterialStateBase(f32(cell.materialId));
+    let spawnLifetime = select(0.0, 1.0, materialStates[stateBase].lifetime > 0.0);
+
+    var physicsSample     = vec4<f32>(restingTemp, density, 0.0, 0.0);
+    var stateSample       = vec4<f32>(1.0, spawnLifetime, 0.0, 0.0);
+    var materialIdEncoded = f32(cell.materialId) / MATERIAL_ID_SCALE;
     if (prevWx >= 0 && prevWy >= 0 && prevWx < simW && prevWy < simH) {
-        let prevCoord = vec2<i32>(prevWx, prevWy);
-        physicsSample = textureLoad(currentPhysics, prevCoord, 0);
-        stateSample   = textureLoad(currentState,   prevCoord, 0);
+        let prevCoord  = vec2<i32>(prevWx, prevWy);
+        let prevOwner  = textureLoad(currentOwnership, prevCoord, 0).r;
+        if (prevOwner == encodedOwner) {
+            physicsSample     = textureLoad(currentPhysics,  prevCoord, 0);
+            stateSample       = textureLoad(currentState,    prevCoord, 0);
+            materialIdEncoded = textureLoad(currentIdentity, prevCoord, 0).r;
+        }
+        let transitionedId = transitionBuffer[u32(prevWy) * u32(simW) + u32(prevWx)];
+        if (transitionedId != 0u) {
+            let transitionedEncoded = f32(transitionedId) / MATERIAL_ID_SCALE;
+            textureStore(nextIdentity, prevCoord, vec4<f32>(transitionedEncoded, cell.colorSeed, 0.0, OCCUPANCY_DYNAMIC));
+            deadCells[cellIdx] = 1u;
+            return;
+        }
     }
 
     let identityValue = vec4<f32>(
-        f32(cell.materialId) / MATERIAL_ID_SCALE,
+        materialIdEncoded,
         cell.colorSeed,
         0.0,
         OCCUPANCY_STATIC

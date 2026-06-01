@@ -28,7 +28,7 @@ export const MoltenIron: MaterialDefinition = {
         temperature: {
             specificHeat: 6,
             restingTemperature: 0.92,
-            restingStrength: 0.35
+            restingStrength: 0.7
         }
     },
     transitions: {
@@ -37,5 +37,5 @@ export const MoltenIron: MaterialDefinition = {
             condition: { temperature: 0.78 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'molten']
 };

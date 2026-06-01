@@ -280,6 +280,8 @@ const MaterialTags = {
     rustable: 5, // Anything tags with this can rust
     rusts: 6, // Something that causes rust
     extinguishes: 7, // Materials that extinguish fire
+    frozen: 8, // Materials that are frozen variants of their solid counterparts
+    molten: 9, // Materials that are molten variants of their solid counterparts
 } as const;
 ```
 

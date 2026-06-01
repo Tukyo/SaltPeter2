@@ -28,7 +28,7 @@ export const MoltenTin: MaterialDefinition = {
         temperature: {
             specificHeat: 3,
             restingTemperature: 0.78,
-            restingStrength: 0.4
+            restingStrength: 0.7
         }
     },
     transitions: {
@@ -37,5 +37,5 @@ export const MoltenTin: MaterialDefinition = {
             condition: { temperature: 0.6 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'molten']
 };

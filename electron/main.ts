@@ -146,8 +146,10 @@ function createWindow(): void {
 function initAutoUpdater(): void {
     if (process.env['ELECTRON_RENDERER_URL'] || process.env['STEAM_APPID']) { return; }
     autoUpdater.autoDownload = false;
+
     autoUpdater.on('update-available', (info) => {
         const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
+        if (!win) { return; }
         dialog.showMessageBox(win, {
             type: 'info',
             title: 'Update Available',
@@ -156,10 +158,40 @@ function initAutoUpdater(): void {
             defaultId: 0,
             cancelId: 1,
         }).then(({ response }) => {
-            if (response === 0) { void autoUpdater.downloadUpdate(); }
+            if (response !== 0) { return; }
+            void autoUpdater.downloadUpdate();
+            if (!win.isDestroyed()) {
+                win.setTitle('SaltPeter - Downloading update...');
+                win.setProgressBar(0);
+            }
         });
     });
-    autoUpdater.on('update-downloaded', () => { autoUpdater.quitAndInstall(true, true); });
+
+    autoUpdater.on('download-progress', (progress) => {
+        const win = BrowserWindow.getAllWindows()[0];
+        if (!win) { return; }
+        const percent = Math.round(progress.percent);
+        win.setProgressBar(progress.percent / 100);
+        win.setTitle(`SaltPeter - Downloading update: ${percent}%`);
+    });
+
+    autoUpdater.on('update-downloaded', () => {
+        const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
+        if (!win) { autoUpdater.quitAndInstall(true, true); return; }
+        win.setProgressBar(-1);
+        win.setTitle(`SaltPeter v${app.getVersion()}`);
+        dialog.showMessageBox(win, {
+            type: 'info',
+            title: 'Update Ready',
+            message: 'Update downloaded. Restart SaltPeter now to apply it?',
+            buttons: ['Restart Now', 'Later'],
+            defaultId: 0,
+            cancelId: 1,
+        }).then(({ response }) => {
+            if (response === 0) { autoUpdater.quitAndInstall(true, true); }
+        });
+    });
+
     void autoUpdater.checkForUpdates();
 }
 
