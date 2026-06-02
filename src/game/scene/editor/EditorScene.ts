@@ -286,10 +286,10 @@ export class EditorScene extends Nitrate.Scene {
 
         const sim = Nitrate.SimulationManager.Instance;
         const webgpu = Nitrate.Renderer.Instance?.GetWebGPU();
-        if (!sim?.pingPong || !webgpu) { return; }
+        if (!sim?.simulationLayer || !webgpu) { return; }
 
-        const { pingPong } = sim;
-        const { width: canvasW, height: canvasH } = pingPong;
+        const { simulationLayer } = sim;
+        const { width: canvasW, height: canvasH } = simulationLayer;
         const colorsPerMaterial = Nitrate.MaterialVisualSchema.GetColorsPerMaterial();
 
         const offsetX = pos?.x ?? Math.floor((canvasW - pixelData.size.width) / 2);
@@ -312,8 +312,8 @@ export class EditorScene extends Nitrate.Scene {
 
         const layout = { bytesPerRow: canvasW * 4 };
         const textureSize: [number, number] = [canvasW, canvasH];
-        webgpu.device.queue.writeTexture({ texture: pingPong.currentIdentity }, identityData, layout, textureSize);
-        webgpu.device.queue.writeTexture({ texture: pingPong.nextIdentity }, identityData, layout, textureSize);
+        webgpu.device.queue.writeTexture({ texture: simulationLayer.currentIdentity }, identityData, layout, textureSize);
+        webgpu.device.queue.writeTexture({ texture: simulationLayer.nextIdentity }, identityData, layout, textureSize);
 
         this.selectionController?.SetSelection({
             x1: offsetX,
@@ -335,10 +335,10 @@ export class EditorScene extends Nitrate.Scene {
 
         const sim = Nitrate.SimulationManager.Instance;
         const webgpu = Nitrate.Renderer.Instance?.GetWebGPU();
-        if (!sim?.pingPong || !webgpu) { return; }
+        if (!sim?.simulationLayer || !webgpu) { return; }
 
-        const { pingPong } = sim;
-        const { width: canvasW, height: canvasH } = pingPong;
+        const { simulationLayer } = sim;
+        const { width: canvasW, height: canvasH } = simulationLayer;
         const colorsPerMaterial = Nitrate.MaterialVisualSchema.GetColorsPerMaterial();
         const blueprintId = Nitrate.MaterialRegistry.Materials['blueprint'].id;
 
@@ -358,8 +358,8 @@ export class EditorScene extends Nitrate.Scene {
 
         const layout = { bytesPerRow: canvasW * 4 };
         const textureSize: [number, number] = [canvasW, canvasH];
-        webgpu.device.queue.writeTexture({ texture: pingPong.currentIdentity }, identityData, layout, textureSize);
-        webgpu.device.queue.writeTexture({ texture: pingPong.nextIdentity }, identityData, layout, textureSize);
+        webgpu.device.queue.writeTexture({ texture: simulationLayer.currentIdentity }, identityData, layout, textureSize);
+        webgpu.device.queue.writeTexture({ texture: simulationLayer.nextIdentity }, identityData, layout, textureSize);
     }
 
     private InitGPU(): void {

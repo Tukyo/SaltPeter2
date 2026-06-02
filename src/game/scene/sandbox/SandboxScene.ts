@@ -80,7 +80,7 @@ export class SandboxScene extends Nitrate.Scene {
         //         const randomY: number = Math.random() * window.innerHeight;
 
         //         const gameObject = await Nitrate.GameObject.Instantiate(
-        //             '53720933-b597-4b87-952e-7bc6ebba9c9c',
+        //             '480e1cf8-3571-4761-84d8-2647754bc63e',
         //             {
         //                 x: randomX,
         //                 y: randomY

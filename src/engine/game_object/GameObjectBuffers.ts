@@ -25,11 +25,10 @@ export class GameObjectBuffers {
     public readonly stampUniformBuffer: GPUBuffer;
     public readonly colliderBuffer: GPUBuffer;
     public readonly collisionUniformBuffer: GPUBuffer;
-    public readonly transitionBuffer: GPUBuffer;
     public readonly deadCellBuffer: GPUBuffer;
     public readonly deadCellReadbackBuffer: GPUBuffer;
 
-    constructor(device: GPUDevice, simWidth: number, simHeight: number) {
+    constructor(device: GPUDevice) {
         const { maxGameObjectCount, maxGameObjectCellsCount } = GameObjectConfig.GetConfig().performance;
 
         const stateBufferSize = maxGameObjectCount * GameObjectStateSchema.byteStride;
@@ -62,12 +61,8 @@ export class GameObjectBuffers {
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
         });
         this.collisionUniformBuffer = device.createBuffer({
-            size: 13 * 4,
+            size: 15 * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
-        this.transitionBuffer = device.createBuffer({
-            size: simWidth * simHeight * 4,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
         this.deadCellBuffer = device.createBuffer({
             size: maxGameObjectCellsCount * 4,
@@ -88,7 +83,6 @@ export class GameObjectBuffers {
         this.stampUniformBuffer.destroy();
         this.colliderBuffer.destroy();
         this.collisionUniformBuffer.destroy();
-        this.transitionBuffer.destroy();
         this.deadCellBuffer.destroy();
         this.deadCellReadbackBuffer.destroy();
     }

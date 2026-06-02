@@ -5,10 +5,10 @@ export const Latte: MaterialDefinition = {
     id: MaterialIds.latte,
     name: 'latte',
     colors: [
-        { r: 165, g: 118, b: 82, a: 0.92 },
-        { r: 178, g: 130, b: 92, a: 0.92 },
-        { r: 155, g: 110, b: 74, a: 0.92 },
-        { r: 172, g: 124, b: 88, a: 0.92 },
+        { r: 165, g: 118, b: 82, a: 0.85 },
+        { r: 178, g: 130, b: 92, a: 0.85 },
+        { r: 155, g: 110, b: 74, a: 0.85 },
+        { r: 172, g: 124, b: 88, a: 0.85 },
     ],
     state: {
         health: 100,

@@ -1,5 +1,5 @@
 import type { MaterialVisualBuffer } from '../../materials/MaterialVisualBuffer';
-import type { PingPongTargets } from '../../simulation/PingPongTargets';
+import type { SimulationLayer } from '../../simulation/SimulationLayer';
 import type { RenderingLayers } from '../RenderingLayers';
 
 import { ShaderAssembler } from '../../shaders/ShaderAssembler';
@@ -12,7 +12,7 @@ interface SimulationRenderPassCreateParams {
 
 interface SimulationRenderPassRunParams {
     encoder: GPUCommandEncoder;
-    targets: PingPongTargets;
+    simulationLayer: SimulationLayer;
     layers: RenderingLayers;
 }
 
@@ -61,12 +61,12 @@ export class SimulationRenderPass {
 
     /** Writes resolved RGBA sim colors into `layers.simTexture`. @internal */
     public Run(params: SimulationRenderPassRunParams): void {
-        const { encoder, targets, layers } = params;
+        const { encoder, simulationLayer, layers } = params;
 
         const bindGroup = this.device.createBindGroup({
             layout: this.pipeline.getBindGroupLayout(0),
             entries: [
-                { binding: 0, resource: targets.currentIdentity.createView() },
+                { binding: 0, resource: simulationLayer.currentIdentity.createView() },
                 { binding: 1, resource: { buffer: this.materialVisualBuffer.buffer } },
                 { binding: 2, resource: layers.simTexture.createView() },
             ],
@@ -76,8 +76,8 @@ export class SimulationRenderPass {
         pass.setPipeline(this.pipeline);
         pass.setBindGroup(0, bindGroup);
         pass.dispatchWorkgroups(
-            Math.ceil(targets.width / this.workgroupSize),
-            Math.ceil(targets.height / this.workgroupSize)
+            Math.ceil(simulationLayer.width / this.workgroupSize),
+            Math.ceil(simulationLayer.height / this.workgroupSize)
         );
         pass.end();
     }

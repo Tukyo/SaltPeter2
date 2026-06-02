@@ -1,4 +1,4 @@
-import type { PingPongTargets } from '../simulation/PingPongTargets';
+import type { SimulationLayer } from '../simulation/SimulationLayer';
 import type { Size2D, Vec2 } from '../definitions/Primitives';
 
 import { LogManager } from '../debug/LogManager';
@@ -16,8 +16,8 @@ export class WorldBlit {
     public IsReady(): boolean { return this.scratchIdentity !== null; }
 
     /** Allocates scratch textures sized to the ping-pong targets. Must be called before Blit. @internal */
-    public Allocate(device: GPUDevice, pingPong: PingPongTargets): void {
-        const { width, height } = pingPong;
+    public Allocate(device: GPUDevice, simulationLayer: SimulationLayer): void {
+        const { width, height } = simulationLayer;
         this.scratchIdentity = TextureFactory.Create2D(device, width, height, 'rgba8unorm');
         this.scratchFloat = TextureFactory.Create2D(device, width, height, 'rgba32float');
         LogManager.Instance?.Log({
@@ -27,9 +27,9 @@ export class WorldBlit {
     }
 
     /** Copies all sim layers by delta cells then clears the vacated strip. One axis per call. @internal */
-    public Blit(device: GPUDevice, pingPong: PingPongTargets, delta: Vec2): void {
+    public Blit(device: GPUDevice, simulationLayer: SimulationLayer, delta: Vec2): void {
         if (!this.scratchIdentity || !this.scratchFloat) { return; }
-        const { width, height } = pingPong;
+        const { width, height } = simulationLayer;
         const absDx = Math.abs(delta.x);
         const absDy = Math.abs(delta.y);
         const srcX = delta.x > 0 ? delta.x : 0;
@@ -40,12 +40,12 @@ export class WorldBlit {
         const blitH = height - absDy;
 
         const enc = device.createCommandEncoder();
-        this.BlitLayer(enc, pingPong.currentIdentity, this.scratchIdentity, srcX, srcY, dstX, dstY, blitW, blitH);
-        this.BlitLayer(enc, pingPong.currentPhysics, this.scratchFloat, srcX, srcY, dstX, dstY, blitW, blitH);
-        this.BlitLayer(enc, pingPong.currentState, this.scratchFloat, srcX, srcY, dstX, dstY, blitW, blitH);
+        this.BlitLayer(enc, simulationLayer.currentIdentity, this.scratchIdentity, srcX, srcY, dstX, dstY, blitW, blitH);
+        this.BlitLayer(enc, simulationLayer.currentPhysics, this.scratchFloat, srcX, srcY, dstX, dstY, blitW, blitH);
+        this.BlitLayer(enc, simulationLayer.currentState, this.scratchFloat, srcX, srcY, dstX, dstY, blitW, blitH);
         device.queue.submit([enc.finish()]);
 
-        this.ClearStrip(device, pingPong, delta);
+        this.ClearStrip(device, simulationLayer, delta);
     }
 
     /** Copies one texture layer through a scratch buffer to avoid GPU read-write aliasing. @internal */
@@ -65,8 +65,8 @@ export class WorldBlit {
     }
 
     /** Zeroes the strip exposed after a blit so stale data does not linger. @internal */
-    private ClearStrip(device: GPUDevice, pingPong: PingPongTargets, delta: Vec2): void {
-        const { width, height } = pingPong;
+    private ClearStrip(device: GPUDevice, simulationLayer: SimulationLayer, delta: Vec2): void {
+        const { width, height } = simulationLayer;
         const absDx = Math.abs(delta.x);
         const absDy = Math.abs(delta.y);
         const origin: Vec2 = { x: delta.x > 0 ? width - absDx : 0, y: delta.y > 0 ? height - absDy : 0 };
@@ -75,9 +75,9 @@ export class WorldBlit {
 
         const identityZeros = new Uint8Array(strip.width * strip.height * 4);
         const floatZeros = new Uint8Array(strip.width * strip.height * 16);
-        device.queue.writeTexture({ texture: pingPong.currentIdentity, origin }, identityZeros, { bytesPerRow: strip.width * 4 }, extent);
-        device.queue.writeTexture({ texture: pingPong.currentPhysics, origin }, floatZeros, { bytesPerRow: strip.width * 16 }, extent);
-        device.queue.writeTexture({ texture: pingPong.currentState, origin }, floatZeros, { bytesPerRow: strip.width * 16 }, extent);
+        device.queue.writeTexture({ texture: simulationLayer.currentIdentity, origin }, identityZeros, { bytesPerRow: strip.width * 4 }, extent);
+        device.queue.writeTexture({ texture: simulationLayer.currentPhysics, origin }, floatZeros, { bytesPerRow: strip.width * 16 }, extent);
+        device.queue.writeTexture({ texture: simulationLayer.currentState, origin }, floatZeros, { bytesPerRow: strip.width * 16 }, extent);
         LogManager.Instance?.Log({
             text: `ClearStrip (${strip.width}x${strip.height}) at (${origin.x},${origin.y}).`,
             options: { tags: ['World'], noisy: true }

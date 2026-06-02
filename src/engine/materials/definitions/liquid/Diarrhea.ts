@@ -5,10 +5,10 @@ export const Diarrhea: MaterialDefinition = {
     id: MaterialIds.diarrhea,
     name: 'diarrhea',
     colors: [
-        { r: 88, g: 58, b: 22, a: 0.8 },
-        { r: 96, g: 64, b: 26, a: 0.8 },
-        { r: 82, g: 54, b: 20, a: 0.8 },
-        { r: 92, g: 61, b: 24, a: 0.8 },
+        { r: 88, g: 58, b: 22, a: 0.85 },
+        { r: 96, g: 64, b: 26, a: 0.85 },
+        { r: 82, g: 54, b: 20, a: 0.85 },
+        { r: 92, g: 61, b: 24, a: 0.85 },
     ],
     state: {
         health: 100,

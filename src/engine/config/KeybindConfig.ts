@@ -6,7 +6,11 @@ export class KeybindConfig {
                 chunk: 'F1',
                 pressure: 'F2',
                 temperature: 'F3',
-                gameObject: 'F4'
+                gameObject: 'F4',
+                layer: {
+                    down: "[",
+                    up: "]"
+                }
             },
             analytics: '`',
         },

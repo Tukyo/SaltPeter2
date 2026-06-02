@@ -1,4 +1,4 @@
-import type { PingPongTargets } from './PingPongTargets';
+import type { SimulationLayer } from './SimulationLayer';
 import type { MaterialPhysicsBuffer } from '../materials/MaterialPhysicsBuffer';
 
 import { PhysicsConfig } from '../config/PhysicsConfig';
@@ -8,7 +8,7 @@ import { SimulationSchema } from './SimulationSchema';
 
 interface DiffusionPassParams {
     device: GPUDevice;
-    targets: PingPongTargets;
+    simulationLayer: SimulationLayer;
     physicsBuffer: MaterialPhysicsBuffer;
 }
 
@@ -20,7 +20,7 @@ interface DiffusionPassParams {
 export class DiffusionPass {
     private readonly device: GPUDevice;
     private readonly pipeline: GPUComputePipeline;
-    private readonly targets: PingPongTargets;
+    private readonly simulationLayer: SimulationLayer;
     private readonly physicsBuffer: MaterialPhysicsBuffer;
     private readonly uniforms: GPUBuffer;
     private readonly workgroupSize: number;
@@ -32,7 +32,7 @@ export class DiffusionPass {
     ) {
         this.device = params.device;
         this.pipeline = pipeline;
-        this.targets = params.targets;
+        this.simulationLayer = params.simulationLayer;
         this.physicsBuffer = params.physicsBuffer;
         this.workgroupSize = workgroupSize;
         this.uniforms = this.device.createBuffer({
@@ -79,11 +79,11 @@ export class DiffusionPass {
         const bindGroup = this.device.createBindGroup({
             layout: this.pipeline.getBindGroupLayout(0),
             entries: [
-                { binding: 0, resource: this.targets.currentIdentity.createView() },
-                { binding: 1, resource: this.targets.nextIdentity.createView() },
-                { binding: 2, resource: this.targets.currentPhysics.createView() },
+                { binding: 0, resource: this.simulationLayer.currentIdentity.createView() },
+                { binding: 1, resource: this.simulationLayer.nextIdentity.createView() },
+                { binding: 2, resource: this.simulationLayer.currentPhysics.createView() },
                 { binding: 3, resource: { buffer: this.physicsBuffer.buffer } },
-                { binding: 4, resource: this.targets.nextPhysics.createView() },
+                { binding: 4, resource: this.simulationLayer.nextPhysics.createView() },
                 { binding: 5, resource: { buffer: this.uniforms } },
             ],
         });
@@ -92,8 +92,8 @@ export class DiffusionPass {
         pass.setPipeline(this.pipeline);
         pass.setBindGroup(0, bindGroup);
         pass.dispatchWorkgroups(
-            Math.ceil(this.targets.width / this.workgroupSize),
-            Math.ceil(this.targets.height / this.workgroupSize)
+            Math.ceil(this.simulationLayer.width / this.workgroupSize),
+            Math.ceil(this.simulationLayer.height / this.workgroupSize)
         );
         pass.end();
     }

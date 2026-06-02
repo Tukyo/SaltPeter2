@@ -1,7 +1,7 @@
 import type { MaterialPhysicsBuffer } from '../materials/MaterialPhysicsBuffer';
 import type { MaterialSimulationBuffer } from '../materials/MaterialSimulationBuffer';
 import type { ReactionLookupBuffer } from '../materials/ReactionLookupBuffer';
-import type { PingPongTargets } from './PingPongTargets';
+import type { SimulationLayer } from './SimulationLayer';
 import type { SimulationTexture } from './SimulationTexture';
 
 import { ShaderAssembler } from '../shaders/ShaderAssembler';
@@ -10,7 +10,7 @@ import { SimulationSchema } from './SimulationSchema';
 
 interface IntentPassParams {
     device: GPUDevice;
-    targets: PingPongTargets;
+    simulationLayer: SimulationLayer;
     intent: SimulationTexture;
     physicsBuffer: MaterialPhysicsBuffer;
     simBuffer: MaterialSimulationBuffer;
@@ -31,7 +31,7 @@ interface IntentRunParams {
 export class IntentPass {
     private readonly device: GPUDevice;
     private readonly pipeline: GPUComputePipeline;
-    private readonly targets: PingPongTargets;
+    private readonly simulationLayer: SimulationLayer;
     private readonly intent: SimulationTexture;
     private readonly physicsBuffer: MaterialPhysicsBuffer;
     private readonly simBuffer: MaterialSimulationBuffer;
@@ -46,7 +46,7 @@ export class IntentPass {
     ) {
         this.device = params.device;
         this.pipeline = pipeline;
-        this.targets = params.targets;
+        this.simulationLayer = params.simulationLayer;
         this.intent = params.intent;
         this.physicsBuffer = params.physicsBuffer;
         this.simBuffer = params.simBuffer;
@@ -83,12 +83,12 @@ export class IntentPass {
         const bindGroup = device.createBindGroup({
             layout: this.pipeline.getBindGroupLayout(0),
             entries: [
-                { binding: 0, resource: this.targets.currentIdentity.createView() },
+                { binding: 0, resource: this.simulationLayer.currentIdentity.createView() },
                 { binding: 1, resource: this.intent.texture.createView() },
                 { binding: 2, resource: { buffer: this.physicsBuffer.buffer } },
                 { binding: 3, resource: { buffer: this.simBuffer.buffer } },
                 { binding: 4, resource: { buffer: this.uniforms } },
-                { binding: 5, resource: this.targets.currentPhysics.createView() },
+                { binding: 5, resource: this.simulationLayer.currentPhysics.createView() },
                 { binding: 6, resource: { buffer: this.reactionBuffer.buffer } },
             ],
         });
@@ -97,8 +97,8 @@ export class IntentPass {
         pass.setPipeline(this.pipeline);
         pass.setBindGroup(0, bindGroup);
         pass.dispatchWorkgroups(
-            Math.ceil(this.targets.width / this.workgroupSize),
-            Math.ceil(this.targets.height / this.workgroupSize)
+            Math.ceil(this.simulationLayer.width / this.workgroupSize),
+            Math.ceil(this.simulationLayer.height / this.workgroupSize)
         );
         pass.end();
     }

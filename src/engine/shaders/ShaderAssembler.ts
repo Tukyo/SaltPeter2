@@ -5,6 +5,7 @@ import { ShaderFactory } from './ShaderFactory';
 import {
     analyticsWgsl,
     commonWgsl,
+    layerInteractionWgsl,
     gameObjectCollisionWgsl,
     gameObjectEraseWgsl,
     gameObjectPhysicsWgsl,
@@ -248,8 +249,7 @@ export class ShaderAssembler {
             ShaderFactory.GenerateColorsPerMaterial(),
             ShaderFactory.GenerateVisualEntryStruct(),
             ShaderFactory.GenerateWorkgroupSize(workgroupSize),
-            ShaderFactory.GenerateGameObjectStateStruct(),
-            ShaderFactory.GenerateGameObjectCellStruct(),
+            commonWgsl,
             gameObjectRenderWgsl,
         ].join('\n');
     }
@@ -300,14 +300,28 @@ export class ShaderAssembler {
     public static GameObjectCollision(workgroupSize: number): string {
         return [
             ShaderFactory.GenerateMaterialCount(),
+            ShaderFactory.GenerateMaterialPhaseConstants(),
             ShaderFactory.GenerateWorkgroupSize(workgroupSize),
+            ShaderFactory.GenerateMaterialPhysicsEntryStruct(),
             ShaderFactory.GenerateGameObjectStateStruct(),
             ShaderFactory.GenerateGameObjectColliderStruct(),
             ShaderFactory.GenerateGameObjectCollisionUniformStruct(),
             ShaderFactory.GenerateGameObjectBodyTypeConstants(),
             commonWgsl,
             identityWgsl,
+            phaseWgsl,
             gameObjectCollisionWgsl,
+        ].join('\n');
+    }
+    //#endregion
+
+    //#region LAYER INTERACTION
+    // @omitfromdocs
+    public static LayerInteraction(workgroupSize: number): string {
+        return [
+            ShaderFactory.GenerateWorkgroupSize(workgroupSize),
+            commonWgsl,
+            layerInteractionWgsl,
         ].join('\n');
     }
     //#endregion

@@ -22,12 +22,11 @@ Created and owned by [`RenderingManager`](../RenderingManager.ts). Do not call d
 ---
 
 ### [`GameObjectRenderPass`](GameObjectRenderPass.ts)
-Writes GO cell colors into {@link RenderingLayers.gameObjectsTexture} for the FRP GO layer.
+Resolves the GameObject layer identity texture into RGBA color for the game objects layer.
 
-One thread per GO slot. Iterates each cell, computes its world position using the same
-rotation math as the stamp pass, and writes the cell's material color unconditionally —
-no occupancy check. {@link RenderingLayers.gameObjectsTexture} is cleared before this runs
-so ghost pixels from previous frames are removed.
+Reads `gameObjectLayer.currentIdentity` pixel-by-pixel (including bleed pixels written
+by the stamp pass) and writes resolved RGBA into {@link RenderingLayers.gameObjectsTexture}.
+Unoccupied pixels write transparent so the composite shows world sim underneath.
 
 Created and owned by [`RenderingManager`](../RenderingManager.ts). Do not call directly.
 

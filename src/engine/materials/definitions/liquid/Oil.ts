@@ -5,10 +5,10 @@ export const Oil: MaterialDefinition = {
     id: MaterialIds.oil,
     name: 'oil',
     colors: [
-        { r: 115, g: 82, b: 20, a: 1 },
-        { r: 128, g: 92, b: 26, a: 1 },
-        { r: 102, g: 71, b: 15, a: 1 },
-        { r: 140, g: 97, b: 31, a: 1 },
+        { r: 115, g: 82, b: 20, a: 0.85 },
+        { r: 128, g: 92, b: 26, a: 0.85 },
+        { r: 102, g: 71, b: 15, a: 0.85 },
+        { r: 140, g: 97, b: 31, a: 0.85 },
     ],
     state: {
         health: 100,

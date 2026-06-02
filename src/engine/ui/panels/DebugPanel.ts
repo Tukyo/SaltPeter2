@@ -1,4 +1,5 @@
-import type { PingPongTargets } from '../../simulation/PingPongTargets';
+import type { SimulationLayer } from '../../simulation/SimulationLayer';
+import type { GameObjectLayer } from '../../game_object/GameObjectLayer';
 import type { TexturePixelReader } from '../../rendering/TexturePixelReader';
 
 import { Camera } from '../../camera/Camera';
@@ -36,7 +37,9 @@ interface ReadHoveredCellParams {
     cellX: number;
     cellY: number;
     version: number;
-    pingPong: PingPongTargets;
+    layerIndex: number;
+    simulationLayer: SimulationLayer;
+    gameObjectLayer: GameObjectLayer | null;
     texturePixelReader: TexturePixelReader;
 }
 
@@ -72,6 +75,10 @@ export class DebugPanel extends NitrateProcess {
     private readonly hoveredPressureValue: HTMLSpanElement;
     private readonly hoveredVelocityValue: HTMLSpanElement;
     private readonly hoveredTagsContainer: HTMLDivElement;
+    private readonly layerNavLabel: HTMLSpanElement;
+
+    // TODO: Should not be stored here
+    private static readonly LayerNames = ['Simulation', 'GameObject'] as const;
 
     private lastFrameTimeMs: number | null = null;
     private fpsSampleElapsedMs: number = 0;
@@ -85,7 +92,8 @@ export class DebugPanel extends NitrateProcess {
     private lastHoveredCellKey: string | null = null;
     private hoveredReadPending: boolean = false;
     private hoveredReadVersion: number = 0;
-    private lastPingPong: PingPongTargets | null = null;
+    private lastSim: SimulationLayer | null = null;
+    private layerIndex: number = 0;
 
     constructor() {
         super();
@@ -117,9 +125,37 @@ export class DebugPanel extends NitrateProcess {
         this.advancedContent = document.createElement('div');
         this.advancedContent.className = 'debug-advanced-content';
 
-        const hoveredTitle = document.createElement('h3');
-        hoveredTitle.textContent = 'Hovered Cell';
-        this.advancedContent.appendChild(hoveredTitle);
+        const layerNav = document.createElement('div');
+        layerNav.className = 'debug-layer-nav';
+
+        const layerPrev = document.createElement('button');
+        layerPrev.className = 'debug-layer-nav-btn';
+        layerPrev.textContent = '<';
+        layerPrev.addEventListener('click', () => {
+            this.layerIndex = (this.layerIndex - 1 + DebugPanel.LayerNames.length) % DebugPanel.LayerNames.length;
+            this.layerNavLabel.textContent = DebugPanel.LayerNames[this.layerIndex];
+            this.lastHoveredCellKey = null;
+            this.ClearHoveredCellInfo();
+        });
+
+        this.layerNavLabel = document.createElement('span');
+        this.layerNavLabel.className = 'debug-layer-nav-label';
+        this.layerNavLabel.textContent = DebugPanel.LayerNames[this.layerIndex];
+
+        const layerNext = document.createElement('button');
+        layerNext.className = 'debug-layer-nav-btn';
+        layerNext.textContent = '>';
+        layerNext.addEventListener('click', () => {
+            this.layerIndex = (this.layerIndex + 1) % DebugPanel.LayerNames.length;
+            this.layerNavLabel.textContent = DebugPanel.LayerNames[this.layerIndex];
+            this.lastHoveredCellKey = null;
+            this.ClearHoveredCellInfo();
+        });
+
+        layerNav.appendChild(layerPrev);
+        layerNav.appendChild(this.layerNavLabel);
+        layerNav.appendChild(layerNext);
+        this.advancedContent.appendChild(layerNav);
 
         this.AppendLabelRow(this.advancedContent, 'Identity');
         this.hoveredIdValue = this.AppendSubStatRow(this.advancedContent, 'ID');
@@ -152,7 +188,7 @@ export class DebugPanel extends NitrateProcess {
         const mouse = Input.Instance?.GetState();
         const sim = SimulationManager.Instance;
         const renderer = Renderer.Instance?.GetWebGPU();
-        const pingPong = sim?.pingPong ?? null;
+        const simulationLayer = sim?.simulationLayer ?? null;
         const texturePixelReader = sim?.texturePixelReader ?? null;
         const canvasWidth = renderer?.canvas.width ?? 1;
         const canvasHeight = renderer?.canvas.height ?? 1;
@@ -161,12 +197,12 @@ export class DebugPanel extends NitrateProcess {
             physicsSteps: sim?.state.GetLastTickPhysicsSteps() ?? 0,
         };
 
-        if (pingPong !== null && pingPong !== this.lastPingPong) {
-            this.lastPingPong = pingPong;
+        if (simulationLayer !== null && simulationLayer !== this.lastSim) {
+            this.lastSim = simulationLayer;
             this.Reset();
         }
         this.RecordFrame(now, stats);
-        if (!pingPong || !texturePixelReader) { return; }
+        if (!simulationLayer || !texturePixelReader) { return; }
 
         if (!this.IsAdvancedEnabled()) {
             this.hoveredReadVersion++;
@@ -187,18 +223,18 @@ export class DebugPanel extends NitrateProcess {
         if (World.Instance) {
             const { chunk } = WorldConfig.GetConfig();
             const margin = chunk.margin * chunk.size;
-            const contentW = pingPong.width - 2 * margin;
-            const contentH = pingPong.height - 2 * margin;
+            const contentW = simulationLayer.width - 2 * margin;
+            const contentH = simulationLayer.height - 2 * margin;
             const cam = Camera.Instance?.GetCameraPos() ?? { x: 0, y: 0 };
             cellX = Math.floor(margin + (cam.x + mouse.pos.x) * contentW / Math.max(1, canvasWidth));
             cellY = Math.floor(margin + (mouse.pos.y - cam.y) * contentH / Math.max(1, canvasHeight));
         } else {
-            cellX = Math.floor(mouse.pos.x * (pingPong.width / Math.max(1, canvasWidth)));
-            cellY = Math.floor(mouse.pos.y * (pingPong.height / Math.max(1, canvasHeight)));
+            cellX = Math.floor(mouse.pos.x * (simulationLayer.width / Math.max(1, canvasWidth)));
+            cellY = Math.floor(mouse.pos.y * (simulationLayer.height / Math.max(1, canvasHeight)));
         }
 
-        cellX = Utils.Clamp(cellX, 0, pingPong.width - 1);
-        cellY = Utils.Clamp(cellY, 0, pingPong.height - 1);
+        cellX = Utils.Clamp(cellX, 0, simulationLayer.width - 1);
+        cellY = Utils.Clamp(cellY, 0, simulationLayer.height - 1);
         const cellKey = cellX + ',' + cellY;
         const cellChanged = cellKey !== this.lastHoveredCellKey;
         const sampleDue = now - this.lastHoveredSampleTimeMs >= DebugPanel.HoveredCellSampleIntervalMs;
@@ -211,7 +247,15 @@ export class DebugPanel extends NitrateProcess {
         this.hoveredReadPending = true;
         const version = ++this.hoveredReadVersion;
 
-        void this.ReadHoveredCell({ cellX, cellY, version, pingPong, texturePixelReader });
+        this.ReadHoveredCell({
+            cellX,
+            cellY,
+            version,
+            layerIndex: this.layerIndex,
+            simulationLayer,
+            gameObjectLayer: sim?.gameObjectLayer ?? null,
+            texturePixelReader,
+        });
     }
 
     private AppendStatRow(section: HTMLElement, label: string): HTMLSpanElement {
@@ -381,10 +425,14 @@ export class DebugPanel extends NitrateProcess {
     }
 
     private async ReadHoveredCell(params: ReadHoveredCellParams): Promise<void> {
-        const { cellX, cellY, version, pingPong, texturePixelReader } = params;
+        const { cellX, cellY, version, layerIndex, simulationLayer, gameObjectLayer, texturePixelReader } = params;
+        const useGoLayer = layerIndex === 1 && gameObjectLayer !== null;
+        const identityTexture = useGoLayer ? gameObjectLayer!.currentIdentity : simulationLayer.currentIdentity;
+        const physicsTexture = useGoLayer ? gameObjectLayer!.currentPhysics : simulationLayer.currentPhysics;
+        const stateTexture = useGoLayer ? gameObjectLayer!.currentState : simulationLayer.currentState;
         try {
             const statePixel = await texturePixelReader.ReadPixel(
-                { texture: pingPong.currentIdentity, pos: { x: cellX, y: cellY }, format: 'rgba8unorm' }
+                { texture: identityTexture, pos: { x: cellX, y: cellY }, format: 'rgba8unorm' }
             );
             if (!this.ShouldApplyHoveredRead(version)) { return; }
 
@@ -392,10 +440,10 @@ export class DebugPanel extends NitrateProcess {
             const material = Object.values(MaterialRegistry.Materials).find(e => e.id === materialId) ?? null;
 
             const physicsPixel = await texturePixelReader.ReadPixel(
-                { texture: pingPong.currentPhysics, pos: { x: cellX, y: cellY }, format: 'rgba32float' }
+                { texture: physicsTexture, pos: { x: cellX, y: cellY }, format: 'rgba32float' }
             );
             const cellStatePixel = await texturePixelReader.ReadPixel(
-                { texture: pingPong.currentState, pos: { x: cellX, y: cellY }, format: 'rgba32float' }
+                { texture: stateTexture, pos: { x: cellX, y: cellY }, format: 'rgba32float' }
             );
 
             if (!this.ShouldApplyHoveredRead(version)) { return; }

@@ -1,4 +1,4 @@
-import type { PingPongTargets } from './PingPongTargets';
+import type { SimulationLayer } from './SimulationLayer';
 import type { MaterialPhysicsBuffer } from '../materials/MaterialPhysicsBuffer';
 import type { MaterialStateBuffer } from '../materials/MaterialStateBuffer';
 
@@ -8,7 +8,7 @@ import { SimulationConfig } from '../config/SimulationConfig';
 
 interface BrushPassParams {
     device: GPUDevice;
-    targets: PingPongTargets;
+    simulationLayer: SimulationLayer;
     physicsBuffer: MaterialPhysicsBuffer;
     stateBuffer: MaterialStateBuffer;
 }
@@ -38,7 +38,7 @@ interface BrushParams {
 export class BrushPass {
     private readonly device: GPUDevice;
     private readonly pipeline: GPUComputePipeline;
-    private readonly targets: PingPongTargets;
+    private readonly simulationLayer: SimulationLayer;
     private readonly physicsBuffer: MaterialPhysicsBuffer;
     private readonly stateBuffer: MaterialStateBuffer;
     private readonly uniforms: GPUBuffer;
@@ -52,7 +52,7 @@ export class BrushPass {
     ) {
         this.device = params.device;
         this.pipeline = pipeline;
-        this.targets = params.targets;
+        this.simulationLayer = params.simulationLayer;
         this.physicsBuffer = params.physicsBuffer;
         this.stateBuffer = params.stateBuffer;
         this.workgroupSize = workgroupSize;
@@ -115,14 +115,14 @@ export class BrushPass {
         const bindGroup = device.createBindGroup({
             layout: this.pipeline.getBindGroupLayout(0),
             entries: [
-                { binding: 0, resource: this.targets.currentIdentity.createView() },
-                { binding: 1, resource: this.targets.nextIdentity.createView() },
+                { binding: 0, resource: this.simulationLayer.currentIdentity.createView() },
+                { binding: 1, resource: this.simulationLayer.nextIdentity.createView() },
                 { binding: 2, resource: { buffer: this.uniforms } },
-                { binding: 3, resource: this.targets.currentPhysics.createView() },
-                { binding: 4, resource: this.targets.nextPhysics.createView() },
+                { binding: 3, resource: this.simulationLayer.currentPhysics.createView() },
+                { binding: 4, resource: this.simulationLayer.nextPhysics.createView() },
                 { binding: 5, resource: { buffer: this.physicsBuffer.buffer } },
-                { binding: 6, resource: this.targets.currentState.createView() },
-                { binding: 7, resource: this.targets.nextState.createView() },
+                { binding: 6, resource: this.simulationLayer.currentState.createView() },
+                { binding: 7, resource: this.simulationLayer.nextState.createView() },
                 { binding: 8, resource: { buffer: this.stateBuffer.buffer } },
             ],
         });
@@ -131,8 +131,8 @@ export class BrushPass {
         pass.setPipeline(this.pipeline);
         pass.setBindGroup(0, bindGroup);
         pass.dispatchWorkgroups(
-            Math.ceil(this.targets.width / this.workgroupSize),
-            Math.ceil(this.targets.height / this.workgroupSize)
+            Math.ceil(this.simulationLayer.width / this.workgroupSize),
+            Math.ceil(this.simulationLayer.height / this.workgroupSize)
         );
         pass.end();
     }

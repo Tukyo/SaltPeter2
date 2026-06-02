@@ -38,22 +38,16 @@ export class RenderingManager extends NitrateProcess {
     private async Init(): Promise<void> {
         const renderer = Renderer.Instance?.GetWebGPU();
         const sim = SimulationManager.Instance;
-        if (!renderer || !sim?.pingPong || !sim.materialVisualBuffer) { return; }
+        if (!renderer || !sim?.simulationLayer || !sim?.gameObjectLayer || !sim.materialVisualBuffer) { return; }
 
         const { device, format } = renderer;
-        const { pingPong, materialVisualBuffer, gameObjectPass } = sim;
-        if (!gameObjectPass) { return; }
+        const { simulationLayer, gameObjectLayer, materialVisualBuffer } = sim;
 
-        this.layers = RenderingLayers.Create(device, { width: pingPong.width, height: pingPong.height });
+        this.layers = RenderingLayers.Create(device, { width: simulationLayer.width, height: simulationLayer.height });
 
         const [simRenderPass, gameObjectRenderPass, compositePass] = await Promise.all([
             SimulationRenderPass.Create({ device, materialVisualBuffer }),
-            GameObjectRenderPass.Create({
-                device,
-                stateBuffer: gameObjectPass.stateBuffer,
-                cellBuffer: gameObjectPass.cellBuffer,
-                materialVisualBuffer,
-            }),
+            GameObjectRenderPass.Create({ device, gameObjectLayer, materialVisualBuffer }),
             CompositePass.Create({ device, format }),
         ]);
 
@@ -65,29 +59,18 @@ export class RenderingManager extends NitrateProcess {
     public Update(now: number): void {
         const renderer = Renderer.Instance?.GetWebGPU();
         const sim = SimulationManager.Instance;
-        if (!renderer || !sim?.pingPong || !this.layers || !this.simRenderPass || !this.gameObjectRenderPass || !this.compositePass) { return; }
+        if (!renderer || !sim?.simulationLayer || !this.layers || !this.simRenderPass || !this.gameObjectRenderPass || !this.compositePass) { return; }
 
         const { device } = renderer;
-        const { pingPong } = sim;
+        const { simulationLayer, gameObjectLayer } = sim;
+        if (!gameObjectLayer) { return; }
 
         const simEnc = device.createCommandEncoder();
-        this.simRenderPass.Run({ encoder: simEnc, targets: pingPong, layers: this.layers });
+        this.simRenderPass.Run({ encoder: simEnc, simulationLayer, layers: this.layers });
         device.queue.submit([simEnc.finish()]);
 
-        const clearEnc = device.createCommandEncoder();
-        const clearPass = clearEnc.beginRenderPass({
-            colorAttachments: [{
-                view: this.layers.gameObjectsTexture.createView(),
-                clearValue: { r: 0, g: 0, b: 0, a: 0 },
-                loadOp: 'clear',
-                storeOp: 'store',
-            }],
-        });
-        clearPass.end();
-        device.queue.submit([clearEnc.finish()]);
-
         const goEnc = device.createCommandEncoder();
-        this.gameObjectRenderPass.Run({ encoder: goEnc, layers: this.layers });
+        this.gameObjectRenderPass.Run({ encoder: goEnc, gameObjectLayer, layers: this.layers });
         device.queue.submit([goEnc.finish()]);
 
         const compositeEnc = device.createCommandEncoder();

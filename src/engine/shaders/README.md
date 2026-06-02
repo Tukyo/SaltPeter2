@@ -26,7 +26,7 @@ The shader pipeline has two layers: **generated fragments** and **raw WGSL sourc
 | `phase/powder/` | [`powderIntent`](phase/powder/powderIntent.wgsl), [`powderQueries`](phase/powder/powderQueries.wgsl), [`powderResolution`](phase/powder/powderResolution.wgsl), [`powderSimulation`](phase/powder/powderSimulation.wgsl), [`powderTargeting`](phase/powder/powderTargeting.wgsl) |
 | `phase/solid/` | [`solidIntent`](phase/solid/solidIntent.wgsl), [`solidResolution`](phase/solid/solidResolution.wgsl), [`solidSimulation`](phase/solid/solidSimulation.wgsl) |
 | `physics/` | [`physics`](physics/physics.wgsl), [`pressurePropagation`](physics/pressurePropagation.wgsl), [`temperaturePropagation`](physics/temperaturePropagation.wgsl), [`transitions`](physics/transitions.wgsl), [`velocityPropagation`](physics/velocityPropagation.wgsl) |
-| `shared/` | [`common`](shared/common.wgsl), [`displacement`](shared/displacement.wgsl), [`identity`](shared/identity.wgsl), [`identityQueries`](shared/identityQueries.wgsl), [`intent`](shared/intent.wgsl), [`intentRead`](shared/intentRead.wgsl) |
+| `shared/` | [`common`](shared/common.wgsl), [`displacement`](shared/displacement.wgsl), [`identity`](shared/identity.wgsl), [`identityQueries`](shared/identityQueries.wgsl), [`intent`](shared/intent.wgsl), [`intentRead`](shared/intentRead.wgsl), [`layerInteraction`](shared/layerInteraction.wgsl) |
 | `sim/` | [`intent`](sim/intent.wgsl), [`reactions`](sim/reactions.wgsl), [`sim`](sim/sim.wgsl) |
 | `state/` | [`state`](state/state.wgsl) |
 | `visual/` | [`composite`](visual/composite.wgsl), [`display`](visual/display.wgsl), [`gameObjectRender`](visual/gameObjectRender.wgsl), [`simRender`](visual/simRender.wgsl) |

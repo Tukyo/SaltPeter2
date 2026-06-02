@@ -1,40 +1,32 @@
 import { TextureFactory } from '../rendering/TextureFactory';
 
 /**
- * Double-buffered GPU texture pairs for each simulation layer.
+ * Double-buffered GPU texture pairs for the simulation layer.
  *
  * Each pass reads from `current*` and writes to `next*`. Call the corresponding
  * `Swap*` method after each pass to advance the buffer for the next frame.
  */
-export class PingPongTargets {
+export class SimulationLayer {
     public readonly width: number;
     public readonly height: number;
-    
+
     public currentIdentity: GPUTexture;
     public nextIdentity: GPUTexture;
     public currentPhysics: GPUTexture;
     public nextPhysics: GPUTexture;
     public currentState: GPUTexture;
     public nextState: GPUTexture;
-    public currentOwnership: GPUTexture;
-    public nextOwnership: GPUTexture;
 
-    constructor(
-        device: GPUDevice,
-        width: number,
-        height: number
-    ) {
+    constructor(device: GPUDevice, width: number, height: number) {
         this.width = width;
         this.height = height;
 
         this.currentIdentity = TextureFactory.Create2D(device, width, height, 'rgba8unorm');
-        this.nextIdentity = TextureFactory.Create2D(device, width, height, 'rgba8unorm');
-        this.currentPhysics = TextureFactory.Create2D(device, width, height, 'rgba32float');
-        this.nextPhysics = TextureFactory.Create2D(device, width, height, 'rgba32float');
-        this.currentState = TextureFactory.Create2D(device, width, height, 'rgba32float');
-        this.nextState = TextureFactory.Create2D(device, width, height, 'rgba32float');
-        this.currentOwnership = TextureFactory.Create2D(device, width, height, 'r32uint');
-        this.nextOwnership = TextureFactory.Create2D(device, width, height, 'r32uint');
+        this.nextIdentity    = TextureFactory.Create2D(device, width, height, 'rgba8unorm');
+        this.currentPhysics  = TextureFactory.Create2D(device, width, height, 'rgba32float');
+        this.nextPhysics     = TextureFactory.Create2D(device, width, height, 'rgba32float');
+        this.currentState    = TextureFactory.Create2D(device, width, height, 'rgba32float');
+        this.nextState       = TextureFactory.Create2D(device, width, height, 'rgba32float');
     }
 
     /**
@@ -82,19 +74,6 @@ export class PingPongTargets {
         this.nextState = temp;
     }
 
-    /**
-     * Swaps the ownership texture pair.
-     * Allows simulation subsystems to claim a cell.
-     * Type: r32uint
-     * R: GameObjectId (0 = unowned)
-     */
-    // @omitfromdocs
-    public SwapOwnership(): void {
-        const temp = this.currentOwnership;
-        this.currentOwnership = this.nextOwnership;
-        this.nextOwnership = temp;
-    }
-
     public OnDestroy(): void {
         this.currentIdentity.destroy();
         this.nextIdentity.destroy();
@@ -102,7 +81,5 @@ export class PingPongTargets {
         this.nextPhysics.destroy();
         this.currentState.destroy();
         this.nextState.destroy();
-        this.currentOwnership.destroy();
-        this.nextOwnership.destroy();
     }
 }

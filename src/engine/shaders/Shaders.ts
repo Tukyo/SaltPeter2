@@ -3,6 +3,7 @@
 
 // Shared helpers
 export { default as commonWgsl } from './shared/common.wgsl?raw';
+export { default as layerInteractionWgsl } from './shared/layerInteraction.wgsl?raw';
 export { default as identityWgsl } from './shared/identity.wgsl?raw';
 export { default as identityQueriesWgsl } from './shared/identityQueries.wgsl?raw';
 export { default as intentHelpersWgsl } from './shared/intent.wgsl?raw';

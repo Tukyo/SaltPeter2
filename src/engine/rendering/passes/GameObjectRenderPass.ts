@@ -1,39 +1,35 @@
 import type { MaterialVisualBuffer } from '../../materials/MaterialVisualBuffer';
+import type { GameObjectLayer } from '../../game_object/GameObjectLayer';
 import type { RenderingLayers } from '../RenderingLayers';
 
-import { GameObjectConfig } from '../../config/GameObjectConfig';
 import { ShaderAssembler } from '../../shaders/ShaderAssembler';
 import { SimulationConfig } from '../../config/SimulationConfig';
 
 interface GameObjectRenderPassCreateParams {
     device: GPUDevice;
-    stateBuffer: GPUBuffer;
-    cellBuffer: GPUBuffer;
+    gameObjectLayer: GameObjectLayer;
     materialVisualBuffer: MaterialVisualBuffer;
 }
 
 interface GameObjectRenderPassRunParams {
     encoder: GPUCommandEncoder;
+    gameObjectLayer: GameObjectLayer;
     layers: RenderingLayers;
 }
 
 /**
- * Writes GO cell colors into {@link RenderingLayers.gameObjectsTexture} for the FRP GO layer.
+ * Resolves the GameObject layer identity texture into RGBA color for the game objects layer.
  *
- * One thread per GO slot. Iterates each cell, computes its world position using the same
- * rotation math as the stamp pass, and writes the cell's material color unconditionally —
- * no occupancy check. {@link RenderingLayers.gameObjectsTexture} is cleared before this runs
- * so ghost pixels from previous frames are removed.
+ * Reads `gameObjectLayer.currentIdentity` pixel-by-pixel (including bleed pixels written
+ * by the stamp pass) and writes resolved RGBA into {@link RenderingLayers.gameObjectsTexture}.
+ * Unoccupied pixels write transparent so the composite shows world sim underneath.
  *
  * Created and owned by {@link RenderingManager}. Do not call directly.
  */
 export class GameObjectRenderPass {
     private readonly device: GPUDevice;
-    private readonly stateBuffer: GPUBuffer;
-    private readonly cellBuffer: GPUBuffer;
     private readonly materialVisualBuffer: MaterialVisualBuffer;
     private readonly pipeline: GPUComputePipeline;
-    private readonly uniformBuffer: GPUBuffer;
     private readonly workgroupSize: number;
 
     private constructor(
@@ -42,18 +38,12 @@ export class GameObjectRenderPass {
         workgroupSize: number
     ) {
         this.device = params.device;
-        this.stateBuffer = params.stateBuffer;
-        this.cellBuffer = params.cellBuffer;
         this.materialVisualBuffer = params.materialVisualBuffer;
         this.pipeline = pipeline;
         this.workgroupSize = workgroupSize;
-        this.uniformBuffer = params.device.createBuffer({
-            size: 3 * 4,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
     }
 
-    /** Compiles the GO render shader and returns a ready-to-use pass. @internal */
+    /** Compiles the GameObject render shader and returns a ready-to-use pass. @internal */
     public static async Create(
         params: GameObjectRenderPassCreateParams
     ): Promise<GameObjectRenderPass> {
@@ -70,36 +60,29 @@ export class GameObjectRenderPass {
         return new GameObjectRenderPass(params, pipeline, workgroupSize);
     }
 
-    /** Writes GO cell colors into `layers.gameObjectsTexture`. @internal */
+    /** Writes resolved GameObject layer RGBA colors into `layers.gameObjectsTexture`. @internal */
     public Run(params: GameObjectRenderPassRunParams): void {
-        const { encoder, layers } = params;
-        const { maxGameObjectCount } = GameObjectConfig.GetConfig().performance;
-
-        this.device.queue.writeBuffer(
-            this.uniformBuffer, 0,
-            new Uint32Array([layers.size.width, layers.size.height, maxGameObjectCount])
-        );
+        const { encoder, gameObjectLayer, layers } = params;
 
         const bindGroup = this.device.createBindGroup({
             layout: this.pipeline.getBindGroupLayout(0),
             entries: [
-                { binding: 0, resource: { buffer: this.stateBuffer } },
-                { binding: 1, resource: { buffer: this.cellBuffer } },
-                { binding: 2, resource: { buffer: this.uniformBuffer } },
-                { binding: 3, resource: { buffer: this.materialVisualBuffer.buffer } },
-                { binding: 4, resource: layers.gameObjectsTexture.createView() },
+                { binding: 0, resource: gameObjectLayer.currentIdentity.createView() },
+                { binding: 1, resource: { buffer: this.materialVisualBuffer.buffer } },
+                { binding: 2, resource: layers.gameObjectsTexture.createView() },
             ],
         });
 
         const pass = encoder.beginComputePass();
         pass.setPipeline(this.pipeline);
         pass.setBindGroup(0, bindGroup);
-        pass.dispatchWorkgroups(Math.ceil(maxGameObjectCount / this.workgroupSize));
+        pass.dispatchWorkgroups(
+            Math.ceil(gameObjectLayer.width / this.workgroupSize),
+            Math.ceil(gameObjectLayer.height / this.workgroupSize)
+        );
         pass.end();
     }
 
     // @omitfromdocs
-    public Destroy(): void {
-        this.uniformBuffer.destroy();
-    }
+    public Destroy(): void {}
 }

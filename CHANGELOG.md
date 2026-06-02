@@ -2,6 +2,54 @@
 
 ---
 
+## [0.0.6] - Patch - 06/01/2026
+### Updates & Changes
+
+#### Architecture
+- `PingPongTargets` split into two dedicated layer types: `SimulationLayer` (identity, physics, state) and `GameObjectLayer` (identity, physics, state, ownership) — world sim and game objects no longer share a single texture set
+- `GameObjectBuffers` moved out of `GameObjectPass.Create` and up to `SimulationManager`, making buffer lifetime match the simulation lifetime instead of the pass
+- `SimulationManager` now owns both `simulationLayer` and `gameObjectLayer` as first-class public references
+
+#### Simulation
+- `sim.wgsl` ownership early-exit removed — all cells now enter `resolveCellForState` regardless of GO ownership
+- GO ownership awareness moved to `phaseResolution.wgsl`: solid and powder intent is blocked from entering GO-owned cells; empty GO-owned cells reject incoming solid/powder and accept only liquid/gas/fire
+- `transitionBuffer` removed from both the sim pipeline and `GameObjectBuffers` — transition detection via buffer write/read is gone
+- Sim pipeline bindings simplified: `ownershipTexture`, `nextOwnershipTexture`, and `transitionBuffer` (bindings 12–14) replaced with a single read-only `goOwnershipTexture` storage texture (binding 12)
+- `PhysicsPass` now dispatches twice per step — once for `simulationLayer`, once for `gameObjectLayer` — giving GO cells temperature and pressure propagation
+
+#### Game Objects
+- `GameObjectRenderPass` rearchitected: was one-thread-per-GO iterating cell positions → now pixel-by-pixel over `gameObjectLayer.currentIdentity`, matching the approach used by `SimulationRenderPass`; stateBuffer, cellBuffer, and the per-frame clear encoder are all removed
+- `gameObjectRender.wgsl` rewritten accordingly — reads identity texture directly, resolves material color, writes transparent for unoccupied pixels
+- Erase pass now calls `GameObjectLayer.ClearNextTextures()` — uses a pre-zeroed GPU buffer to clear next identity and next ownership in one encoder call, replacing the manual clear render pass in `RenderingManager`
+- `gameObjectStamp.wgsl` transition detection block removed — stamp no longer reads `transitionBuffer` or kills cells on material change
+- `GameObjectCollisionPass` now takes `physicsBuffer` and classifies boundary cells by phase: gas and fire are ignored entirely, liquid cells are accumulated for buoyancy rather than contributing to collision normals
+- Buoyancy applied per step: upward velocity proportional to `avgLiquidDensity / state.density * submersionFraction * gravity * buoyancyScale`
+- Liquid drag applied per step when submerged: velocity scaled by `1 - submersionFraction * liquidDrag` on both axes
+- Sleeping objects wake immediately on any liquid contact
+- Near-point contact jitter: when `hitCount <= 2`, a small random lateral impulse is injected to break point-contact balancing instability
+
+#### Config
+- `GameObjectConfig.physics.liquid` block added: `buoyancy: 10.0`, `drag: 0.015`
+- `KeybindConfig.debug.overlay.layer` added: `down: "["`, `up: "]"` — cycles active debug layer
+
+#### Shaders
+- `LayerInteractionPass` and `layerInteraction.wgsl` added — new cross-layer compute pass that runs after both layers swap each step; currently stubs (ownership read plumbing in place, no interaction logic yet)
+- `ShaderAssembler.LayerInteraction` assembler method added
+- `ShaderAssembler.GameObjectCollision` now includes `MaterialPhysicsEntry` struct and phase constants so the collision shader can classify cell phases
+- `ShaderAssembler.GameObjectRender` simplified — no longer generates GO state/cell structs; includes `commonWgsl` for shared identity helpers instead
+
+#### Debug
+- `TemperatureOverlay` gains `SetLayerIndex(index)` — when index is 1, reads `gameObjectLayer.currentPhysics` instead of `simulationLayer.currentPhysics`
+- `DebugOverlay` gains `[ ]` keybinds to cycle between `Simulation` and `GameObject` debug layers; `CycleLayer`, `GetActiveLayerIndex`, and `GetActiveLayerName` added
+- `DebugOverlayBadge` added — small DOM label that displays the active layer name when the temperature overlay is active
+- `DebugPanel` hovered-cell inspector gains `< >` layer navigation buttons; `ReadHoveredCell` selects identity, physics, and state textures from the currently selected layer
+- `GameObjectOverlay` now reads `gameObjectLayer.currentOwnership` instead of the sim layer ownership texture
+
+#### Materials
+- Liquid color alphas adjusted across 14 materials for visual consistency: Acid, Beer, Blood, Brine, Coffee, Diarrhea, Honey, Latte, MoltenPlastic, Oil, Peat, Saltwater, Urine, Vomit
+
+---
+
 ## [0.0.5] - Patch - 06/01/2026
 ### Updates & Changes
 

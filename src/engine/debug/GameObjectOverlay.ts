@@ -76,11 +76,11 @@ export class GameObjectOverlay {
         if (!this.visible || this.readPending) { return; }
         const sim = SimulationManager.Instance;
         const renderer = Renderer.Instance?.GetWebGPU();
-        if (!sim?.pingPong || !renderer) { return; }
+        if (!sim?.simulationLayer || !sim?.gameObjectLayer || !renderer) { return; }
 
-        const { pingPong } = sim;
+        const { simulationLayer, gameObjectLayer } = sim;
         const { device } = renderer;
-        const { width, height } = pingPong;
+        const { width, height } = simulationLayer;
 
         if (!this.renderer2D) { this.Create(renderer.canvas.width, renderer.canvas.height); }
         if (!this.renderer2D || !this.ctx || !this.tmpCanvas) { return; }
@@ -132,7 +132,7 @@ export class GameObjectOverlay {
 
         const enc = device.createCommandEncoder();
         enc.copyTextureToBuffer(
-            { texture: pingPong.currentOwnership, origin: [camOriginX, camOriginY] },
+            { texture: gameObjectLayer.currentOwnership, origin: [camOriginX, camOriginY] },
             { buffer: ownershipBuffer, bytesPerRow },
             [contentW, contentH]
         );

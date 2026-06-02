@@ -249,7 +249,7 @@ export class Hierarchy extends NitrateProcess {
         });
     }
 
-    /** Positions and populates the context menu. Shows object actions when a GO is targeted, or a create action when targeting the background. */
+    /** Positions and populates the context menu. Shows object actions when a GameObject is targeted, or a create action when targeting the background. */
     private ShowContextMenu(e: MouseEvent, go?: GameObject): void {
         e.preventDefault();
         e.stopPropagation();

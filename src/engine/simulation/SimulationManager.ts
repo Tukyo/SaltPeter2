@@ -8,10 +8,14 @@ import { SimulationConfig } from '../config/SimulationConfig';
 import { Analytics } from '../debug/Analytics';
 import { AnalyticsPass } from '../debug/AnalyticsPass';
 import { LogManager } from '../debug/LogManager';
+import { LayerInteractionPass } from './LayerInteractionPass';
 import { DiffusionPass } from './DiffusionPass';
-import { GameObjectPass } from '../game_object/GameObjectPass';
 import { IntentPass } from './IntentPass';
 import { PhysicsPass } from './PhysicsPass';
+
+import { GameObjectBuffers } from '../game_object/GameObjectBuffers';
+import { GameObjectPass } from '../game_object/GameObjectPass';
+import { GameObjectLayer } from '../game_object/GameObjectLayer';
 
 import { MaterialPhysicsBuffer } from '../materials/MaterialPhysicsBuffer';
 import { MaterialStateBuffer } from '../materials/MaterialStateBuffer';
@@ -20,11 +24,11 @@ import { MaterialSimulationBuffer } from '../materials/MaterialSimulationBuffer'
 
 import { NitrateProcess } from '../NitrateProcess';
 
-import { PingPongTargets } from './PingPongTargets';
 import { ReactionLookupBuffer } from '../materials/ReactionLookupBuffer';
 
 import { SimulationClock } from './SimulationClock';
 import { SimulationInitializer } from './SimulationInitializer';
+import { SimulationLayer } from './SimulationLayer';
 import { SimulationPass } from './SimulationPass';
 import { SimulationState } from './SimulationState';
 import { SimulationTexture } from './SimulationTexture';
@@ -51,7 +55,9 @@ import { World } from '../world/World';
 export class SimulationManager extends NitrateProcess {
     public static Instance: SimulationManager | null = null;
 
-    public pingPong: PingPongTargets | null = null;
+    public simulationLayer: SimulationLayer | null = null;
+    public gameObjectLayer: GameObjectLayer | null = null;
+    public gameObjectBuffers: GameObjectBuffers | null = null;
     public intent: SimulationTexture | null = null;
     public texturePixelReader: TexturePixelReader | null = null;
 
@@ -62,6 +68,7 @@ export class SimulationManager extends NitrateProcess {
     public reactionBuffer: ReactionLookupBuffer | null = null;
 
     public analyticsPass: AnalyticsPass | null = null;
+    public layerInteractionPass: LayerInteractionPass | null = null;
     public diffusionPass: DiffusionPass | null = null;
     public gameObjectPass: GameObjectPass | null = null;
     public intentPass: IntentPass | null = null;
@@ -112,7 +119,7 @@ export class SimulationManager extends NitrateProcess {
     public Debounce(frames: number): void { this.debounceCountdown = frames; }
 
     public Start(): void {
-        if (this.blocked || this.pingPong) { return; }
+        if (this.blocked || this.simulationLayer) { return; }
         const webgpu = Renderer.Instance?.GetWebGPU();
         if (!webgpu) { return; }
         LogManager.Instance?.Log({
@@ -142,14 +149,16 @@ export class SimulationManager extends NitrateProcess {
         const { device } = webgpu;
         const { width, height } = size;
 
-        this.pingPong = this.Register(new PingPongTargets(device, width, height));
+        this.simulationLayer = this.Register(new SimulationLayer(device, width, height));
+        this.gameObjectLayer = this.Register(new GameObjectLayer(device, width, height));
 
-        new SimulationInitializer(device, this.pingPong);
+        new SimulationInitializer(device, this.simulationLayer, this.gameObjectLayer);
 
-        if (this.pingPong && World.Instance) {
-            await ChunkManager.Instance?.InitializeChunks(device, this.pingPong, size);
+        if (this.simulationLayer && World.Instance) {
+            await ChunkManager.Instance?.InitializeChunks(device, this.simulationLayer, size);
         }
 
+        this.gameObjectBuffers = this.Register(new GameObjectBuffers(device));
         this.intent = this.Register(new SimulationTexture(device, size));
         this.texturePixelReader = this.Register(new TexturePixelReader(device));
         this.materialPhysicsBuffer = this.Register(new MaterialPhysicsBuffer(device));
@@ -158,11 +167,11 @@ export class SimulationManager extends NitrateProcess {
         this.materialSimBuffer = this.Register(new MaterialSimulationBuffer(device));
         this.reactionBuffer = this.Register(new ReactionLookupBuffer(device));
 
-        const [intentPass, simPass, diffusionPass, physicsPass, analyticsPass, gameObjectPass]
+        const [intentPass, simPass, diffusionPass, physicsPass, analyticsPass, gameObjectPass, layerInteractionPass]
             = await Promise.all([
                 IntentPass.Create({
                     device,
-                    targets: this.pingPong,
+                    simulationLayer: this.simulationLayer,
                     intent: this.intent,
                     physicsBuffer: this.materialPhysicsBuffer,
                     simBuffer: this.materialSimBuffer,
@@ -170,7 +179,8 @@ export class SimulationManager extends NitrateProcess {
                 }),
                 SimulationPass.Create({
                     device,
-                    targets: this.pingPong,
+                    simulationLayer: this.simulationLayer,
+                    gameObjectLayer: this.gameObjectLayer,
                     intent: this.intent,
                     physicsBuffer: this.materialPhysicsBuffer,
                     simBuffer: this.materialSimBuffer,
@@ -179,20 +189,28 @@ export class SimulationManager extends NitrateProcess {
                 }),
                 DiffusionPass.Create({
                     device,
-                    targets: this.pingPong,
+                    simulationLayer: this.simulationLayer,
                     physicsBuffer: this.materialPhysicsBuffer
                 }),
                 PhysicsPass.Create({
                     device,
-                    targets: this.pingPong,
+                    simulationLayer: this.simulationLayer,
+                    gameObjectLayer: this.gameObjectLayer,
                     physicsBuffer: this.materialPhysicsBuffer
                 }),
                 AnalyticsPass.Create(device),
                 GameObjectPass.Create({
                     device,
-                    targets: this.pingPong,
+                    simulationLayer: this.simulationLayer,
+                    gameObjectLayer: this.gameObjectLayer,
                     physicsBuffer: this.materialPhysicsBuffer,
                     stateBuffer: this.materialStateBuffer,
+                    gameObjectBuffers: this.gameObjectBuffers,
+                }),
+                LayerInteractionPass.Create({
+                    device,
+                    simulationLayer: this.simulationLayer,
+                    gameObjectLayer: this.gameObjectLayer,
                 }),
             ]);
 
@@ -202,6 +220,7 @@ export class SimulationManager extends NitrateProcess {
         this.physicsPass = this.Register(physicsPass);
         this.analyticsPass = this.Register(analyticsPass);
         this.gameObjectPass = this.Register(gameObjectPass);
+        this.layerInteractionPass = this.Register(layerInteractionPass);
 
         Analytics.Init(this.analyticsPass);
         SimulationManager.Instance = this;
@@ -215,9 +234,29 @@ export class SimulationManager extends NitrateProcess {
 
     /** Dispatches all simulation passes for the current frame. Returns step counts for profiling. @internal */
     public Simulate(now: number): { simulationSteps: number; physicsSteps: number } {
-        const { pingPong, intentPass, simPass, diffusionPass, physicsPass, gameObjectPass } = this;
+        const {
+            simulationLayer,
+            gameObjectLayer,
+            intentPass,
+            simPass,
+            diffusionPass,
+            physicsPass,
+            gameObjectPass,
+            layerInteractionPass
+        } = this;
         const webgpu = Renderer.Instance?.GetWebGPU();
-        if (!pingPong || !intentPass || !simPass || !diffusionPass || !physicsPass || !gameObjectPass || !webgpu) {
+
+        if (
+            !simulationLayer ||
+            !gameObjectLayer ||
+            !intentPass ||
+            !simPass ||
+            !diffusionPass ||
+            !physicsPass ||
+            !gameObjectPass ||
+            !layerInteractionPass ||
+            !webgpu
+        ) {
             return { simulationSteps: 0, physicsSteps: 0 };
         }
 
@@ -241,9 +280,8 @@ export class SimulationManager extends NitrateProcess {
             state.SetSimTime(state.GetSimTime() + simStepDuration);
 
             const encSim = device.createCommandEncoder();
-            encSim.clearBuffer(gameObjectPass.transitionBuffer);
             intentPass.Run({ encoder: encSim, time: state.GetSimTime(), gravity });
-            simPass.Run({ encoder: encSim, time: state.GetSimTime(), gravity, transitionBuffer: gameObjectPass.transitionBuffer });
+            simPass.Run({ encoder: encSim, time: state.GetSimTime(), gravity });
             device.queue.submit([encSim.finish()]);
 
             const encErase = device.createCommandEncoder();
@@ -255,16 +293,23 @@ export class SimulationManager extends NitrateProcess {
             device.queue.submit([encGameObjects.finish()]);
             gameObjectPass.ReadbackPositions();
 
-            pingPong.SwapIdentity();
-            pingPong.SwapPhysics();
-            pingPong.SwapState();
-            pingPong.SwapOwnership();
+            simulationLayer.SwapIdentity();
+            simulationLayer.SwapPhysics();
+            simulationLayer.SwapState();
+            gameObjectLayer.SwapIdentity();
+            gameObjectLayer.SwapPhysics();
+            gameObjectLayer.SwapState();
+            gameObjectLayer.SwapOwnership();
+
+            const layerInteractionEnc = device.createCommandEncoder();
+            layerInteractionPass.Run(layerInteractionEnc);
+            device.queue.submit([layerInteractionEnc.finish()]);
 
             const diffEnc = device.createCommandEncoder();
             diffusionPass.Run(diffEnc, state.GetSimStepCount() % 2);
             device.queue.submit([diffEnc.finish()]);
-            pingPong.SwapIdentity();
-            pingPong.SwapPhysics();
+            simulationLayer.SwapIdentity();
+            simulationLayer.SwapPhysics();
             state.SetSimStepCount(state.GetSimStepCount() + 1);
 
             state.SetPhysicsTickCounter(state.GetPhysicsTickCounter() + 1);
@@ -273,7 +318,8 @@ export class SimulationManager extends NitrateProcess {
                 const physicsEnc = device.createCommandEncoder();
                 physicsPass.Run(physicsEnc, gravity);
                 device.queue.submit([physicsEnc.finish()]);
-                pingPong.SwapPhysics();
+                simulationLayer.SwapPhysics();
+                gameObjectLayer.SwapPhysics();
                 physicsSteps++;
             }
         }
@@ -311,7 +357,9 @@ export class SimulationManager extends NitrateProcess {
         for (const p of this.processes) p.OnDestroy?.();
         this.processes.length = 0;
 
-        this.pingPong = null;
+        this.simulationLayer = null;
+        this.gameObjectLayer = null;
+        this.gameObjectBuffers = null;
         this.intent = null;
         this.texturePixelReader = null;
         this.materialPhysicsBuffer = null;
@@ -325,6 +373,7 @@ export class SimulationManager extends NitrateProcess {
         this.gameObjectPass = null;
         this.physicsPass = null;
         this.analyticsPass = null;
+        this.layerInteractionPass = null;
 
         Analytics.Reset();
 

@@ -5,10 +5,10 @@ export const Peat: MaterialDefinition = {
     id: MaterialIds.peat,
     name: 'peat',
     colors: [
-        { r: 28, g: 48, b: 20, a: 1 },
-        { r: 42, g: 68, b: 30, a: 1 },
-        { r: 18, g: 32, b: 12, a: 1 },
-        { r: 55, g: 82, b: 38, a: 1 },
+        { r: 28, g: 48, b: 20, a: 0.9 },
+        { r: 42, g: 68, b: 30, a: 0.9 },
+        { r: 18, g: 32, b: 12, a: 0.9 },
+        { r: 55, g: 82, b: 38, a: 0.9 },
     ],
     state: {
         health: 100,

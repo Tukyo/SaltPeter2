@@ -8,11 +8,15 @@ fn resolveEmptyCellFromPhaseIntents(
     gravityDirection: f32,
     time:             f32
 ) -> ResolvedCell {
-    let incomingSolid = chooseIncomingSolidSourceFromIntent(coord, res, gravityDirection, time);
-    if isValidCoord(incomingSolid) { return ResolvedCell(textureLoad(identityTexture, vec2i(incomingSolid)), incomingSolid); }
+    let goOwned = isOwnedCell(textureLoad(goOwnershipTexture, vec2i(coord)).r);
 
-    let incomingPowder = chooseIncomingPowderSourceFromIntent(coord, res, gravityDirection, time);
-    if isValidCoord(incomingPowder) { return ResolvedCell(textureLoad(identityTexture, vec2i(incomingPowder)), incomingPowder); }
+    if !goOwned {
+        let incomingSolid = chooseIncomingSolidSourceFromIntent(coord, res, gravityDirection, time);
+        if isValidCoord(incomingSolid) { return ResolvedCell(textureLoad(identityTexture, vec2i(incomingSolid)), incomingSolid); }
+
+        let incomingPowder = chooseIncomingPowderSourceFromIntent(coord, res, gravityDirection, time);
+        if isValidCoord(incomingPowder) { return ResolvedCell(textureLoad(identityTexture, vec2i(incomingPowder)), incomingPowder); }
+    }
 
     let incomingLiquid = chooseIncomingLiquidSourceFromIntent(coord, res, gravityDirection, time);
     if isValidCoord(incomingLiquid) { return ResolvedCell(textureLoad(identityTexture, vec2i(incomingLiquid)), incomingLiquid); }
@@ -39,7 +43,15 @@ fn resolveCellForState(
         return resolveEmptyCellFromPhaseIntents(coord, res, currentIdentityState, gravityDirection, time);
     }
 
+    let intentTarget = getMaterialIntentTargetAtCoord(coord, res, gravityDirection);
     let phaseId = getStatePhaseId(currentIdentityState);
+    if !sameCoord(intentTarget, coord) &&
+       isOwnedCell(textureLoad(goOwnershipTexture, vec2i(intentTarget)).r) &&
+       !isMaterialPhaseId(phaseId, MATERIAL_PHASE_LIQUID) &&
+       !isMaterialPhaseId(phaseId, MATERIAL_PHASE_GAS) &&
+       !isMaterialPhaseId(phaseId, MATERIAL_PHASE_FIRE) {
+        return ResolvedCell(currentIdentityState, coord);
+    }
 
     if isMaterialPhaseId(phaseId, MATERIAL_PHASE_SOLID)  { return resolveSolidCell(coord, res, currentIdentityState, gravityDirection, time); }
     if isMaterialPhaseId(phaseId, MATERIAL_PHASE_POWDER) { return resolvePowderCell(coord, res, currentIdentityState, gravityDirection, time); }

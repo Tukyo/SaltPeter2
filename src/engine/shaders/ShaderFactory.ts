@@ -318,6 +318,8 @@ export class ShaderFactory {
             ['sleepVelocityThreshold', 'f32'],
             ['wakeTolerance', 'f32'],
             ['sleepAngularThreshold', 'f32'],
+            ['buoyancyScale', 'f32'],
+            ['liquidDrag', 'f32'],
         ]);
     }
 

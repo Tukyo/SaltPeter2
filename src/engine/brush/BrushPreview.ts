@@ -50,12 +50,12 @@ export class BrushPreview extends NitrateProcess {
         if (!mouse || !mouse.isInside) { this.Hide(); return; }
 
         const brushState = BrushManager.Instance?.state;
-        const pingPong = SimulationManager.Instance?.pingPong;
-        if (!brushState || !pingPong) { this.Hide(); return; }
+        const simulationLayer = SimulationManager.Instance?.simulationLayer;
+        if (!brushState || !simulationLayer) { this.Hide(); return; }
 
         const rect = this.canvas.getBoundingClientRect();
-        const simWidth = pingPong.width;
-        const simHeight = pingPong.height;
+        const simWidth = simulationLayer.width;
+        const simHeight = simulationLayer.height;
         const cellW = rect.width / Math.max(1, simWidth);
         const cellH = rect.height / Math.max(1, simHeight);
 

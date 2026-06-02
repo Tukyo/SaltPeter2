@@ -1,46 +1,29 @@
-// Writes GO cell colors into gameObjectsTexture for the FRP GO layer.
-// One thread per GO slot. Iterates each cell, computes world position, writes color.
-// No occupancy check — always writes unconditionally.
-// gameObjectsTexture is cleared each frame before this runs.
+// Resolves the GameObject layer identity texture into RGBA color for the game objects layer.
+// Reads goIdentityTexture + material color table, writes resolved RGBA to gameObjectsTexture.
+// Output is consumed by CompositePass — nothing else should read gameObjectsTexture.
 
-struct GoRenderUniforms {
-    simWidth: u32,
-    simHeight: u32,
-    gameObjectCount: u32,
-}
+@group(0) @binding(0) var goIdentityTexture: texture_2d<f32>;
+@group(0) @binding(1) var<storage, read> materials: array<VisualEntry>;
+@group(0) @binding(2) var gameObjectsTexture: texture_storage_2d<rgba8unorm, write>;
 
-@group(0) @binding(0) var<storage, read> gameObjectStates: array<GameObjectState>;
-@group(0) @binding(1) var<storage, read> cells:            array<GameObjectCell>;
-@group(0) @binding(2) var<uniform>       uniforms:         GoRenderUniforms;
-@group(0) @binding(3) var<storage, read> materials:        array<VisualEntry>;
-@group(0) @binding(4) var gameObjectsTexture: texture_storage_2d<rgba8unorm, write>;
-
-@compute @workgroup_size(WG_SIZE, 1, 1)
+@compute @workgroup_size(WG_SIZE, WG_SIZE)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-    let goIdx = id.x;
-    if (goIdx >= uniforms.gameObjectCount) { return; }
+    let dims = textureDimensions(goIdentityTexture);
+    if (id.x >= dims.x || id.y >= dims.y) { return; }
 
-    let state = gameObjectStates[goIdx];
-    if (state.isActive == 0u) { return; }
+    let coord = vec2<i32>(i32(id.x), i32(id.y));
+    let identityState = textureLoad(goIdentityTexture, coord, 0);
 
-    let cosTheta = cos(state.theta);
-    let sinTheta = sin(state.theta);
-    let simW = i32(uniforms.simWidth);
-    let simH = i32(uniforms.simHeight);
-
-    for (var i: u32 = 0u; i < state.cellCount; i++) {
-        let cell = cells[state.cellOffset + i];
-
-        let localFX = f32(cell.localX) - state.pivotX;
-        let localFY = f32(cell.localY) - state.pivotY;
-        let wx = i32(floor(state.posX + cosTheta * localFX - sinTheta * localFY));
-        let wy = i32(floor(state.posY + sinTheta * localFX + cosTheta * localFY));
-
-        if (wx < 0 || wy < 0 || wx >= simW || wy >= simH) { continue; }
-
-        let localColorIdx = i32(floor(clamp(cell.colorSeed, 0.0, 0.999999) * COLORS_PER_MATERIAL));
-        let color = materials[i32(cell.materialId)].colors[localColorIdx];
-
-        textureStore(gameObjectsTexture, vec2<i32>(wx, wy), color);
+    if (!isOccupiedState(identityState)) {
+        textureStore(gameObjectsTexture, coord, vec4<f32>(0.0));
+        return;
     }
+
+    let materialId    = i32(decodeMaterialId(identityState));
+    let colorSeed     = decodeColorSeed(identityState);
+    let variantId     = i32(decodeVariantId(identityState));
+    let localColorIdx = i32(floor(clamp(colorSeed, 0.0, 0.999999) * COLORS_PER_MATERIAL));
+    let colorIdx      = variantId * i32(COLORS_PER_MATERIAL) + localColorIdx;
+
+    textureStore(gameObjectsTexture, coord, materials[materialId].colors[colorIdx]);
 }

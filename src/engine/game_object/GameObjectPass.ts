@@ -1,6 +1,7 @@
 import type { MaterialPhysicsBuffer } from '../materials/MaterialPhysicsBuffer';
 import type { MaterialStateBuffer } from '../materials/MaterialStateBuffer';
-import type { PingPongTargets } from '../simulation/PingPongTargets';
+import type { SimulationLayer } from '../simulation/SimulationLayer';
+import type { GameObjectLayer } from './GameObjectLayer';
 
 import { ColliderGenerator } from '../component/ColliderGenerator';
 import { GameObjectCellSchema } from './GameObjectCellSchema';
@@ -24,9 +25,11 @@ import { GameObject } from './GameObject';
 
 interface GameObjectPassParams {
     device: GPUDevice;
-    targets: PingPongTargets;
+    simulationLayer: SimulationLayer;
+    gameObjectLayer: GameObjectLayer;
     physicsBuffer: MaterialPhysicsBuffer;
     stateBuffer: MaterialStateBuffer;
+    gameObjectBuffers: GameObjectBuffers;
 }
 
 interface GameObjectRunParams {
@@ -64,7 +67,8 @@ interface GameObjectRunParams {
  */
 export class GameObjectPass {
     private readonly device: GPUDevice;
-    private readonly targets: PingPongTargets;
+    private readonly simulationLayer: SimulationLayer;
+    private readonly gameObjectLayer: GameObjectLayer;
     private readonly erasePipeline: GPUComputePipeline;
     private readonly stampPipeline: GPUComputePipeline;
     private readonly gameObjectBuffers: GameObjectBuffers;
@@ -74,7 +78,6 @@ export class GameObjectPass {
     private readonly materialStateBuffer: MaterialStateBuffer;
     private readonly workgroupSize: number;
 
-    public get transitionBuffer(): GPUBuffer { return this.gameObjectBuffers.transitionBuffer; }
     public get colliderBuffer(): GPUBuffer { return this.gameObjectBuffers.colliderBuffer; }
     public get stateBuffer(): GPUBuffer { return this.gameObjectBuffers.stateBuffer; }
     public get cellBuffer(): GPUBuffer { return this.gameObjectBuffers.cellBuffer; }
@@ -105,7 +108,8 @@ export class GameObjectPass {
         workgroupSize: number
     ) {
         this.device = params.device;
-        this.targets = params.targets;
+        this.simulationLayer = params.simulationLayer;
+        this.gameObjectLayer = params.gameObjectLayer;
         this.erasePipeline = erasePipeline;
         this.stampPipeline = stampPipeline;
         this.gameObjectBuffers = gameObjectBuffers;
@@ -119,7 +123,7 @@ export class GameObjectPass {
     /** Compiles erase and stamp shaders, creates sub-passes, and returns a ready-to-use pass. @internal */
     public static async Create(params: GameObjectPassParams): Promise<GameObjectPass> {
         const workgroupSize = SimulationConfig.GetConfig().performance.workgroupSize;
-        const gameObjectBuffers = new GameObjectBuffers(params.device, params.targets.width, params.targets.height);
+        const gameObjectBuffers = params.gameObjectBuffers;
 
         const [erasePipeline, stampPipeline, physicsPass, collisionPass] = await Promise.all([
             params.device.createComputePipelineAsync({
@@ -147,6 +151,7 @@ export class GameObjectPass {
             GameObjectCollisionPass.Create({
                 device: params.device,
                 buffers: gameObjectBuffers,
+                physicsBuffer: params.physicsBuffer,
             }),
         ]);
 
@@ -255,7 +260,7 @@ export class GameObjectPass {
 
         // Moment of inertia about the pivot: I = mass * Σ(dx² + dy²) / cellCount
         // where dx/dy is each cell's offset from the pivot in local space.
-        // Determines how easily the GO rotates under a given torque.
+        // Determines how easily the GameObject rotates under a given torque.
         const pivotX = pixelData.pivot.x;
         const pivotY = pixelData.pivot.y;
         const sumSquaredRadius = filledCells.reduce((acc, c) => {
@@ -328,11 +333,13 @@ export class GameObjectPass {
         if (this.totalCells === 0) { return; }
 
         const { encoder } = params;
-        const { targets, device, gameObjectBuffers } = this;
+        const { gameObjectLayer, device, gameObjectBuffers } = this;
+
+        gameObjectLayer.ClearNextTextures(encoder);
 
         device.queue.writeBuffer(
             gameObjectBuffers.eraseUniformBuffer, 0,
-            new Uint32Array([this.totalCells, targets.width, targets.height, 0])
+            new Uint32Array([this.totalCells, gameObjectLayer.width, gameObjectLayer.height, 0])
         );
 
         const eraseBindGroup = device.createBindGroup({
@@ -341,9 +348,9 @@ export class GameObjectPass {
                 { binding: 0, resource: { buffer: gameObjectBuffers.cellBuffer } },
                 { binding: 1, resource: { buffer: gameObjectBuffers.stateBuffer } },
                 { binding: 2, resource: { buffer: gameObjectBuffers.eraseUniformBuffer } },
-                { binding: 3, resource: targets.currentOwnership.createView() },
-                { binding: 4, resource: targets.nextIdentity.createView() },
-                { binding: 5, resource: targets.nextOwnership.createView() },
+                { binding: 3, resource: gameObjectLayer.currentOwnership.createView() },
+                { binding: 4, resource: gameObjectLayer.nextIdentity.createView() },
+                { binding: 5, resource: gameObjectLayer.nextOwnership.createView() },
             ],
         });
         const erasePass = encoder.beginComputePass();
@@ -358,18 +365,18 @@ export class GameObjectPass {
         if (this.totalCells === 0) { return; }
 
         const { encoder, gravity, simStepDuration } = params;
-        const { targets, device, gameObjectBuffers } = this;
+        const { simulationLayer, gameObjectLayer, device, gameObjectBuffers } = this;
 
         device.queue.writeBuffer(
             gameObjectBuffers.stampUniformBuffer, 0,
-            new Uint32Array([this.totalCells, targets.width, targets.height, 0])
+            new Uint32Array([this.totalCells, gameObjectLayer.width, gameObjectLayer.height, 0])
         );
 
         // Physics — save prevPos, integrate velocity, update positions in state buffer
         this.physicsPass.Run({ encoder, gravity, simStepDuration });
 
         // Collision — reflect velocity away from occupied sim cells
-        this.collisionPass.Run({ encoder, targets, gravity, simStepDuration });
+        this.collisionPass.Run({ encoder, simulationLayer, gameObjectLayer, gravity, simStepDuration });
 
         // Stamp — carry full cell state (identity, physics, state) from prevPos to new pos
         const stampBindGroup = device.createBindGroup({
@@ -378,16 +385,15 @@ export class GameObjectPass {
                 { binding: 0, resource: { buffer: gameObjectBuffers.cellBuffer } },
                 { binding: 1, resource: { buffer: gameObjectBuffers.stateBuffer } },
                 { binding: 2, resource: { buffer: gameObjectBuffers.stampUniformBuffer } },
-                { binding: 3, resource: targets.currentIdentity.createView() },
-                { binding: 4, resource: targets.currentOwnership.createView() },
-                { binding: 5, resource: targets.nextIdentity.createView() },
-                { binding: 6, resource: targets.nextOwnership.createView() },
-                { binding: 7, resource: targets.currentPhysics.createView() },
-                { binding: 8, resource: targets.nextPhysics.createView() },
-                { binding: 9, resource: targets.currentState.createView() },
-                { binding: 10, resource: targets.nextState.createView() },
-                { binding: 11, resource: { buffer: gameObjectBuffers.transitionBuffer } },
-                { binding: 12, resource: { buffer: gameObjectBuffers.deadCellBuffer } },
+                { binding: 3, resource: gameObjectLayer.currentIdentity.createView() },
+                { binding: 4, resource: gameObjectLayer.currentOwnership.createView() },
+                { binding: 5, resource: gameObjectLayer.nextIdentity.createView() },
+                { binding: 6, resource: gameObjectLayer.nextOwnership.createView() },
+                { binding: 7, resource: gameObjectLayer.currentPhysics.createView() },
+                { binding: 8, resource: gameObjectLayer.nextPhysics.createView() },
+                { binding: 9, resource: gameObjectLayer.currentState.createView() },
+                { binding: 10, resource: gameObjectLayer.nextState.createView() },
+                { binding: 11, resource: { buffer: gameObjectBuffers.deadCellBuffer } },
                 { binding: 13, resource: { buffer: this.materialPhysicsBuffer.buffer } },
                 { binding: 14, resource: { buffer: this.materialStateBuffer.buffer } },
             ],
@@ -535,7 +541,5 @@ export class GameObjectPass {
         );
     }
 
-    public OnDestroy(): void {
-        this.gameObjectBuffers.OnDestroy();
-    }
+    public OnDestroy(): void { }
 }

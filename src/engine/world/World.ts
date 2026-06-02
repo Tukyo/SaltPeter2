@@ -1,5 +1,5 @@
 import type { ChunkEntry } from './chunk/ChunkData';
-import type { PingPongTargets } from '../simulation/PingPongTargets';
+import type { SimulationLayer } from '../simulation/SimulationLayer';
 import type { Size2D, Vec2 } from '../definitions/Primitives';
 
 import { Camera } from '../camera/Camera';
@@ -20,7 +20,7 @@ export interface WorldMetadata {
 
 interface HorizontalShiftParams {
     device: GPUDevice;
-    pingPong: PingPongTargets;
+    simulationLayer: SimulationLayer;
     cam: Camera;
     chunkSize: number;
     contentWidth: number;
@@ -30,7 +30,7 @@ interface HorizontalShiftParams {
 
 interface VerticalShiftParams {
     device: GPUDevice;
-    pingPong: PingPongTargets;
+    simulationLayer: SimulationLayer;
     cam: Camera;
     chunkSize: number;
     contentHeight: number;
@@ -40,7 +40,7 @@ interface VerticalShiftParams {
 
 interface StripReadbackParams {
     device: GPUDevice;
-    pingPong: PingPongTargets;
+    simulationLayer: SimulationLayer;
     delta: Vec2;
     capturedOrigin: Vec2;
 }
@@ -105,19 +105,19 @@ export class World extends NitrateProcess {
         const sim = SimulationManager.Instance;
         const cam = Camera.Instance;
         const renderer = Renderer.Instance?.GetWebGPU();
-        if (!sim?.pingPong || !cam || !renderer) { return; }
+        if (!sim?.simulationLayer || !cam || !renderer) { return; }
 
         if (!this.blit.IsReady()) {
-            this.blit.Allocate(renderer.device, sim.pingPong);
+            this.blit.Allocate(renderer.device, sim.simulationLayer);
         }
 
-        const { pingPong } = sim;
+        const { simulationLayer } = sim;
         const { canvas } = renderer;
         const chunkSize = ChunkData.GetChunkSize();
         const { chunk } = WorldConfig.GetConfig();
         const margin = chunk.margin * chunk.size;
-        const contentWidth = pingPong.width - 2 * margin;
-        const contentHeight = pingPong.height - 2 * margin;
+        const contentWidth = simulationLayer.width - 2 * margin;
+        const contentHeight = simulationLayer.height - 2 * margin;
 
         const { x: camX, y: camY } = cam.GetCameraPos();
         const offsetCellsX = camX * contentWidth / canvas.width;
@@ -125,7 +125,7 @@ export class World extends NitrateProcess {
 
         this.HandleHorizontalShift({
             device: renderer.device,
-            pingPong,
+            simulationLayer,
             cam,
             chunkSize,
             contentWidth,
@@ -134,7 +134,7 @@ export class World extends NitrateProcess {
         });
         this.HandleVerticalShift({
             device: renderer.device,
-            pingPong,
+            simulationLayer,
             cam,
             chunkSize,
             contentHeight: contentHeight,
@@ -145,7 +145,7 @@ export class World extends NitrateProcess {
 
     /** Checks the horizontal camera offset and shifts the sim window left or right by one chunk if the threshold is exceeded. */
     private HandleHorizontalShift(params: HorizontalShiftParams): void {
-        const { device, pingPong, cam, chunkSize, contentWidth, canvasWidth, offsetCellsX } = params;
+        const { device, simulationLayer, cam, chunkSize, contentWidth, canvasWidth, offsetCellsX } = params;
         const simDebounce = WorldConfig.GetConfig().performance.simDebounce;
 
         if (offsetCellsX > chunkSize) {
@@ -153,12 +153,12 @@ export class World extends NitrateProcess {
             this.simOrigin.x += chunkSize;
             this.BeginStripReadback({
                 device,
-                pingPong,
+                simulationLayer,
                 delta: { x: chunkSize, y: 0 },
                 capturedOrigin: { x: ox, y: oy }
             });
-            this.blit.Blit(device, pingPong, { x: chunkSize, y: 0 });
-            ChunkManager.Instance?.UploadEdgeChunks(device, pingPong, { x: chunkSize, y: 0 }, this.simOrigin);
+            this.blit.Blit(device, simulationLayer, { x: chunkSize, y: 0 });
+            ChunkManager.Instance?.UploadEdgeChunks(device, simulationLayer, { x: chunkSize, y: 0 }, this.simOrigin);
             SimulationManager.Instance?.Debounce(simDebounce);
             cam.Pan(-chunkSize * canvasWidth / contentWidth, 0);
             LogManager.Instance?.Log({
@@ -170,12 +170,12 @@ export class World extends NitrateProcess {
             this.simOrigin.x -= chunkSize;
             this.BeginStripReadback({
                 device,
-                pingPong,
+                simulationLayer,
                 delta: { x: -chunkSize, y: 0 },
                 capturedOrigin: { x: ox, y: oy }
             });
-            this.blit.Blit(device, pingPong, { x: -chunkSize, y: 0 });
-            ChunkManager.Instance?.UploadEdgeChunks(device, pingPong, { x: -chunkSize, y: 0 }, this.simOrigin);
+            this.blit.Blit(device, simulationLayer, { x: -chunkSize, y: 0 });
+            ChunkManager.Instance?.UploadEdgeChunks(device, simulationLayer, { x: -chunkSize, y: 0 }, this.simOrigin);
             SimulationManager.Instance?.Debounce(simDebounce);
             cam.Pan(chunkSize * canvasWidth / contentWidth, 0);
             LogManager.Instance?.Log({
@@ -187,7 +187,7 @@ export class World extends NitrateProcess {
 
     /** Checks the vertical camera offset and shifts the sim window up or down by one chunk if the threshold is exceeded. */
     private HandleVerticalShift(params: VerticalShiftParams): void {
-        const { device, pingPong, cam, chunkSize, contentHeight, canvasHeight, offsetCellsY } = params;
+        const { device, simulationLayer, cam, chunkSize, contentHeight, canvasHeight, offsetCellsY } = params;
         const simDebounce = WorldConfig.GetConfig().performance.simDebounce;
 
         if (offsetCellsY > chunkSize) {
@@ -195,12 +195,12 @@ export class World extends NitrateProcess {
             this.simOrigin.y += chunkSize;
             this.BeginStripReadback({
                 device,
-                pingPong,
+                simulationLayer,
                 delta: { x: 0, y: chunkSize },
                 capturedOrigin: { x: ox, y: oy }
             });
-            this.blit.Blit(device, pingPong, { x: 0, y: chunkSize });
-            ChunkManager.Instance?.UploadEdgeChunks(device, pingPong, { x: 0, y: chunkSize }, this.simOrigin);
+            this.blit.Blit(device, simulationLayer, { x: 0, y: chunkSize });
+            ChunkManager.Instance?.UploadEdgeChunks(device, simulationLayer, { x: 0, y: chunkSize }, this.simOrigin);
             SimulationManager.Instance?.Debounce(simDebounce);
             cam.Pan(0, chunkSize * canvasHeight / contentHeight);
             LogManager.Instance?.Log({
@@ -212,12 +212,12 @@ export class World extends NitrateProcess {
             this.simOrigin.y -= chunkSize;
             this.BeginStripReadback({
                 device,
-                pingPong,
+                simulationLayer,
                 delta: { x: 0, y: -chunkSize },
                 capturedOrigin: { x: ox, y: oy }
             });
-            this.blit.Blit(device, pingPong, { x: 0, y: -chunkSize });
-            ChunkManager.Instance?.UploadEdgeChunks(device, pingPong, { x: 0, y: -chunkSize }, this.simOrigin);
+            this.blit.Blit(device, simulationLayer, { x: 0, y: -chunkSize });
+            ChunkManager.Instance?.UploadEdgeChunks(device, simulationLayer, { x: 0, y: -chunkSize }, this.simOrigin);
             SimulationManager.Instance?.Debounce(simDebounce);
             cam.Pan(0, -chunkSize * canvasHeight / contentHeight);
             LogManager.Instance?.Log({
@@ -229,18 +229,18 @@ export class World extends NitrateProcess {
 
     /** Computes the strip region from the delta, calls PrepareReadback, then fires CommitStripReadback. */
     private BeginStripReadback(params: StripReadbackParams): void {
-        const { device, pingPong, delta, capturedOrigin } = params;
-        const { width, height } = pingPong;
+        const { device, simulationLayer, delta, capturedOrigin } = params;
+        const { width, height } = simulationLayer;
         const absDx = Math.abs(delta.x);
         const absDy = Math.abs(delta.y);
         const readOrigin: Vec2 = { x: delta.x < 0 ? width - absDx : 0, y: delta.y < 0 ? height - absDy : 0 };
         const readSize: Size2D = { width: delta.x !== 0 ? absDx : width, height: delta.y !== 0 ? absDy : height };
-        const buffers = this.PrepareReadback(device, pingPong, readOrigin, readSize);
+        const buffers = this.PrepareReadback(device, simulationLayer, readOrigin, readSize);
         this.CommitStripReadback({ buffers, readOrigin, readSize, capturedOrigin });
     }
 
     /** Allocates GPU readback buffers, submits copy commands for the given region, and returns the buffers and row strides. */
-    private PrepareReadback(device: GPUDevice, pingPong: PingPongTargets, readOrigin: Vec2, readSize: Size2D): ReadbackBuffers {
+    private PrepareReadback(device: GPUDevice, simulationLayer: SimulationLayer, readOrigin: Vec2, readSize: Size2D): ReadbackBuffers {
         const identityBPR = readSize.width * ChunkData.GetIdentityBytesPerCell();
         const floatBPR = readSize.width * ChunkData.GetPhysicsBytesPerCell();
         const identityBuffer = device.createBuffer({
@@ -257,15 +257,15 @@ export class World extends NitrateProcess {
         });
         const enc = device.createCommandEncoder();
         enc.copyTextureToBuffer({
-            texture: pingPong.currentIdentity,
+            texture: simulationLayer.currentIdentity,
             origin: [readOrigin.x, readOrigin.y]
         }, { buffer: identityBuffer, bytesPerRow: identityBPR }, [readSize.width, readSize.height]);
         enc.copyTextureToBuffer({
-            texture: pingPong.currentPhysics,
+            texture: simulationLayer.currentPhysics,
             origin: [readOrigin.x, readOrigin.y]
         }, { buffer: physicsBuffer, bytesPerRow: floatBPR }, [readSize.width, readSize.height]);
         enc.copyTextureToBuffer({
-            texture: pingPong.currentState,
+            texture: simulationLayer.currentState,
             origin: [readOrigin.x, readOrigin.y]
         }, { buffer: stateBuffer, bytesPerRow: floatBPR }, [readSize.width, readSize.height]);
         device.queue.submit([enc.finish()]);
@@ -404,12 +404,12 @@ export class World extends NitrateProcess {
     private async ReadbackAndSaveAll(): Promise<void> {
         const sim = SimulationManager.Instance;
         const renderer = Renderer.Instance?.GetWebGPU();
-        if (!sim?.pingPong || !renderer) { return; }
+        if (!sim?.simulationLayer || !renderer) { return; }
 
-        const { pingPong } = sim;
+        const { simulationLayer } = sim;
         const readOrigin: Vec2 = { x: 0, y: 0 };
-        const readSize: Size2D = { width: pingPong.width, height: pingPong.height };
-        const buffers = this.PrepareReadback(renderer.device, pingPong, readOrigin, readSize);
+        const readSize: Size2D = { width: simulationLayer.width, height: simulationLayer.height };
+        const buffers = this.PrepareReadback(renderer.device, simulationLayer, readOrigin, readSize);
         await this.CommitStripReadback({ buffers, readOrigin, readSize, capturedOrigin: this.simOrigin });
     }
 

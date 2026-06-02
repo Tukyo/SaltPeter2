@@ -1,0 +1,14 @@
+{
+  "guid": "480e1cf8-3571-4761-84d8-2647754bc63e",
+  "type": "gameobject",
+  "editor": {
+    "size": {
+      "width": 32,
+      "height": 32
+    },
+    "pos": {
+      "x": 11,
+      "y": 15
+    }
+  }
+}

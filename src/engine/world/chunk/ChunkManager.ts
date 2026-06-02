@@ -1,5 +1,5 @@
 import type { ChunkAddress, ChunkEntry } from './ChunkData';
-import type { PingPongTargets } from '../../simulation/PingPongTargets';
+import type { SimulationLayer } from '../../simulation/SimulationLayer';
 import type { Size2D, Vec2 } from '../../definitions/Primitives';
 
 import { ChunkData } from './ChunkData';
@@ -41,7 +41,7 @@ export class ChunkManager extends NitrateProcess {
     /** Loads and uploads all chunks covering the sim texture region to the GPU on scene start. @internal */
     public async InitializeChunks(
         device: GPUDevice,
-        pingPong: PingPongTargets,
+        simulationLayer: SimulationLayer,
         size: Size2D
     ): Promise<void> {
         if (!World.Instance) { return; }
@@ -66,13 +66,13 @@ export class ChunkManager extends NitrateProcess {
                 const physicsBPR = chunkSize * ChunkData.GetPhysicsBytesPerCell();
                 const stateBPR = chunkSize * ChunkData.GetStateBytesPerCell();
                 device.queue.writeTexture(
-                    { texture: pingPong.currentIdentity, origin }, chunk.identity, { bytesPerRow: identityBPR }, extent
+                    { texture: simulationLayer.currentIdentity, origin }, chunk.identity, { bytesPerRow: identityBPR }, extent
                 );
                 device.queue.writeTexture(
-                    { texture: pingPong.currentPhysics, origin }, chunk.physics, { bytesPerRow: physicsBPR }, extent
+                    { texture: simulationLayer.currentPhysics, origin }, chunk.physics, { bytesPerRow: physicsBPR }, extent
                 );
                 device.queue.writeTexture(
-                    { texture: pingPong.currentState, origin }, chunk.state, { bytesPerRow: stateBPR }, extent
+                    { texture: simulationLayer.currentState, origin }, chunk.state, { bytesPerRow: stateBPR }, extent
                 );
                 uploaded++;
             }
@@ -126,12 +126,12 @@ export class ChunkManager extends NitrateProcess {
     /** Uploads the newly exposed strip of chunks after a shift. @internal */
     public async UploadEdgeChunks(
         device: GPUDevice,
-        pingPong: PingPongTargets,
+        simulationLayer: SimulationLayer,
         delta: Vec2,
         simOrigin: Vec2
     ): Promise<void> {
         const chunkSize = ChunkData.GetChunkSize();
-        const { width, height } = pingPong;
+        const { width, height } = simulationLayer;
         const { x: simOriginX, y: simOriginY } = simOrigin;
 
         const stripTexX = delta.x > 0 ? width - Math.abs(delta.x) : 0;
@@ -159,19 +159,19 @@ export class ChunkManager extends NitrateProcess {
                 const origin = { x: texX, y: texY };
                 const extent: GPUExtent3DStrict = [chunkSize, chunkSize];
                 device.queue.writeTexture(
-                    { texture: pingPong.currentIdentity, origin },
+                    { texture: simulationLayer.currentIdentity, origin },
                     chunk.identity,
                     { bytesPerRow: chunkSize * ChunkData.GetIdentityBytesPerCell() },
                     extent
                 );
                 device.queue.writeTexture(
-                    { texture: pingPong.currentPhysics, origin },
+                    { texture: simulationLayer.currentPhysics, origin },
                     chunk.physics,
                     { bytesPerRow: chunkSize * ChunkData.GetPhysicsBytesPerCell() },
                     extent
                 );
                 device.queue.writeTexture(
-                    { texture: pingPong.currentState, origin },
+                    { texture: simulationLayer.currentState, origin },
                     chunk.state,
                     { bytesPerRow: chunkSize * ChunkData.GetStateBytesPerCell() },
                     extent

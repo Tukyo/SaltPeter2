@@ -1,12 +1,14 @@
 import type { MaterialPhysicsBuffer } from '../materials/MaterialPhysicsBuffer';
-import type { PingPongTargets } from './PingPongTargets';
+import type { GameObjectLayer } from '../game_object/GameObjectLayer';
+import type { SimulationLayer } from './SimulationLayer';
 
 import { ShaderAssembler } from '../shaders/ShaderAssembler';
 import { SimulationConfig } from '../config/SimulationConfig';
 
 interface PhysicsPassParams {
     device: GPUDevice;
-    targets: PingPongTargets;
+    simulationLayer: SimulationLayer;
+    gameObjectLayer: GameObjectLayer;
     physicsBuffer: MaterialPhysicsBuffer;
 }
 
@@ -18,7 +20,8 @@ interface PhysicsPassParams {
 export class PhysicsPass {
     private readonly device: GPUDevice;
     private readonly pipeline: GPUComputePipeline;
-    private readonly targets: PingPongTargets;
+    private readonly simulationLayer: SimulationLayer;
+    private readonly gameObjectLayer: GameObjectLayer;
     private readonly physicsBuffer: MaterialPhysicsBuffer;
     private readonly uniforms: GPUBuffer;
     private readonly workgroupSize: number;
@@ -30,7 +33,8 @@ export class PhysicsPass {
     ) {
         this.device = params.device;
         this.pipeline = pipeline;
-        this.targets = params.targets;
+        this.simulationLayer = params.simulationLayer;
+        this.gameObjectLayer = params.gameObjectLayer;
         this.physicsBuffer = params.physicsBuffer;
         this.workgroupSize = workgroupSize;
         this.uniforms = this.device.createBuffer({
@@ -56,24 +60,37 @@ export class PhysicsPass {
     public Run(encoder: GPUCommandEncoder, gravity: number): void {
         this.device.queue.writeBuffer(this.uniforms, 0, new Float32Array([gravity]));
 
-        const bindGroup = this.device.createBindGroup({
-            layout: this.pipeline.getBindGroupLayout(0),
+        const layout = this.pipeline.getBindGroupLayout(0);
+        const simBindGroup = this.device.createBindGroup({
+            layout,
             entries: [
-                { binding: 0, resource: this.targets.currentIdentity.createView() },
-                { binding: 1, resource: this.targets.currentPhysics.createView() },
-                { binding: 2, resource: this.targets.nextPhysics.createView() },
+                { binding: 0, resource: this.simulationLayer.currentIdentity.createView() },
+                { binding: 1, resource: this.simulationLayer.currentPhysics.createView() },
+                { binding: 2, resource: this.simulationLayer.nextPhysics.createView() },
+                { binding: 3, resource: { buffer: this.physicsBuffer.buffer } },
+                { binding: 4, resource: { buffer: this.uniforms } },
+            ],
+        });
+        const goBindGroup = this.device.createBindGroup({
+            layout,
+            entries: [
+                { binding: 0, resource: this.gameObjectLayer.currentIdentity.createView() },
+                { binding: 1, resource: this.gameObjectLayer.currentPhysics.createView() },
+                { binding: 2, resource: this.gameObjectLayer.nextPhysics.createView() },
                 { binding: 3, resource: { buffer: this.physicsBuffer.buffer } },
                 { binding: 4, resource: { buffer: this.uniforms } },
             ],
         });
 
+        const workgroupsX = Math.ceil(this.simulationLayer.width / this.workgroupSize);
+        const workgroupsY = Math.ceil(this.simulationLayer.height / this.workgroupSize);
+
         const pass = encoder.beginComputePass();
         pass.setPipeline(this.pipeline);
-        pass.setBindGroup(0, bindGroup);
-        pass.dispatchWorkgroups(
-            Math.ceil(this.targets.width / this.workgroupSize),
-            Math.ceil(this.targets.height / this.workgroupSize)
-        );
+        pass.setBindGroup(0, simBindGroup);
+        pass.dispatchWorkgroups(workgroupsX, workgroupsY);
+        pass.setBindGroup(0, goBindGroup);
+        pass.dispatchWorkgroups(workgroupsX, workgroupsY);
         pass.end();
     }
 

@@ -39,17 +39,17 @@ export class ExportGameObject extends Export {
         const sim = SimulationManager.Instance;
         if (!norm || !anchor || !go || !sim) { return; }
 
-        const { pingPong, texturePixelReader } = sim;
-        if (!pingPong || !texturePixelReader) { return; }
+        const { simulationLayer, texturePixelReader } = sim;
+        if (!simulationLayer || !texturePixelReader) { return; }
 
-        const gridSize = pingPong.width;
+        const gridSize = simulationLayer.width;
 
         const { x1, y1, x2, y2 } = norm;
         const width = x2 - x1 + 1;
         const height = y2 - y1 + 1;
 
         const { data, bytesPerRow } = await texturePixelReader.ReadRegion({
-            texture: pingPong.currentIdentity,
+            texture: simulationLayer.currentIdentity,
             rowStart: gridSize - 1 - y2,
             rowCount: height,
             fullWidth: gridSize,

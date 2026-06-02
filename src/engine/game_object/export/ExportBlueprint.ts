@@ -26,13 +26,13 @@ export class ExportBlueprint extends Export {
         const sim = SimulationManager.Instance;
         if (!go || !sim) { return; }
 
-        const { pingPong, texturePixelReader } = sim;
-        if (!pingPong || !texturePixelReader) { return; }
+        const { simulationLayer, texturePixelReader } = sim;
+        if (!simulationLayer || !texturePixelReader) { return; }
 
-        const { width, height } = pingPong;
+        const { width, height } = simulationLayer;
 
         const { data, bytesPerRow } = await texturePixelReader.ReadRegion({
-            texture: pingPong.currentIdentity,
+            texture: simulationLayer.currentIdentity,
             rowStart: 0,
             rowCount: height,
             fullWidth: width,

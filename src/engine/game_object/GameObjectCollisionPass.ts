@@ -1,4 +1,6 @@
-import type { PingPongTargets } from '../simulation/PingPongTargets';
+import type { MaterialPhysicsBuffer } from '../materials/MaterialPhysicsBuffer';
+import type { SimulationLayer } from '../simulation/SimulationLayer';
+import type { GameObjectLayer } from './GameObjectLayer';
 
 import { GameObjectBuffers } from './GameObjectBuffers';
 import { GameObjectConfig } from '../config/GameObjectConfig';
@@ -8,11 +10,13 @@ import { SimulationConfig } from '../config/SimulationConfig';
 interface GameObjectCollisionPassCreateParams {
     device: GPUDevice;
     buffers: GameObjectBuffers;
+    physicsBuffer: MaterialPhysicsBuffer;
 }
 
 interface GameObjectCollisionPassRunParams {
     encoder: GPUCommandEncoder;
-    targets: PingPongTargets;
+    simulationLayer: SimulationLayer;
+    gameObjectLayer: GameObjectLayer;
     gravity: number;
     simStepDuration: number;
 }
@@ -36,6 +40,7 @@ interface GameObjectCollisionPassRunParams {
 export class GameObjectCollisionPass {
     private readonly device: GPUDevice;
     private readonly buffers: GameObjectBuffers;
+    private readonly physicsBuffer: MaterialPhysicsBuffer;
     private readonly pipeline: GPUComputePipeline;
     private readonly workgroupSize: number;
 
@@ -46,6 +51,7 @@ export class GameObjectCollisionPass {
     ) {
         this.device = params.device;
         this.buffers = params.buffers;
+        this.physicsBuffer = params.physicsBuffer;
         this.pipeline = pipeline;
         this.workgroupSize = workgroupSize;
     }
@@ -71,17 +77,17 @@ export class GameObjectCollisionPass {
 
     /** Dispatches the collision detection and velocity reflection pass. @internal */
     public Run(params: GameObjectCollisionPassRunParams): void {
-        const { encoder, targets, gravity, simStepDuration } = params;
+        const { encoder, simulationLayer, gameObjectLayer, gravity, simStepDuration } = params;
         const { device, buffers, pipeline, workgroupSize } = this;
         const maxGameObjectCount = GameObjectConfig.GetConfig().performance.maxGameObjectCount;
 
         // Mixed u32/f32 fields — use a shared ArrayBuffer with typed views
         const physics = GameObjectConfig.GetConfig().physics;
-        const uniformData = new ArrayBuffer(13 * 4);
+        const uniformData = new ArrayBuffer(15 * 4);
         const uu = new Uint32Array(uniformData);
         const uf = new Float32Array(uniformData);
-        uu[0] = targets.width;
-        uu[1] = targets.height;
+        uu[0] = gameObjectLayer.width;
+        uu[1] = gameObjectLayer.height;
         uu[2] = maxGameObjectCount;
         uu[3] = physics.sleep.linear.delay;
         uf[4] = gravity;
@@ -93,6 +99,8 @@ export class GameObjectCollisionPass {
         uf[10] = physics.sleep.linear.threshold;
         uf[11] = physics.sleep.wake.contactFraction;
         uf[12] = physics.sleep.angular.threshold;
+        uf[13] = physics.liquid.buoyancy;
+        uf[14] = physics.liquid.drag;
         device.queue.writeBuffer(buffers.collisionUniformBuffer, 0, uniformData);
 
         const bindGroup = device.createBindGroup({
@@ -101,8 +109,9 @@ export class GameObjectCollisionPass {
                 { binding: 0, resource: { buffer: buffers.stateBuffer } },
                 { binding: 1, resource: { buffer: buffers.colliderBuffer } },
                 { binding: 2, resource: { buffer: buffers.collisionUniformBuffer } },
-                { binding: 3, resource: targets.nextIdentity.createView() },
-                { binding: 4, resource: targets.currentOwnership.createView() },
+                { binding: 3, resource: simulationLayer.nextIdentity.createView() },
+                { binding: 4, resource: gameObjectLayer.currentOwnership.createView() },
+                { binding: 5, resource: { buffer: this.physicsBuffer.buffer } },
             ],
         });
 

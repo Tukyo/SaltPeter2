@@ -107,8 +107,8 @@ export class ChunkOverlay {
 
     /** Computes chunk grid lines, biome labels, and world origin position in canvas space for the current camera view. @internal */
     private Sample(canvas: HTMLCanvasElement): { xs: number[]; ys: number[]; labels: ChunkLabel[]; origin: Vec2 } | null {
-        const pingPong = SimulationManager.Instance?.pingPong;
-        if (!pingPong || !World.Instance) { return null; }
+        const simulationLayer = SimulationManager.Instance?.simulationLayer;
+        if (!simulationLayer || !World.Instance) { return null; }
 
         const cam = Camera.Instance;
         if (!cam) { return null; }
@@ -118,8 +118,8 @@ export class ChunkOverlay {
         const { chunk } = WorldConfig.GetConfig();
         const margin = chunk.margin * chunk.size;
 
-        const contentWidth = pingPong.width - 2 * margin;
-        const contentHeight = pingPong.height - 2 * margin;
+        const contentWidth = simulationLayer.width - 2 * margin;
+        const contentHeight = simulationLayer.height - 2 * margin;
         const scaleX = canvas.width / contentWidth;
         const scaleY = canvas.height / contentHeight;
 
@@ -128,9 +128,9 @@ export class ChunkOverlay {
         const camCellY = -camY * contentHeight / canvas.height;
 
         const worldLeft = margin + simOriginX + camCellX;
-        const worldRight = pingPong.width - margin + simOriginX + camCellX;
+        const worldRight = simulationLayer.width - margin + simOriginX + camCellX;
         const worldTop = margin + simOriginY + camCellY;
-        const worldBottom = pingPong.height - margin + simOriginY + camCellY;
+        const worldBottom = simulationLayer.height - margin + simOriginY + camCellY;
 
         const xs: number[] = [];
         const ys: number[] = [];

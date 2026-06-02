@@ -56,7 +56,7 @@ export class AnchorController extends Nitrate.NitrateProcess {
     }
 
     private MouseToCell(e: MouseEvent): Nitrate.Vec2 {
-        const gridSize = Nitrate.SimulationManager.Instance?.pingPong?.width ?? 64;
+        const gridSize = Nitrate.SimulationManager.Instance?.simulationLayer?.width ?? 64;
         const rect = this.canvas.getBoundingClientRect();
         const nx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
         const ny = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));

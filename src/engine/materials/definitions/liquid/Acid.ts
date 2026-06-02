@@ -6,9 +6,9 @@ export const Acid: MaterialDefinition = {
     name: 'acid',
     colors: [
         { r: 51, g: 199, b: 38, a: 0.75 },
-        { r: 64, g: 217, b: 51, a: 0.725 },
-        { r: 38, g: 179, b: 26, a: 0.8 },
-        { r: 77, g: 230, b: 64, a: 0.7 },
+        { r: 64, g: 217, b: 51, a: 0.75 },
+        { r: 38, g: 179, b: 26, a: 0.75 },
+        { r: 77, g: 230, b: 64, a: 0.75 },
     ],
     state: {
         health: 100,

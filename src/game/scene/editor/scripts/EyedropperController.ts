@@ -113,21 +113,21 @@ export class EyedropperController extends Nitrate.NitrateProcess {
     private async ReadAtPosition(): Promise<void> {
         if (this.isReading) { return; }
         const mouse = Nitrate.Input.Instance?.GetState();
-        const pingPong = Nitrate.SimulationManager.Instance?.pingPong;
+        const simulationLayer = Nitrate.SimulationManager.Instance?.simulationLayer;
         const reader = Nitrate.SimulationManager.Instance?.texturePixelReader;
         const canvas = Nitrate.Renderer.Instance?.GetWebGPU()?.canvas;
-        if (!mouse || !pingPong || !reader || !canvas) { return; }
+        if (!mouse || !simulationLayer || !reader || !canvas) { return; }
 
-        const texX = Math.floor(mouse.pos.x * pingPong.width / Math.max(1, canvas.width));
-        const texY = Math.floor(mouse.pos.y * pingPong.height / Math.max(1, canvas.height));
+        const texX = Math.floor(mouse.pos.x * simulationLayer.width / Math.max(1, canvas.width));
+        const texY = Math.floor(mouse.pos.y * simulationLayer.height / Math.max(1, canvas.height));
 
-        if (texX < 0 || texX >= pingPong.width || texY < 0 || texY >= pingPong.height) { return; }
+        if (texX < 0 || texX >= simulationLayer.width || texY < 0 || texY >= simulationLayer.height) { return; }
 
         this.isReading = true;
         let bytes: number[];
         try {
             bytes = await reader.ReadPixel({
-                texture: pingPong.currentIdentity,
+                texture: simulationLayer.currentIdentity,
                 pos: { x: texX, y: texY },
                 format: 'rgba8unorm',
             });

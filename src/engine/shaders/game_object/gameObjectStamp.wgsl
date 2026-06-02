@@ -9,8 +9,7 @@
 @group(0) @binding(8)  var               nextPhysics:      texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9)  var               currentState:     texture_2d<f32>;
 @group(0) @binding(10) var               nextState:        texture_storage_2d<rgba32float, write>;
-@group(0) @binding(11) var<storage, read>       transitionBuffer:  array<u32>;
-@group(0) @binding(12) var<storage, read_write> deadCells:         array<u32>;
+@group(0) @binding(11) var<storage, read_write> deadCells:         array<u32>;
 @group(0) @binding(13) var<storage, read>       physicsMaterials:  array<MaterialPhysicsEntry>;
 @group(0) @binding(14) var<storage, read>       materialStates:    array<MaterialStateEntry>;
 
@@ -94,13 +93,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             physicsSample     = textureLoad(currentPhysics,  prevCoord, 0);
             stateSample       = textureLoad(currentState,    prevCoord, 0);
             materialIdEncoded = textureLoad(currentIdentity, prevCoord, 0).r;
-        }
-        let transitionedId = transitionBuffer[u32(prevWy) * u32(simW) + u32(prevWx)];
-        if (transitionedId != 0u) {
-            let transitionedEncoded = f32(transitionedId) / MATERIAL_ID_SCALE;
-            textureStore(nextIdentity, prevCoord, vec4<f32>(transitionedEncoded, cell.colorSeed, 0.0, OCCUPANCY_DYNAMIC));
-            deadCells[cellIdx] = 1u;
-            return;
         }
     }
 

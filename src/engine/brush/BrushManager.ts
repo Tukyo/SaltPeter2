@@ -1,7 +1,7 @@
 import type { BrushShape } from './BrushTypes';
 import type { Color } from '../definitions/Primitives';
 import type { MaterialId, MaterialOccupancy } from '../materials/definitions/MaterialIdentity';
-import type { PingPongTargets } from '../simulation/PingPongTargets';
+import type { SimulationLayer } from '../simulation/SimulationLayer';
 
 import { BrushPass } from '../simulation/BrushPass';
 import { BrushState } from './BrushState';
@@ -25,7 +25,7 @@ export class BrushManager extends NitrateProcess {
 
     private device: GPUDevice | null = null;
     private brushPass: BrushPass | null = null;
-    private pingPong: PingPongTargets | null = null;
+    private simulationLayer: SimulationLayer | null = null;
 
     private blocked: boolean = false;
     private simTime: number = 0;
@@ -62,8 +62,8 @@ export class BrushManager extends NitrateProcess {
     public Update(now: number): void {
         const mouse = Input.Instance?.GetState();
         const canvas = Renderer.Instance?.GetWebGPU()?.canvas;
-        const pingPong = SimulationManager.Instance?.pingPong;
-        if (!mouse || !canvas || !pingPong) { return; }
+        const simulationLayer = SimulationManager.Instance?.simulationLayer;
+        if (!mouse || !canvas || !simulationLayer) { return; }
 
         const config = SimulationConfig.GetConfig();
         const time = now * 0.001;
@@ -85,8 +85,8 @@ export class BrushManager extends NitrateProcess {
         const margin = World.Instance
             ? WorldConfig.GetConfig().chunk.margin * WorldConfig.GetConfig().chunk.size
             : 0;
-        const contentW = pingPong.width - 2 * margin;
-        const contentH = pingPong.height - 2 * margin;
+        const contentW = simulationLayer.width - 2 * margin;
+        const contentH = simulationLayer.height - 2 * margin;
         const camX = Camera.Instance?.GetCameraPos().x ?? 0;
         const camY = Camera.Instance?.GetCameraPos().y ?? 0;
         const simX = margin + (mouse.pos.x + camX) * contentW / canvas.width;
@@ -99,14 +99,14 @@ export class BrushManager extends NitrateProcess {
 
     private async Init(): Promise<void> {
         const device = Renderer.Instance?.GetWebGPU()?.device;
-        const { pingPong, materialPhysicsBuffer, materialStateBuffer } = SimulationManager.Instance ?? {};
-        if (!device || !pingPong || !materialPhysicsBuffer || !materialStateBuffer) { return; }
+        const { simulationLayer, materialPhysicsBuffer, materialStateBuffer } = SimulationManager.Instance ?? {};
+        if (!device || !simulationLayer || !materialPhysicsBuffer || !materialStateBuffer) { return; }
 
         this.device = device;
-        this.pingPong = pingPong;
+        this.simulationLayer = simulationLayer;
         this.brushPass = await BrushPass.Create({
             device,
-            targets: pingPong,
+            simulationLayer,
             physicsBuffer: materialPhysicsBuffer,
             stateBuffer: materialStateBuffer,
         });
@@ -141,7 +141,7 @@ export class BrushManager extends NitrateProcess {
     }
 
     private Apply(simX: number, simY: number, simTime: number): void {
-        if (!this.device || !this.brushPass || !this.pingPong) { return; }
+        if (!this.device || !this.brushPass || !this.simulationLayer) { return; }
         const { state } = this;
         const materialId = state.GetMode() === 'erase' ? 0 : state.GetMaterialId();
         if (!SceneManager.IsDirty() && materialId !== 0) { SceneManager.MarkDirty(); }
@@ -163,9 +163,9 @@ export class BrushManager extends NitrateProcess {
             occupancy: state.GetOccupancy() === 'static' ? 2 : 1,
         });
         this.device.queue.submit([enc.finish()]);
-        this.pingPong.SwapIdentity();
-        this.pingPong.SwapPhysics();
-        this.pingPong.SwapState();
+        this.simulationLayer.SwapIdentity();
+        this.simulationLayer.SwapPhysics();
+        this.simulationLayer.SwapState();
     }
 
     public OnDestroy(): void {
@@ -173,7 +173,7 @@ export class BrushManager extends NitrateProcess {
         this.onPaletteChange = null;
 
         this.brushPass = null;
-        this.pingPong = null;
+        this.simulationLayer = null;
         this.device = null;
 
         if (BrushManager.Instance === this) {

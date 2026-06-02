@@ -5,10 +5,10 @@ export const Blood: MaterialDefinition = {
     id: MaterialIds.blood,
     name: 'blood',
     colors: [
-        { r: 158, g: 10, b: 10, a: 1 },
-        { r: 140, g: 5, b: 5, a: 1 },
-        { r: 179, g: 15, b: 15, a: 1 },
-        { r: 122, g: 3, b: 8, a: 1 },
+        { r: 158, g: 10, b: 10, a: 0.9 },
+        { r: 140, g: 5, b: 5, a: 0.9 },
+        { r: 179, g: 15, b: 15, a: 0.9 },
+        { r: 122, g: 3, b: 8, a: 0.9 },
     ],
     state: {
         health: 100,

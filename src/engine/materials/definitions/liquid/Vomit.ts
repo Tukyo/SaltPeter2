@@ -5,10 +5,10 @@ export const Vomit: MaterialDefinition = {
     id: MaterialIds.vomit,
     name: 'vomit',
     colors: [
-        { r: 72, g: 88, b: 35, a: 1 },
-        { r: 205, g: 88, b: 42, a: 1 },
-        { r: 128, g: 148, b: 48, a: 1 },
-        { r: 98, g: 118, b: 58, a: 1 },
+        { r: 72, g: 88, b: 35, a: 0.925 },
+        { r: 205, g: 88, b: 42, a: 0.925 },
+        { r: 128, g: 148, b: 48, a: 0.925 },
+        { r: 98, g: 118, b: 58, a: 0.925 },
     ],
     state: {
         health: 100,

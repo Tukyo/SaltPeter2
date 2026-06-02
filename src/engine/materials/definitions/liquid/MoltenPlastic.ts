@@ -5,10 +5,10 @@ export const MoltenPlastic: MaterialDefinition = {
     id: MaterialIds.plastic_molten,
     name: 'plastic_molten',
     colors: [
-        { r: 195, g: 190, b: 187, a: 1 },
-        { r: 200, g: 195, b: 192, a: 1 },
-        { r: 192, g: 187, b: 184, a: 1 },
-        { r: 198, g: 193, b: 190, a: 1 },
+        { r: 195, g: 190, b: 187, a: 0.95 },
+        { r: 200, g: 195, b: 192, a: 0.95 },
+        { r: 192, g: 187, b: 184, a: 0.95 },
+        { r: 198, g: 193, b: 190, a: 0.95 },
     ],
     state: {
         health: 100,

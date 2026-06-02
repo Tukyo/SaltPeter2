@@ -1,22 +1,23 @@
 import { MaterialRegistry } from '../materials/MaterialRegistry';
-import type { PingPongTargets } from './PingPongTargets';
+import type { GameObjectLayer } from '../game_object/GameObjectLayer';
+import type { SimulationLayer } from './SimulationLayer';
 
 /**
- * Seeds the simulation textures with default values before the first frame.
- *
- * Currently pre-fills both physics texture pairs with air's resting temperature
- * so cells start at ambient rather than absolute zero.
+ * Seeds physics textures on all layers with air's resting temperature
+ * so all cells start at ambient rather than absolute zero.
  */
 export class SimulationInitializer {
-    constructor(device: GPUDevice, pingPong: PingPongTargets) {
+    constructor(device: GPUDevice, simulationLayer: SimulationLayer, gameObjectLayer: GameObjectLayer) {
         const ambientTemp = MaterialRegistry.Materials.air.physics.temperature.restingTemperature;
-        const ambientData = new Float32Array(pingPong.width * pingPong.height * 4);
-        for (let i = 0; i < pingPong.width * pingPong.height; i++) {
+        const ambientData = new Float32Array(simulationLayer.width * simulationLayer.height * 4);
+        for (let i = 0; i < simulationLayer.width * simulationLayer.height; i++) {
             ambientData[i * 4] = ambientTemp;
         }
-        const layout = { bytesPerRow: pingPong.width * 16 };
-        const size: GPUExtent3DStrict = [pingPong.width, pingPong.height];
-        device.queue.writeTexture({ texture: pingPong.currentPhysics }, ambientData, layout, size);
-        device.queue.writeTexture({ texture: pingPong.nextPhysics }, ambientData, layout, size);
+        const layout = { bytesPerRow: simulationLayer.width * 16 };
+        const size: GPUExtent3DStrict = [simulationLayer.width, simulationLayer.height];
+        device.queue.writeTexture({ texture: simulationLayer.currentPhysics }, ambientData, layout, size);
+        device.queue.writeTexture({ texture: simulationLayer.nextPhysics }, ambientData, layout, size);
+        device.queue.writeTexture({ texture: gameObjectLayer.currentPhysics }, ambientData, layout, size);
+        device.queue.writeTexture({ texture: gameObjectLayer.nextPhysics }, ambientData, layout, size);
     }
 }

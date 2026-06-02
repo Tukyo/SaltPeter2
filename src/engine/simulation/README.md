@@ -48,19 +48,22 @@ Created and owned by [`SimulationManager`](SimulationManager.ts). Called each fr
 
 ---
 
-### [`PhysicsPass`](PhysicsPass.ts)
-GPU compute pass that runs temperature, pressure, and velocity propagation.
+### [`LayerInteractionPass`](LayerInteractionPass.ts)
+GPU compute pass that handles cross-layer interactions between the world simulation
+and game object layers.
+
+Runs after both layers have finished simulating and swapped each step. Dispatches
+over GameObject layer dimensions — only GameObject-owned pixels are processed.
 
 Created and owned by [`SimulationManager`](SimulationManager.ts). Called each frame by the manager — not directly.
 
 
 ---
 
-### [`PingPongTargets`](PingPongTargets.ts)
-Double-buffered GPU texture pairs for each simulation layer.
+### [`PhysicsPass`](PhysicsPass.ts)
+GPU compute pass that runs temperature, pressure, and velocity propagation.
 
-Each pass reads from `current*` and writes to `next*`. Call the corresponding
-`Swap*` method after each pass to advance the buffer for the next frame.
+Created and owned by [`SimulationManager`](SimulationManager.ts). Called each frame by the manager — not directly.
 
 
 ---
@@ -76,10 +79,17 @@ spiral-of-death on slow frames.
 ---
 
 ### [`SimulationInitializer`](SimulationInitializer.ts)
-Seeds the simulation textures with default values before the first frame.
+Seeds physics textures on all layers with air's resting temperature
+so all cells start at ambient rather than absolute zero.
 
-Currently pre-fills both physics texture pairs with air's resting temperature
-so cells start at ambient rather than absolute zero.
+
+---
+
+### [`SimulationLayer`](SimulationLayer.ts)
+Double-buffered GPU texture pairs for the simulation layer.
+
+Each pass reads from `current*` and writes to `next*`. Call the corresponding
+`Swap*` method after each pass to advance the buffer for the next frame.
 
 
 ---

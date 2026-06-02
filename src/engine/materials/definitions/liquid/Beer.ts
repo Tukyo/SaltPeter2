@@ -5,10 +5,10 @@ export const Beer: MaterialDefinition = {
     id: MaterialIds.beer,
     name: 'beer',
     colors: [
-        { r: 108, g: 62, b: 22, a: 0.88 },
-        { r: 113, g: 66, b: 25, a: 0.88 },
-        { r: 103, g: 58, b: 19, a: 0.88 },
-        { r: 110, g: 64, b: 23, a: 0.88 },
+        { r: 108, g: 62, b: 22, a: 0.8 },
+        { r: 113, g: 66, b: 25, a: 0.8 },
+        { r: 103, g: 58, b: 19, a: 0.8 },
+        { r: 110, g: 64, b: 23, a: 0.8 },
     ],
     state: {
         health: 100,

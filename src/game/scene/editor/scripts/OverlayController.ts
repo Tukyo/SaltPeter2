@@ -37,7 +37,7 @@ export class OverlayController extends Nitrate.NitrateProcess {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (!norm) { return; }
 
-        const gridSize = Nitrate.SimulationManager.Instance?.pingPong?.width ?? 64;
+        const gridSize = Nitrate.SimulationManager.Instance?.simulationLayer?.width ?? 64;
         const cellPx = canvas.width / gridSize;
 
         const px = norm.x1 * cellPx;

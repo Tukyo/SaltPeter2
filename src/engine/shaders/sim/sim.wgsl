@@ -11,9 +11,7 @@
 @group(0) @binding(9) var nextCellStateTexture:            texture_storage_2d<rgba32float, write>;
 @group(0) @binding(10) var<storage, read> materialStates: array<MaterialStateEntry>;
 @group(0) @binding(11) var<storage, read> reactionLookup:  array<f32>;
-@group(0) @binding(12) var ownershipTexture:               texture_2d<u32>;
-@group(0) @binding(13) var nextOwnershipTexture:           texture_storage_2d<r32uint, write>;
-@group(0) @binding(14) var<storage, read_write> transitionBuffer: array<u32>;
+@group(0) @binding(12) var goOwnershipTexture:  texture_storage_2d<r32uint, read>;
 @compute @workgroup_size(WG_SIZE, WG_SIZE)
 
 fn main(@builtin(global_invocation_id) id: vec3u) {
@@ -22,23 +20,16 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 
     if !inBounds(coord, res) { return; }
 
-    let ownerValue           = textureLoad(ownershipTexture, vec2i(id.xy), 0).r;
-
     let currentIdentityState = textureLoad(identityTexture, vec2i(id.xy));
     let currentPhysics       = textureLoad(physicsTexture, vec2i(id.xy));
 
-    var resolvedCell: ResolvedCell;
-    if isOwnedCell(ownerValue) { // Do not move owned cells (other systems own them)
-        resolvedCell = ResolvedCell(currentIdentityState, coord);
-    } else {
-        resolvedCell = resolveCellForState(
-            coord,
-            res,
-            currentIdentityState,
-            getGravityDirection(uniforms.gravity),
-            uniforms.time
-        );
-    }
+    let resolvedCell = resolveCellForState(
+        coord,
+        res,
+        currentIdentityState,
+        getGravityDirection(uniforms.gravity),
+        uniforms.time
+    );
     let resolved       = resolvedCell.identityState;
 
     let materialStayed = abs(getStateMaterialId(currentIdentityState) - getStateMaterialId(resolved)) < 0.5;
@@ -92,10 +83,4 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 
     textureStore(nextCellStateTexture, vec2i(id.xy), select(vec4f(0.0), sourceCellState, isOccupiedState(finalState)));
     textureStore(nextIdentityTexture, vec2i(id.xy), finalState);
-
-    let materialChanged = abs(decodeMaterialId(finalState) - decodeMaterialId(currentIdentityState)) > 0.5;
-    if isOwnedCell(ownerValue) && materialChanged {
-        textureStore(nextOwnershipTexture, vec2i(id.xy), releaseOwnership());
-        transitionBuffer[u32(id.y) * u32(res.x) + u32(id.x)] = u32(round(decodeMaterialId(finalState)));
-    }
 }

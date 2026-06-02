@@ -5,10 +5,10 @@ export const Coffee: MaterialDefinition = {
     id: MaterialIds.coffee,
     name: 'coffee',
     colors: [
-        { r: 115, g: 72, b: 40, a: 0.92 },
-        { r: 128, g: 80, b: 46, a: 0.92 },
-        { r: 108, g: 66, b: 36, a: 0.92 },
-        { r: 122, g: 76, b: 43, a: 0.92 },
+        { r: 115, g: 72, b: 40, a: 0.925 },
+        { r: 128, g: 80, b: 46, a: 0.925 },
+        { r: 108, g: 66, b: 36, a: 0.925 },
+        { r: 122, g: 76, b: 43, a: 0.925 },
     ],
     state: {
         health: 100,

@@ -17,6 +17,11 @@ export class TemperatureOverlay {
     private tmpCanvas: HTMLCanvasElement | null = null;
     private visible: boolean = false;
     private readPending: boolean = false;
+    private layerIndex: number = 0;
+
+    public SetLayerIndex(index: number): void {
+        this.layerIndex = index;
+    }
 
     private static readonly HeatStops: [number, number, number][] = [
         [0, 0, 255], // blue
@@ -59,11 +64,15 @@ export class TemperatureOverlay {
         if (!this.visible || this.readPending) { return; }
         const sim = SimulationManager.Instance;
         const renderer = Renderer.Instance?.GetWebGPU();
-        if (!sim?.pingPong || !renderer) { return; }
+        if (!sim?.simulationLayer || !renderer) { return; }
+        if (this.layerIndex === 1 && !sim.gameObjectLayer) { return; }
 
-        const { pingPong } = sim;
+        const { simulationLayer, gameObjectLayer } = sim;
+        const physicsTexture = this.layerIndex === 1
+            ? gameObjectLayer!.currentPhysics
+            : simulationLayer.currentPhysics;
         const { device } = renderer;
-        const { width, height } = pingPong;
+        const { width, height } = simulationLayer;
 
         if (!this.renderer2D) { this.Create(renderer.canvas.width, renderer.canvas.height); }
         if (!this.renderer2D || !this.ctx || !this.tmpCanvas) { return; }
@@ -88,7 +97,7 @@ export class TemperatureOverlay {
 
         const enc = device.createCommandEncoder();
         enc.copyTextureToBuffer(
-            { texture: pingPong.currentPhysics, origin: [camOriginX, camOriginY] },
+            { texture: physicsTexture, origin: [camOriginX, camOriginY] },
             { buffer: gpuBuffer, bytesPerRow },
             [contentW, contentH]
         );

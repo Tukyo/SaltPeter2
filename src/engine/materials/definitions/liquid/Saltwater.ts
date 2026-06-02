@@ -5,10 +5,10 @@ export const Saltwater: MaterialDefinition = {
     id: MaterialIds.saltwater,
     name: 'saltwater',
     colors: [
-        { r: 55, g: 138, b: 178, a: 1 },
-        { r: 46, g: 150, b: 192, a: 1 },
-        { r: 40, g: 124, b: 162, a: 1 },
-        { r: 62, g: 144, b: 185, a: 1 },
+        { r: 55, g: 138, b: 178, a: 0.775 },
+        { r: 46, g: 150, b: 192, a: 0.775 },
+        { r: 40, g: 124, b: 162, a: 0.775 },
+        { r: 62, g: 144, b: 185, a: 0.775 },
     ],
     state: {
         health: 100,

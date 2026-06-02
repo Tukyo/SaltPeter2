@@ -41,6 +41,15 @@ Each overlay layer is bound to a hotkey defined in [`KeybindConfig`](../config/K
 new Nitrate.DebugOverlay();
 ```
 
+| Method | Description |
+|--------|-------------|
+| [`CycleLayer(direction: 1 \| -1): void`](DebugOverlay.ts) | Cycles the active layer. Keybinds in [`KeybindConfig`](../config/KeybindConfig.ts). |
+
+---
+
+### [`DebugOverlayBadge`](DebugOverlayBadge.ts)
+Small label that shows the active debug layer.
+
 
 ---
 
@@ -102,6 +111,9 @@ Reads the physics texture and renders per-cell temperature as a heatmap.
 
 Owned and driven by [`DebugOverlay`](DebugOverlay.ts) — do not instantiate directly.
 
+| Method | Description |
+|--------|-------------|
+| [`SetLayerIndex(index: number): void`](TemperatureOverlay.ts) | — |
 
 ---
 

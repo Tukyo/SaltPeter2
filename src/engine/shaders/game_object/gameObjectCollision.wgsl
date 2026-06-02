@@ -3,6 +3,7 @@
 @group(0) @binding(2) var<uniform>             uniforms:         GameObjectCollisionUniforms;
 @group(0) @binding(3) var                      identityTexture:  texture_2d<f32>;
 @group(0) @binding(4) var                      ownershipTexture: texture_2d<u32>;
+@group(0) @binding(5) var<storage, read>       physicsMaterials: array<MaterialPhysicsEntry>;
 
 // Returns how many cells to push along the collision normal to correct overlap.
 // fraction = hitCount / boundaryCount is raised to (1 / hardness) before scaling by force.
@@ -29,17 +30,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let simW     = i32(uniforms.simWidth);
     let simH     = i32(uniforms.simHeight);
 
-    var normalX:     f32 = 0.0;
-    var normalY:     f32 = 0.0;
-    var hitCount:    u32 = 0u;
-    var contactSumX: f32 = 0.0; // sum of in-bounds hit cell centers, for torque lever arm
-    var contactSumY: f32 = 0.0;
-    var contactHits: u32 = 0u;
+    var normalX:          f32 = 0.0;
+    var normalY:          f32 = 0.0;
+    var hitCount:         u32 = 0u;
+    var contactSumX:      f32 = 0.0;
+    var contactSumY:      f32 = 0.0;
+    var contactHits:      u32 = 0u;
+    var liquidHitCount:   u32 = 0u;
+    var liquidDensitySum: f32 = 0.0;
 
     // selfEncoded = slotIndex + 1, used to skip own cells in the ownership texture
     let selfEncoded = gameObjectIdx + 1u;
 
-    // First other-GO cell detected — its slot index drives the velocity response
+    // First other-GameObject cell detected — its slot index drives the velocity response
     var detectedOtherEncoded: u32 = 0u;
 
     let neighbors = chebyshevOffsets();
@@ -75,9 +78,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let cellOwner  = textureLoad(ownershipTexture, coord, 0).r;
         let isOtherGo  = cellOwner != 0u && cellOwner != selfEncoded;
 
-        // Identity texture has sim cells only (GO cells were erased this frame).
-        // Ownership texture has last-frame GO stamps — used to detect other GOs.
+        // Identity texture has sim cells only (GameObject cells were erased this frame).
+        // Ownership texture has last-frame GameObject stamps — used to detect other GOs.
         if (!isOccupiedState(cellSample) && !isOtherGo) { continue; }
+
+        // Phase-aware classification: gas and fire are ignored, liquid is buoyancy-only,
+        // solid and other-GO cells continue to the rigid collision path.
+        if (!isOtherGo) {
+            let phaseId = getStatePhaseId(cellSample);
+            if (isMaterialPhaseId(phaseId, MATERIAL_PHASE_GAS) ||
+                isMaterialPhaseId(phaseId, MATERIAL_PHASE_FIRE)) { continue; }
+            if (isMaterialPhaseId(phaseId, MATERIAL_PHASE_LIQUID)) {
+                let matIdx = clamp(i32(floor(getStateMaterialId(cellSample) + 0.5)), 0, MATERIAL_COUNT - 1);
+                liquidDensitySum += physicsMaterials[matIdx].density;
+                liquidHitCount++;
+                continue;
+            }
+        }
 
         if (isOtherGo && detectedOtherEncoded == 0u) {
             detectedOtherEncoded = cellOwner;
@@ -124,6 +141,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         normalY += cellNormalY;
     }
 
+    if (liquidHitCount > 0u) {
+        let submersionFraction = f32(liquidHitCount) / max(1.0, f32(state.boundaryCount));
+        let avgLiquidDensity   = liquidDensitySum / f32(liquidHitCount);
+        let buoyancyAccel      = (avgLiquidDensity / max(0.001, state.density)) * submersionFraction * uniforms.gravity * uniforms.buoyancyScale;
+        state.velY += buoyancyAccel * uniforms.simStepDuration;
+        let dragFactor = max(0.0, 1.0 - submersionFraction * uniforms.liquidDrag);
+        state.velX *= dragFactor;
+        state.velY *= dragFactor;
+    }
+
     if (hitCount == 0u) {
         state.hitCount = 0u;
         // Do not reset sleepTimer here — the settle push can briefly lift the object off the
@@ -141,7 +168,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (state.isSleeping == 1u) {
         let hitDeltaFraction = f32(abs(i32(hitCount) - i32(state.hitCount))) /
                                max(1.0, f32(state.boundaryCount));
-        if (hitDeltaFraction <= uniforms.wakeTolerance) {
+        if (hitDeltaFraction <= uniforms.wakeTolerance && liquidHitCount == 0u) {
             gameObjectStates[gameObjectIdx] = state;
             return;
         }
@@ -258,6 +285,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             state.velX  += impulse / selfMass;
             state.omega -= leverY * impulse / max(0.001, state.momentOfInertia);
         }
+    }
+
+    // Near-point contact is physically unstable — a single boundary point touching a surface
+    // produces zero torque and lets the GO balance indefinitely. Inject a small lateral jitter
+    // so the instability resolves naturally rather than locking in place.
+    if (hitCount <= 2u) {
+        let jitter = (hash(vec2f(state.posX * 0.37, state.posY * 0.53)) - 0.5) * 0.4;
+        state.velX += jitter;
     }
 
     state.hitCount = hitCount;

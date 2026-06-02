@@ -99,6 +99,14 @@ Created and owned by [`GameObjectPass`](GameObjectPass.ts). Do not call directly
 
 ---
 
+### [`GameObjectLayer`](GameObjectLayer.ts)
+Double-buffered GPU texture pairs for the GameObject layer.
+
+Works exactly the same as the SimulationLayer, but targeted for GameObjects.
+
+
+---
+
 ### [`GameObjectManager`](GameObjectManager.ts)
 Tracks all active [`GameObject`](GameObject.ts) instances and manages their lifecycle.
 

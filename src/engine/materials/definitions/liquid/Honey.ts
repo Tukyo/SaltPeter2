@@ -5,10 +5,10 @@ export const Honey: MaterialDefinition = {
     id: MaterialIds.honey,
     name: 'honey',
     colors: [
-        { r: 212, g: 168, b: 58, a: 1 },
-        { r: 232, g: 188, b: 80, a: 1 },
-        { r: 192, g: 148, b: 44, a: 1 },
-        { r: 222, g: 178, b: 68, a: 1 },
+        { r: 212, g: 168, b: 58, a: 0.9 },
+        { r: 232, g: 188, b: 80, a: 0.9 },
+        { r: 192, g: 148, b: 44, a: 0.9 },
+        { r: 222, g: 178, b: 68, a: 0.9 },
     ],
     state: {
         health: 100,

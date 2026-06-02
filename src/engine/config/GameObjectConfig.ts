@@ -6,6 +6,10 @@ export class GameObjectConfig {
             maxSpeed: 5 // How many cells per sim step a GameObject is allowed to move
         },
         physics: {
+            angular: {
+                // Maximum angular velocity in rad/s. Set to 0 to disable rotation.
+                maxAngularSpeed: 5
+            },
             collision: {
                 depenetration: {
                     // Max cell push per sim step when overlapping. Scales with fraction of boundary points inside.
@@ -23,9 +27,11 @@ export class GameObjectConfig {
                     threshold: 0.001
                 }
             },
-            angular: {
-                // Maximum angular velocity in rad/s. Set to 0 to disable rotation.
-                maxAngularSpeed: 5
+            liquid: {
+                // Scale change for buoyancy of GameObjects in liquids
+                buoyancy: 10.0,
+                // Per-step velocity damping fraction when submerged (0=none, 1=instant stop)
+                drag: 0.015
             },
             sleep: {
                 linear: {
@@ -42,7 +48,7 @@ export class GameObjectConfig {
                     // Fraction of boundary points that must change contact state to wake a sleeping object.
                     // Normalized to boundaryCount so sensitivity is consistent across object sizes.
                     contactFraction: 0.01,
-                    // Minimum speed in cells/s of a contacting GO required to wake a sleeping object. 0 = disabled.
+                    // Minimum speed in cells/s of a contacting GameObjects required to wake a sleeping object. 0 = disabled.
                     velocityThreshold: 0
                 }
             }

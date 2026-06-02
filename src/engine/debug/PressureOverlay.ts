@@ -35,11 +35,11 @@ export class PressureOverlay {
         if (!this.visible || this.readPending) { return; }
         const sim = SimulationManager.Instance;
         const renderer = Renderer.Instance?.GetWebGPU();
-        if (!sim?.pingPong || !renderer) { return; }
+        if (!sim?.simulationLayer || !renderer) { return; }
 
-        const { pingPong } = sim;
+        const { simulationLayer } = sim;
         const { device } = renderer;
-        const { width, height } = pingPong;
+        const { width, height } = simulationLayer;
 
         if (!this.renderer2D) { this.Create(renderer.canvas.width, renderer.canvas.height); }
         if (!this.renderer2D || !this.ctx || !this.tmpCanvas) { return; }
@@ -64,7 +64,7 @@ export class PressureOverlay {
 
         const enc = device.createCommandEncoder();
         enc.copyTextureToBuffer(
-            { texture: pingPong.currentPhysics, origin: [camOriginX, camOriginY] },
+            { texture: simulationLayer.currentPhysics, origin: [camOriginX, camOriginY] },
             { buffer: gpuBuffer, bytesPerRow },
             [contentW, contentH]
         );

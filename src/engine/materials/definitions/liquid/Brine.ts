@@ -5,10 +5,10 @@ export const Brine: MaterialDefinition = {
     id: MaterialIds.brine,
     name: 'brine',
     colors: [
-        { r: 36, g: 118, b: 98, a: 1 },
-        { r: 42, g: 126, b: 105, a: 1 },
-        { r: 30, g: 110, b: 90, a: 1 },
-        { r: 38, g: 122, b: 100, a: 1 },
+        { r: 36, g: 118, b: 98, a: 0.775 },
+        { r: 42, g: 126, b: 105, a: 0.775 },
+        { r: 30, g: 110, b: 90, a: 0.775 },
+        { r: 38, g: 122, b: 100, a: 0.775 },
     ],
     state: {
         health: 100,
