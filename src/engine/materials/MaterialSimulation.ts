@@ -87,10 +87,10 @@ export class MaterialSimulation {
 
         return {
             riseRandomRate: activity * 4.0,
-            upwardRiseChance: Math.min(rise, 1),
-            diagonalRiseChance: Math.min(rise * 0.6 + turbulence * 0.2, 1),
+            upwardRiseChance: Math.min(rise, 0.25),
+            diagonalRiseChance: Math.min(rise * 0.25 + turbulence * 0.2, 1),
             spreadRandomRate: activity * 4.5,
-            lateralSpreadChance: Math.min(dissipation * 1.8 + turbulence * 0.15, 1),
+            lateralSpreadChance: Math.min(dissipation * 1.15 + turbulence * 0.15, 1),
             turbulenceChance: Math.min(turbulence * activity * 0.2, 1),
             dissipationChance: Math.min(dissipation * 0.01, 1),
         };

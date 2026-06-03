@@ -1,5 +1,6 @@
 import type { MaterialName } from './definitions/MaterialIdentity';
 import type { MaterialReactionReagent } from './definitions/MaterialReactions';
+import type { SimulationResource } from '../simulation/SimulationManager';
 
 import { MaterialRegistry } from './MaterialRegistry';
 import { Reactions } from './definitions/MaterialReactions';
@@ -15,7 +16,7 @@ const FLOATS_PER_ENTRY = 5; // productIdA, productIdB, invertedRate, biproductId
  * bidirectionally so `A + B` and `B + A` are both populated. Unfilled entries default to `-1`.
  * The reaction rate is stored pre-inverted and scaled by reagent durability for GPU efficiency.
  */
-export class ReactionLookupBuffer {
+export class ReactionLookupBuffer implements SimulationResource {
     public readonly buffer: GPUBuffer;
 
     constructor(device: GPUDevice) {
@@ -80,7 +81,8 @@ export class ReactionLookupBuffer {
         device.queue.writeBuffer(this.buffer, 0, data);
     }
 
-    public OnDestroy(): void {
+    // @omitfromdocs
+    public Destroy(): void {
         this.buffer.destroy();
     }
 }

@@ -1,3 +1,5 @@
+import type { SimulationResource } from "../simulation/SimulationManager";
+
 import { TextureFactory } from "../rendering/TextureFactory";
 
 /**
@@ -5,7 +7,7 @@ import { TextureFactory } from "../rendering/TextureFactory";
  *
  * Works exactly the same as the SimulationLayer, but targeted for GameObjects.
  */
-export class GameObjectLayer {
+export class GameObjectLayer implements SimulationResource {
     public readonly width: number;
     public readonly height: number;
 
@@ -124,7 +126,8 @@ export class GameObjectLayer {
         );
     }
 
-    public OnDestroy(): void {
+    // @omitfromdocs
+    public Destroy(): void {
         this.currentIdentity.destroy();
         this.nextIdentity.destroy();
         this.currentPhysics.destroy();

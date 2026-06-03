@@ -1,3 +1,4 @@
+import type { SimulationResource } from './SimulationManager';
 import type { Size2D } from '../definitions/Primitives';
 
 /**
@@ -5,7 +6,7 @@ import type { Size2D } from '../definitions/Primitives';
  *
  * Created by {@link SimulationManager} and shared with the passes that need it.
  */
-export class SimulationTexture {
+export class SimulationTexture implements SimulationResource {
     public readonly width: number;
     public readonly height: number;
     public readonly texture: GPUTexture;
@@ -22,7 +23,8 @@ export class SimulationTexture {
         });
     }
 
-    public OnDestroy(): void {
+    // @omitfromdocs
+    public Destroy(): void {
         this.texture.destroy();
     }
 }

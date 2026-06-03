@@ -3,7 +3,6 @@
 
 // Shared helpers
 export { default as commonWgsl } from './shared/common.wgsl?raw';
-export { default as layerInteractionWgsl } from './shared/layerInteraction.wgsl?raw';
 export { default as identityWgsl } from './shared/identity.wgsl?raw';
 export { default as identityQueriesWgsl } from './shared/identityQueries.wgsl?raw';
 export { default as intentHelpersWgsl } from './shared/intent.wgsl?raw';
@@ -73,7 +72,12 @@ export { default as instantiateCellWgsl } from './instantiation/instantiateCell.
 export { default as compositeWgsl } from './visual/composite.wgsl?raw';
 export { default as displayWgsl } from './visual/display.wgsl?raw';
 export { default as gameObjectRenderWgsl } from './visual/gameObjectRender.wgsl?raw';
+export { default as particleRenderWgsl } from './visual/particleRender.wgsl?raw';
 export { default as simRenderWgsl } from './visual/simRender.wgsl?raw';
+
+// Particle
+export { default as particleEmissionWgsl } from './particle/particleEmission.wgsl?raw';
+export { default as particleSimulationWgsl } from './particle/particleSimulation.wgsl?raw';
 
 // Game object
 export { default as gameObjectEraseWgsl } from './game_object/gameObjectErase.wgsl?raw';

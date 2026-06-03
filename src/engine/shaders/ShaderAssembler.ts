@@ -5,7 +5,6 @@ import { ShaderFactory } from './ShaderFactory';
 import {
     analyticsWgsl,
     commonWgsl,
-    layerInteractionWgsl,
     gameObjectCollisionWgsl,
     gameObjectEraseWgsl,
     gameObjectPhysicsWgsl,
@@ -52,6 +51,9 @@ import {
     transitionsWgsl,
     brushOutputWgsl,
     brushWgsl,
+    particleEmissionWgsl,
+    particleSimulationWgsl,
+    particleRenderWgsl,
 } from './Shaders';
 
 /**
@@ -274,13 +276,19 @@ export class ShaderAssembler {
             ShaderFactory.GenerateMaterialCount(),
             ShaderFactory.GenerateWorkgroupSize(workgroupSize),
             ShaderFactory.GenerateMaxDensity(),
+            ShaderFactory.GenerateMaterialPhaseConstants(),
             ShaderFactory.GenerateMaterialPhysicsEntryStruct(),
             ShaderFactory.GenerateMaterialStateEntryStruct(),
             ShaderFactory.GenerateMaterialStateIndexHelper(),
+            ShaderFactory.GenerateReactionConstants(),
             ShaderFactory.GenerateGameObjectStateStruct(),
             ShaderFactory.GenerateGameObjectCellStruct(),
             ShaderFactory.GenerateGameObjectPassUniformStruct(),
             commonWgsl,
+            identityWgsl,
+            phaseWgsl,
+            transitionsWgsl,
+            reactionsWgsl,
             gameObjectStampWgsl,
         ].join('\n');
     }
@@ -315,13 +323,38 @@ export class ShaderAssembler {
     }
     //#endregion
 
-    //#region LAYER INTERACTION
+    //#region PARTICLE
     // @omitfromdocs
-    public static LayerInteraction(workgroupSize: number): string {
+    public static ParticleEmission(workgroupSize: number): string {
         return [
             ShaderFactory.GenerateWorkgroupSize(workgroupSize),
+            ShaderFactory.GenerateParticleConstants(),
+            ShaderFactory.GenerateParticleEmissionUniformStruct(),
             commonWgsl,
-            layerInteractionWgsl,
+            particleEmissionWgsl,
+        ].join('\n');
+    }
+
+    // @omitfromdocs
+    public static ParticleSimulation(workgroupSize: number): string {
+        return [
+            ShaderFactory.GenerateParticleWorkgroupSize(workgroupSize),
+            ShaderFactory.GenerateParticleConstants(),
+            ShaderFactory.GenerateParticleSimulationUniformStruct(),
+            commonWgsl,
+            particleSimulationWgsl,
+        ].join('\n');
+    }
+
+    // @omitfromdocs
+    public static ParticleRender(workgroupSize: number): string {
+        return [
+            ShaderFactory.GenerateMaterialCount(),
+            ShaderFactory.GenerateParticleWorkgroupSize(workgroupSize),
+            ShaderFactory.GenerateParticleConstants(),
+            ShaderFactory.GenerateColorsPerMaterial(),
+            ShaderFactory.GenerateVisualEntryStruct(),
+            particleRenderWgsl,
         ].join('\n');
     }
     //#endregion

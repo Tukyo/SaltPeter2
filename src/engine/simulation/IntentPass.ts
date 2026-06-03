@@ -2,6 +2,7 @@ import type { MaterialPhysicsBuffer } from '../materials/MaterialPhysicsBuffer';
 import type { MaterialSimulationBuffer } from '../materials/MaterialSimulationBuffer';
 import type { ReactionLookupBuffer } from '../materials/ReactionLookupBuffer';
 import type { SimulationLayer } from './SimulationLayer';
+import type { SimulationResource } from './SimulationManager';
 import type { SimulationTexture } from './SimulationTexture';
 
 import { ShaderAssembler } from '../shaders/ShaderAssembler';
@@ -28,7 +29,7 @@ interface IntentRunParams {
  *
  * Created and owned by {@link SimulationManager}. Called each frame by the manager — not directly.
  */
-export class IntentPass {
+export class IntentPass implements SimulationResource {
     private readonly device: GPUDevice;
     private readonly pipeline: GPUComputePipeline;
     private readonly simulationLayer: SimulationLayer;
@@ -103,7 +104,8 @@ export class IntentPass {
         pass.end();
     }
 
-    public OnDestroy(): void {
+    // @omitfromdocs
+    public Destroy(): void {
         this.uniforms.destroy();
     }
 }

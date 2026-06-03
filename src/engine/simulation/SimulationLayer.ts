@@ -1,3 +1,5 @@
+import type { SimulationResource } from './SimulationManager';
+
 import { TextureFactory } from '../rendering/TextureFactory';
 
 /**
@@ -6,7 +8,7 @@ import { TextureFactory } from '../rendering/TextureFactory';
  * Each pass reads from `current*` and writes to `next*`. Call the corresponding
  * `Swap*` method after each pass to advance the buffer for the next frame.
  */
-export class SimulationLayer {
+export class SimulationLayer implements SimulationResource {
     public readonly width: number;
     public readonly height: number;
 
@@ -74,7 +76,8 @@ export class SimulationLayer {
         this.nextState = temp;
     }
 
-    public OnDestroy(): void {
+    // @omitfromdocs
+    public Destroy(): void {
         this.currentIdentity.destroy();
         this.nextIdentity.destroy();
         this.currentPhysics.destroy();

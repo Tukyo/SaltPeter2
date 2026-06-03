@@ -13,6 +13,7 @@ struct CropUniform {
 @group(0) @binding(0) var simTexture:         texture_2d<f32>;
 @group(0) @binding(1) var gameObjectsTexture: texture_2d<f32>;
 @group(0) @binding(2) var<uniform> crop:      CropUniform;
+@group(0) @binding(3) var particleTexture:    texture_2d<f32>;
 
 @vertex
 fn vs_main(@builtin(vertex_index) vi: u32) -> VertexOut {
@@ -39,12 +40,13 @@ fn fs_main(in: VertexOut) -> @location(0) vec4f {
     ) * texDim;
     let coord = vec2i(i32(coordF.x), i32(coordF.y));
 
-    let goColor  = textureLoad(gameObjectsTexture, coord, 0);
-    let simColor = textureLoad(simTexture,         coord, 0);
+    let goColor       = textureLoad(gameObjectsTexture, coord, 0);
+    let simColor      = textureLoad(simTexture,         coord, 0);
+    let particleColor = textureLoad(particleTexture,    coord, 0);
 
-    // Composite bottom to top: GOs behind, sim on top.
-    // Sim cells with alpha < 1 (e.g. water) allow GOs to show through.
+    // Composite bottom to top: GOs → sim → particles.
     var color = goColor;
     color = alphaOver(color, simColor);
+    color = alphaOver(color, particleColor);
     return color;
 }

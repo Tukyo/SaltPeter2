@@ -19,9 +19,8 @@ export class TemperatureOverlay {
     private readPending: boolean = false;
     private layerIndex: number = 0;
 
-    public SetLayerIndex(index: number): void {
-        this.layerIndex = index;
-    }
+    /** Sets the overlay display index. @internal */
+    public SetLayerIndex(index: number): void { this.layerIndex = index; }
 
     private static readonly HeatStops: [number, number, number][] = [
         [0, 0, 255], // blue
@@ -160,10 +159,10 @@ export class TemperatureOverlay {
     }
 
     /** Removes the overlay canvas and releases all references. Called by DebugOverlay on scene teardown. @internal */
-    public OnDestroy(): void {
+    public Destroy(): void {
         if (this.renderer2D) { Renderer.Destroy2D(this.renderer2D); }
         this.renderer2D = null;
-        
+
         this.ctx = null;
         this.tmpCanvas = null;
     }

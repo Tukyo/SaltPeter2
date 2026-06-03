@@ -1,6 +1,7 @@
-import type { MaterialPhysicsBuffer } from '../materials/MaterialPhysicsBuffer';
 import type { GameObjectLayer } from '../game_object/GameObjectLayer';
+import type { MaterialPhysicsBuffer } from '../materials/MaterialPhysicsBuffer';
 import type { SimulationLayer } from './SimulationLayer';
+import type { SimulationResource } from './SimulationManager';
 
 import { ShaderAssembler } from '../shaders/ShaderAssembler';
 import { SimulationConfig } from '../config/SimulationConfig';
@@ -17,7 +18,7 @@ interface PhysicsPassParams {
  *
  * Created and owned by {@link SimulationManager}. Called each frame by the manager — not directly.
  */
-export class PhysicsPass {
+export class PhysicsPass implements SimulationResource {
     private readonly device: GPUDevice;
     private readonly pipeline: GPUComputePipeline;
     private readonly simulationLayer: SimulationLayer;
@@ -69,6 +70,8 @@ export class PhysicsPass {
                 { binding: 2, resource: this.simulationLayer.nextPhysics.createView() },
                 { binding: 3, resource: { buffer: this.physicsBuffer.buffer } },
                 { binding: 4, resource: { buffer: this.uniforms } },
+                { binding: 5, resource: this.gameObjectLayer.currentIdentity.createView() },
+                { binding: 6, resource: this.gameObjectLayer.currentPhysics.createView() },
             ],
         });
         const goBindGroup = this.device.createBindGroup({
@@ -79,6 +82,8 @@ export class PhysicsPass {
                 { binding: 2, resource: this.gameObjectLayer.nextPhysics.createView() },
                 { binding: 3, resource: { buffer: this.physicsBuffer.buffer } },
                 { binding: 4, resource: { buffer: this.uniforms } },
+                { binding: 5, resource: this.simulationLayer.currentIdentity.createView() },
+                { binding: 6, resource: this.simulationLayer.currentPhysics.createView() },
             ],
         });
 
@@ -94,7 +99,8 @@ export class PhysicsPass {
         pass.end();
     }
 
-    public OnDestroy(): void {
+    // @omitfromdocs
+    public Destroy(): void {
         this.uniforms.destroy();
     }
 }

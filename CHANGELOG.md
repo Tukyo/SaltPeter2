@@ -2,6 +2,83 @@
 
 ---
 
+## [0.0.7] - [06/02/2026]
+### Updates & Changes
+
+#### Particles!
+The particle system here mimics Unity's modular particle system. Each particle emitter can have varied modules and produces effects for the materials they are associated with.
+
+- `src/engine/config/ParticleConfig.ts` — particle system performance config (`maxParticles`, `maxParticlesPerMaterial`)
+- `src/engine/particle/ParticleBuffer.ts` — flat GPU storage buffer for all live particle state
+- `src/engine/particle/ParticleDefinitionBuffer.ts` — per-material particle definition buffer uploaded from authoring data
+- `src/engine/particle/ParticleSourceLookupBuffer.ts` — lookup table mapping material IDs to particle definition ranges
+- `src/engine/particle/ParticleSchema.ts` — byte layout constants for particle definition fields
+- `src/engine/particle/ParticleEmissionPass.ts` — GPU compute pass that spawns particles from emitter sources each sim step
+- `src/engine/particle/ParticleSimulationPass.ts` — GPU compute pass that integrates particle physics, applies gravity/VOL/noise, and handles collision response
+- `src/engine/shaders/particle/particleEmission.wgsl` — emission shader: samples emitter positions, distributes velocities by cone/angle mode, writes to particle buffer
+- `src/engine/shaders/particle/particleSimulation.wgsl` — simulation shader: gravity, `VelocityOverLifetime`, noise perturbation, collision response, kill on speed threshold
+- `src/engine/shaders/particle/particleRender.wgsl` — render shader: one thread per particle, resolves material color, writes to particle layer texture
+- `src/engine/rendering/passes/ParticleRenderPass.ts` — dispatches the particle render shader each frame; owns the pipeline
+- Full particle simulation pipeline wired into `SimulationManager`: `ParticleEmissionPass` and `ParticleSimulationPass` run each sim step; `ParticleRenderPass` runs each render frame
+- `RenderingLayers` gains `particleTexture` — a dedicated `rgba8unorm` layer for composited particle output
+- `RenderingManager` drives `ParticleRenderPass` and submits its encoder between GO and composite passes
+- `composite.wgsl` updated: layer order is now GO → sim → particles (particles render on top of all simulation content); binding 3 added for `particleTexture`
+- `ShaderAssembler` — `LayerInteraction` region replaced with `ParticleEmission`, `ParticleSimulation`, and `ParticleRender` assembly methods
+- `ShaderFactory` — `GenerateParticleWorkgroupSize`, `GenerateParticleConstants`, `GenerateParticleEmissionUniformStruct`, `GenerateParticleSimulationUniformStruct` added
+- Added particle effects to multiple materials
+
+#### Game Objects
+- `gameObjectStamp.wgsl` — stamp pass now performs transition and reaction checks inline per cell:
+  - Phase transition: if a GO cell's temperature crosses its material threshold, the cell is marked dead and ejected into the sim layer as a dynamic cell
+  - Reactions: GO cells participate in `checkReactions` against neighboring sim cells; on a match the cell is ejected as the reaction product
+  - Bleed corners (X/Y/diagonal overlap cells) demoted to `stampBleedAt` — writes identity and ownership only, no physics or state, preventing double-stamping physics data into fractional coverage pixels
+- `GameObjectPass` — now accepts `reactionBuffer` and passes it to the stamp bind group; stamp uniform buffer extended with `deltaTime` and `time` fields (required by reaction and transition checks); bindings 12–19 wired: `simulationLayer.nextIdentity`, `materialPhysicsBuffer`, `materialStateBuffer`, `simulationLayer.nextPhysics`, `simulationLayer.nextState`, `simulationLayer.currentIdentity`, `reactionBuffer`, `gameObjectLayer.currentIdentity`
+- `GameObjectPass` now implements `SimulationResource` (`Destroy()`) — consistent with all other registered passes
+- `SimulationManager` wires `reactionBuffer` into `GameObjectPass.Create`
+
+#### Cross-Layer Temperature
+- `physics.wgsl` — two new bindings: `crossIdentityTexture` (binding 5) and `crossPhysicsTexture` (binding 6); the physics pass now receives the opposing layer's identity and physics textures so temperature can transfer across sim↔GO boundaries
+- `temperaturePropagation.wgsl` — `sampleNeighborTemp()` helper added: prefers the primary layer's temperature at a given coord; falls back to the cross-layer when the primary cell is air; `propagateTemperature` uses it for all four cardinal neighbors so GO cells and sim cells exchange heat naturally
+
+#### Reactions
+- `reactions.wgsl` — `sampleNeighborState()` helper added: returns the sim identity state if occupied, otherwise falls back to the GO identity texture (binding `goIdentityTexture`); all neighbor lookups in `checkReactions` now use this helper so sim cells can react with adjacent GO material cells
+
+#### Simulation
+- `sim.wgsl` — removed `if moveDir.y != 0.0` gate from the velocity seeding block; all new arrivals now update `finalVx/Y` from `moveDir * accel` regardless of direction; previously pure lateral movement (water sliding sideways) did not contribute to `vx`, leaving horizontal velocity near zero and making the velocity signal unreliable
+- `phaseResolution.wgsl` — fire cells can no longer enter GO-owned cells (previously only liquid/gas were exempt from the GO ownership block); GO-owned cells also no longer accept incoming fire from intent
+
+#### Liquid Flow Coupling for Game Objects
+- `gameObjectCollision.wgsl` — liquid boundary hits now sample `simPhysicsTexture` (binding 6, `texture_2d<f32>`) to read each cell's `vx`/`vy`; velocity is accumulated and averaged across all submerged boundary points; drag formula changed from `velX *= (1 - drag)` (pull toward zero) to `velX += (avgLiquidVelX * scale - velX) * drag` (pull toward scaled liquid velocity) — GOs now get carried by currents instead of just being slowed in still water
+- `GameObjectCollisionPass` — adds `simulationLayer.nextPhysics` as binding 6; uniform buffer extended with `liquidVelocityScale` at slot 15
+- `GameObjectConfig.physics.liquid.velocityScale` added (`100.0`) — amplifies the small sim-level velocity signal before applying drag coupling; tune down from 100 once flow feel is calibrated
+- `GameObjectBuffers` — collision uniform buffer size `15 * 4 → 16 * 4`
+- `ShaderFactory` — `liquidVelocityScale: f32` added to `GameObjectCollisionUniforms` struct
+
+#### Config
+- `GameObjectConfig.physics.liquid.velocityScale: 100.0` added
+- `PhysicsConfig.velocity.liquid.acceleration` — unchanged at `0.02`; note: with lateral velocity seeding now active, the effective steady-state `vx = accel / (1 - damping) = 1.0 (MAX)` — tune `acceleration` down if liquid flows too directionally
+
+#### Architecture
+- `SimulationManager` — `processes` array typed as `SimulationResource[]`; `OnDestroy` calls `p.Destroy()` instead of `p.OnDestroy?.()` (interface normalized across all registered passes)
+- `GameObjectPassUniforms` struct (`ShaderFactory`) gains `deltaTime` and `time` fields with padding alignment fix (`pad0`, `pad1`, `pad2`)
+- `PhysicsPass` — both sim-layer and GO-layer dispatches now bind the opposing layer's identity and physics textures (bindings 5–6) to supply `crossIdentityTexture`/`crossPhysicsTexture`
+- `SimulationPass` — binding 13 added (`gameObjectLayer.currentIdentity`) to supply `goIdentityTexture` to `reactions.wgsl`
+- Barrel exports updated: `ParticleConfig` → `config/Index.ts`; `ParticleRenderPass` → `rendering/passes/Index.ts`; `LayerInteractionPass` removed from `simulation/Index.ts`
+
+#### Removed Files
+- `src/engine/simulation/LayerInteractionPass.ts` — removed (was the stub added in 0.0.6: *"new cross-layer compute pass that runs after both layers swap each step; currently stubs (ownership read plumbing in place, no interaction logic yet)"*)
+- `src/engine/shaders/shared/layerInteraction.wgsl` — removed alongside `LayerInteractionPass`
+
+#### Materials
+- `MaterialSimulation` gas baking — `upwardRiseChance` capped at `0.25` (was `1.0`); `diagonalRiseChance` coefficient reduced from `0.6 → 0.25`; `lateralSpreadChance` coefficient reduced from `1.8 → 1.15`; gas spreads and rises less aggressively
+
+### Bug Fixes
+- Fixed bug causing temperature misreads in the GameObject layer
+- `BrushManager` — now calls `brushPass.Destroy()` before nulling on teardown (was leaking the GPU uniform buffer)
+- Fixed a bug causing horizontal velocity in particles to not accurately reflect its true velocity or propagate to neighbor pixels
+
+---
+
 ## [0.0.6] - Patch - 06/01/2026
 ### Updates & Changes
 

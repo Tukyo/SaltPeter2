@@ -1,4 +1,5 @@
 import type { Size2D } from '../definitions/Primitives';
+import type { SimulationResource } from '../simulation/SimulationManager';
 
 import { MaterialRegistry } from '../materials/MaterialRegistry';
 import { ShaderAssembler } from '../shaders/ShaderAssembler';
@@ -8,7 +9,7 @@ import { SimulationConfig } from '../config/SimulationConfig';
  * GPU compute pass that counts cells per material ID into a readback buffer.
  * @internal
  */
-export class AnalyticsPass {
+export class AnalyticsPass implements SimulationResource {
     private readonly device: GPUDevice;
     private readonly pipeline: GPUComputePipeline;
     private readonly countBuffer: GPUBuffer;
@@ -89,7 +90,7 @@ export class AnalyticsPass {
     }
 
     /** Destroys the GPU buffers. Called automatically by SimulationManager on scene teardown. */
-    public OnDestroy(): void {
+    public Destroy(): void {
         this.countBuffer.destroy();
         this.readbackBuffer.destroy();
     }

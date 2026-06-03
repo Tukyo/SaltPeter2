@@ -1,4 +1,5 @@
 import type { MaterialName } from './definitions/MaterialIdentity';
+import type { SimulationResource } from '../simulation/SimulationManager';
 
 import { MaterialRegistry } from './MaterialRegistry';
 import { MaterialVisualSchema } from './MaterialVisualSchema';
@@ -10,7 +11,7 @@ import { MaterialVisualSchema } from './MaterialVisualSchema';
  * into a flat `Float32Array` (RGBA normalized to 0–1), indexed by material id. Uploaded as
  * an immutable `STORAGE` buffer. Layout is defined by {@link MaterialVisualSchema}.
  */
-export class MaterialVisualBuffer {
+export class MaterialVisualBuffer implements SimulationResource {
     public readonly buffer: GPUBuffer;
 
     constructor(device: GPUDevice) {
@@ -27,7 +28,7 @@ export class MaterialVisualBuffer {
             for (let i = 0; i < material.colors.length; i++) {
                 const color = material.colors[i];
                 const offset = base + i * 4;
-                data[offset]     = color.r / 255;
+                data[offset] = color.r / 255;
                 data[offset + 1] = color.g / 255;
                 data[offset + 2] = color.b / 255;
                 data[offset + 3] = color.a;
@@ -39,7 +40,7 @@ export class MaterialVisualBuffer {
                     for (let i = 0; i < variant.colors.length; i++) {
                         const color = variant.colors[i];
                         const offset = variantBase + i * 4;
-                        data[offset]     = color.r / 255;
+                        data[offset] = color.r / 255;
                         data[offset + 1] = color.g / 255;
                         data[offset + 2] = color.b / 255;
                         data[offset + 3] = color.a;
@@ -56,7 +57,8 @@ export class MaterialVisualBuffer {
         device.queue.writeBuffer(this.buffer, 0, data);
     }
 
-    public OnDestroy(): void {
+    // @omitfromdocs
+    public Destroy(): void {
         this.buffer.destroy();
     }
 }

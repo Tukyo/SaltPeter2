@@ -1,5 +1,4 @@
 export * from './BrushPass';
-export * from './LayerInteractionPass'
 export * from './DiffusionPass';
 export * from './IntentPass';
 export * from './PhysicsPass';

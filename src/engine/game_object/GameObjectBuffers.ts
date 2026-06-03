@@ -1,3 +1,5 @@
+import type { SimulationResource } from '../simulation/SimulationManager';
+
 import { GameObjectCellSchema } from './GameObjectCellSchema';
 import { GameObjectColliderSchema } from './GameObjectColliderSchema';
 import { GameObjectConfig } from '../config/GameObjectConfig';
@@ -16,7 +18,7 @@ import { GameObjectStateSchema } from './GameObjectStateSchema';
  *
  * Created and owned by {@link GameObjectPass}.
  */
-export class GameObjectBuffers {
+export class GameObjectBuffers implements SimulationResource {
     public readonly stateBuffer: GPUBuffer;
     public readonly stateReadbackBuffer: GPUBuffer;
     public readonly cellBuffer: GPUBuffer;
@@ -49,11 +51,11 @@ export class GameObjectBuffers {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         this.eraseUniformBuffer = device.createBuffer({
-            size: 4 * 4,
+            size: 8 * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         this.stampUniformBuffer = device.createBuffer({
-            size: 4 * 4,
+            size: 8 * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         this.colliderBuffer = device.createBuffer({
@@ -61,7 +63,7 @@ export class GameObjectBuffers {
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
         });
         this.collisionUniformBuffer = device.createBuffer({
-            size: 15 * 4,
+            size: 16 * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         this.deadCellBuffer = device.createBuffer({
@@ -74,7 +76,8 @@ export class GameObjectBuffers {
         });
     }
 
-    public OnDestroy(): void {
+    // @omitfromdocs
+    public Destroy(): void {
         this.stateBuffer.destroy();
         this.stateReadbackBuffer.destroy();
         this.cellBuffer.destroy();

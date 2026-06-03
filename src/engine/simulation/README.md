@@ -26,7 +26,7 @@ Runtime settings live in [`SimulationState`](SimulationState.ts), accessible via
 ### [`BrushPass`](BrushPass.ts)
 GPU compute pass that writes brush strokes into the simulation texture.
 
-Created and owned by [`SimulationManager`](SimulationManager.ts). Each frame, [`BrushManager`](../brush/BrushManager.ts) calls
+Created and owned by [`BrushManager`](../brush/BrushManager.ts). Each frame, calls
 `Run()` via the manager — not directly.
 
 
@@ -42,18 +42,6 @@ Created and owned by [`SimulationManager`](SimulationManager.ts). Called each fr
 
 ### [`IntentPass`](IntentPass.ts)
 GPU compute pass that determines per-cell movement intent for the current frame.
-
-Created and owned by [`SimulationManager`](SimulationManager.ts). Called each frame by the manager — not directly.
-
-
----
-
-### [`LayerInteractionPass`](LayerInteractionPass.ts)
-GPU compute pass that handles cross-layer interactions between the world simulation
-and game object layers.
-
-Runs after both layers have finished simulating and swapped each step. Dispatches
-over GameObject layer dimensions — only GameObject-owned pixels are processed.
 
 Created and owned by [`SimulationManager`](SimulationManager.ts). Called each frame by the manager — not directly.
 

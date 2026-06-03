@@ -1,9 +1,13 @@
 import { BrushSchema } from '../brush/BrushSchema';
 import { PhysicsConfig } from '../config/PhysicsConfig';
+import { ParticleConfig } from '../config/ParticleConfig';
 
 import { GameObjectCellSchema } from '../game_object/GameObjectCellSchema';
 import { GameObjectColliderSchema } from '../game_object/GameObjectColliderSchema';
 import { GameObjectStateSchema } from '../game_object/GameObjectStateSchema';
+
+import { ParticleBuffer } from '../particle/ParticleBuffer';
+import { ParticleSchema } from '../particle/ParticleSchema';
 
 import { Rigidbody } from '../component/definitions/rigidbody/Rigidbody';
 
@@ -287,7 +291,11 @@ export class ShaderFactory {
             ['totalCells', 'u32'],
             ['simWidth', 'u32'],
             ['simHeight', 'u32'],
+            ['deltaTime', 'f32'],
+            ['time', 'f32'],
             ['pad0', 'u32'],
+            ['pad1', 'u32'],
+            ['pad2', 'u32'],
         ]);
     }
 
@@ -320,6 +328,7 @@ export class ShaderFactory {
             ['sleepAngularThreshold', 'f32'],
             ['buoyancyScale', 'f32'],
             ['liquidDrag', 'f32'],
+            ['liquidVelocityScale', 'f32'],
         ]);
     }
 
@@ -328,6 +337,41 @@ export class ShaderFactory {
         return (Object.entries(Rigidbody.BodyTypeValue) as [string, number][])
             .map(([name, value]) => `const GAMEOBJECT_BODY_${name.toUpperCase()}: u32 = ${value}u;`)
             .join('\n');
+    }
+    //#endregion
+
+    //#region PARTICLE
+    // @omitfromdocs
+    public static GenerateParticleWorkgroupSize(workgroupSize: number): string {
+        return `const PARTICLE_WG_SIZE: u32 = ${workgroupSize * workgroupSize}u;`;
+    }
+
+    // @omitfromdocs
+    public static GenerateParticleConstants(): string {
+        const { maxParticles, maxParticlesPerMaterial } = ParticleConfig.GetConfig().performance;
+        const defFloats = ParticleSchema.GetParticleDefinitionFields().length;
+        return [
+            `const PARTICLE_FLOATS_PER_PARTICLE: u32 = ${ParticleBuffer.FloatsPerParticle}u;`,
+            `const PARTICLE_MAX_COUNT: u32 = ${maxParticles}u;`,
+            `const PARTICLE_MAX_PER_MATERIAL: i32 = ${maxParticlesPerMaterial};`,
+            `const PARTICLE_DEF_FLOATS: i32 = ${defFloats};`,
+        ].join('\n');
+    }
+
+    // @omitfromdocs
+    public static GenerateParticleEmissionUniformStruct(): string {
+        return this.GenerateStruct('ParticleEmissionUniforms', [
+            ['time', 'f32'],
+            ['deltaTime', 'f32'],
+        ]);
+    }
+
+    // @omitfromdocs
+    public static GenerateParticleSimulationUniformStruct(): string {
+        return this.GenerateStruct('ParticleSimUniforms', [
+            ['deltaTime', 'f32'],
+            ['time', 'f32'],
+        ]);
     }
     //#endregion
 

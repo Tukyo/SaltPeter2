@@ -172,7 +172,9 @@ export class BrushManager extends NitrateProcess {
         NitrateProcess.RemoveInitListener(SimulationManager, this.onSimInit);
         this.onPaletteChange = null;
 
+        this.brushPass?.Destroy();
         this.brushPass = null;
+        
         this.simulationLayer = null;
         this.device = null;
 

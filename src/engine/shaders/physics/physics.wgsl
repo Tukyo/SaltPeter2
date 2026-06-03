@@ -3,11 +3,13 @@
 // Reads currentPhysics, writes nextPhysics.
 // Temperature propagation and pressure propagation logic assembles before this file.
 
-@group(0) @binding(0) var identityTexture:        texture_storage_2d<rgba8unorm, read>;
-@group(0) @binding(1) var physicsTexture:       texture_storage_2d<rgba32float, read>;
-@group(0) @binding(2) var nextPhysicsTexture:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(0) var identityTexture:      texture_storage_2d<rgba8unorm,   read>;
+@group(0) @binding(1) var physicsTexture:       texture_storage_2d<rgba32float,  read>;
+@group(0) @binding(2) var nextPhysicsTexture:   texture_storage_2d<rgba32float,  write>;
 @group(0) @binding(3) var<storage, read> physicsMaterials: array<MaterialPhysicsEntry>;
 @group(0) @binding(4) var<uniform> physicsUniforms: PhysicsUniforms;
+@group(0) @binding(5) var crossIdentityTexture: texture_storage_2d<rgba8unorm,   read>;
+@group(0) @binding(6) var crossPhysicsTexture:  texture_storage_2d<rgba32float,  read>;
 
 @compute @workgroup_size(WG_SIZE, WG_SIZE)
 fn main(@builtin(global_invocation_id) id: vec3u) {

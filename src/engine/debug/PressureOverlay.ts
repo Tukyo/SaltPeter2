@@ -127,7 +127,7 @@ export class PressureOverlay {
     }
 
     /** Removes the overlay canvas and releases all references. Called by DebugOverlay on scene teardown. @internal */
-    public OnDestroy(): void {
+    public Destroy(): void {
         if (this.renderer2D) { Renderer.Destroy2D(this.renderer2D); }
         this.renderer2D = null;
         

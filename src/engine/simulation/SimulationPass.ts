@@ -4,6 +4,7 @@ import type { MaterialSimulationBuffer } from '../materials/MaterialSimulationBu
 import type { MaterialStateBuffer } from '../materials/MaterialStateBuffer';
 import type { ReactionLookupBuffer } from '../materials/ReactionLookupBuffer';
 import type { SimulationLayer } from './SimulationLayer';
+import type { SimulationResource } from './SimulationManager';
 import type { SimulationTexture } from './SimulationTexture';
 
 import { ShaderAssembler } from '../shaders/ShaderAssembler';
@@ -32,7 +33,7 @@ interface SimulationRunParams {
  *
  * Created and owned by {@link SimulationManager}. Called each frame by the manager — not directly.
  */
-export class SimulationPass {
+export class SimulationPass implements SimulationResource {
     private readonly device: GPUDevice;
     private readonly pipeline: GPUComputePipeline;
     private readonly simulationLayer: SimulationLayer;
@@ -104,6 +105,7 @@ export class SimulationPass {
                 { binding: 10, resource: { buffer: this.stateBuffer.buffer } },
                 { binding: 11, resource: { buffer: this.reactionBuffer.buffer } },
                 { binding: 12, resource: this.gameObjectLayer.currentOwnership.createView() },
+                { binding: 13, resource: this.gameObjectLayer.currentIdentity.createView() },
             ],
         });
 
@@ -117,7 +119,8 @@ export class SimulationPass {
         pass.end();
     }
 
-    public OnDestroy(): void {
+    // @omitfromdocs
+    public Destroy(): void {
         this.uniforms.destroy();
     }
 }

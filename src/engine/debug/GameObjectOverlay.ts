@@ -310,7 +310,7 @@ export class GameObjectOverlay {
     }
 
     /** Removes the overlay canvas and releases all references. @internal */
-    public OnDestroy(): void {
+    public Destroy(): void {
         if (this.renderer2D) { Renderer.Destroy2D(this.renderer2D); }
         this.renderer2D = null;
         this.ctx = null;

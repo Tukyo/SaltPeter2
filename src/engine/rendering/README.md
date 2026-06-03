@@ -99,8 +99,6 @@ Waits for [`SimulationManager`](../simulation/SimulationManager.ts) to initializ
 [`RenderingLayers`](RenderingLayers.ts) and all render passes. Each `Update` dispatches
 passes in layer order and composites the results to the canvas.
 
-Layer order (bottom → top): GOs → Sim
-
 
 ---
 

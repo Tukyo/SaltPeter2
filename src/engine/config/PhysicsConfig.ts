@@ -37,7 +37,7 @@ export class PhysicsConfig {
         velocity: {
             max: 1.0,
             liquid: {
-                acceleration: 0.02,
+                acceleration: 0.0025,
                 damping: 0.98,
                 propagation: 0.75
             },

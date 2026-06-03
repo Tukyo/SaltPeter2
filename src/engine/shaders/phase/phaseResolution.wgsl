@@ -24,8 +24,10 @@ fn resolveEmptyCellFromPhaseIntents(
     let incomingGas = chooseIncomingGasSourceFromIntent(coord, res, gravityDirection, time);
     if isValidCoord(incomingGas) { return ResolvedCell(textureLoad(identityTexture, vec2i(incomingGas)), incomingGas); }
 
-    let incomingFire = chooseIncomingFireSourceFromIntent(coord, res, gravityDirection, time);
-    if isValidCoord(incomingFire) { return ResolvedCell(textureLoad(identityTexture, vec2i(incomingFire)), incomingFire); }
+    if !goOwned {
+        let incomingFire = chooseIncomingFireSourceFromIntent(coord, res, gravityDirection, time);
+        if isValidCoord(incomingFire) { return ResolvedCell(textureLoad(identityTexture, vec2i(incomingFire)), incomingFire); }
+    }
 
     return ResolvedCell(currentIdentityState, coord);
 }
@@ -48,8 +50,7 @@ fn resolveCellForState(
     if !sameCoord(intentTarget, coord) &&
        isOwnedCell(textureLoad(goOwnershipTexture, vec2i(intentTarget)).r) &&
        !isMaterialPhaseId(phaseId, MATERIAL_PHASE_LIQUID) &&
-       !isMaterialPhaseId(phaseId, MATERIAL_PHASE_GAS) &&
-       !isMaterialPhaseId(phaseId, MATERIAL_PHASE_FIRE) {
+       !isMaterialPhaseId(phaseId, MATERIAL_PHASE_GAS) {
         return ResolvedCell(currentIdentityState, coord);
     }
 

@@ -20,5 +20,5 @@ export class DebugOverlayBadge {
     public Hide(): void { this.element.classList.remove('is-visible'); }
 
     // @omitfromdocs
-    public OnDestroy(): void { this.element.parentElement?.removeChild(this.element); }
+    public Destroy(): void { this.element.parentElement?.removeChild(this.element); }
 }

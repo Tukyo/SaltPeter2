@@ -33,6 +33,19 @@ Created and owned by [`RenderingManager`](../RenderingManager.ts). Do not call d
 
 ---
 
+### [`ParticleRenderPass`](ParticleRenderPass.ts)
+Resolves live particle positions into RGBA pixels on the particle layer texture.
+
+Clears {@link RenderingLayers.particleTexture} each frame, then dispatches one
+thread per particle slot. Active particles scatter-write a single pixel at their
+current position, sourcing color from [`ParticleDefinitionBuffer`](../../particle/ParticleDefinitionBuffer.ts) visual params
+(material lookup or raw RGBA). Inactive slots are skipped.
+
+Created and owned by [`RenderingManager`](../RenderingManager.ts). Do not call directly.
+
+
+---
+
 ### [`SimulationRenderPass`](SimulationRenderPass.ts)
 Resolves the simulation identity texture into RGBA color for the sim layer.
 

@@ -77,6 +77,7 @@ export class CompositePass {
                 { binding: 0, resource: layers.simTexture.createView() },
                 { binding: 1, resource: layers.gameObjectsTexture.createView() },
                 { binding: 2, resource: { buffer: this.cropBuffer } },
+                { binding: 3, resource: layers.particleTexture.createView() },
             ],
         });
 

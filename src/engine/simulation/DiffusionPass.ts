@@ -1,5 +1,6 @@
-import type { SimulationLayer } from './SimulationLayer';
 import type { MaterialPhysicsBuffer } from '../materials/MaterialPhysicsBuffer';
+import type { SimulationLayer } from './SimulationLayer';
+import type { SimulationResource } from './SimulationManager';
 
 import { PhysicsConfig } from '../config/PhysicsConfig';
 import { ShaderAssembler } from '../shaders/ShaderAssembler';
@@ -17,7 +18,7 @@ interface DiffusionPassParams {
  *
  * Created and owned by {@link SimulationManager}. Called each frame by the manager — not directly.
  */
-export class DiffusionPass {
+export class DiffusionPass implements SimulationResource {
     private readonly device: GPUDevice;
     private readonly pipeline: GPUComputePipeline;
     private readonly simulationLayer: SimulationLayer;
@@ -98,7 +99,8 @@ export class DiffusionPass {
         pass.end();
     }
 
-    public OnDestroy(): void {
+    // @omitfromdocs
+    public Destroy(): void {
         this.uniforms.destroy();
     }
 }

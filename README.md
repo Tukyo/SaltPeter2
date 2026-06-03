@@ -22,10 +22,12 @@ One of the main goals in this project is to obtain a better understanding of gam
 | Graham Scan | [Ronald Graham](https://en.wikipedia.org/wiki/Graham_scan) | $\text{cross}(A,B,C) = (B_x - A_x)(C_y - A_y) - (B_y - A_y)(C_x - A_x)$ |
 | Perlin Noise | [Ken Perlin](https://en.wikipedia.org/wiki/Perlin_noise) | $f(t) = 6t^5 - 15t^4 + 10t^3$ |
 | Worley Noise | [Steven Worley](https://en.wikipedia.org/wiki/Steven_Worley) | $F_1(\mathbf{x}) = \min_i\ d(\mathbf{x},\ \mathbf{x}_i)$ |
+| Ridged Multifractal Noise | [Ken Musgrave](https://en.wikipedia.org/wiki/Ken_Musgrave) | $n_i = 1 - \|f(\mathbf{x} \cdot 2^i)\|$ |
 | Dot Product | [Josiah Willard Gibbs](https://en.wikipedia.org/wiki/Dot_product) | $\mathbf{a} \cdot \mathbf{b} = \sum_i a_i b_i = \|\mathbf{a}\|\|\mathbf{b}\|\cos\theta$ |
 | Coulomb Friction | [Charles-Augustin de Coulomb](https://en.wikipedia.org/wiki/Friction) | $F_f = \mu N$ |
 | Baumgarte Stabilization | [Joachim Baumgarte](https://www.researchgate.net/publication/227225246_Investigation_on_the_Baumgarte_Stabilization_Method_for_Dynamic_Analysis_of_Constrained_Multibody_Systems) | $Jv + \beta \frac{C}{\Delta t} = 0$ |
 | Bresenham's Circle | [Jack Elton Bresenham](https://en.wikipedia.org/wiki/Midpoint_circle_algorithm) | $d(x, y) = x^2 + y^2 - r^2$ |
+| Thermal conduction | [Joseph Fourier](https://en.wikipedia.org/wiki/Joseph_Fourier) | $q = -k\nabla T$ |
 
 
 ## Engine

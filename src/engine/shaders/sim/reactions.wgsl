@@ -1,5 +1,5 @@
 // Depends on: common.wgsl, identity.wgsl
-// Bindings: identityTexture (binding 0), reactionLookup (binding 11), materialStates (binding 10)
+// Bindings: identityTexture, goIdentityTexture, reactionLookup, materialStates
 
 struct ReactionResult {
     state:     vec4f,
@@ -7,6 +7,13 @@ struct ReactionResult {
 }
 
 const NO_REACTION: ReactionResult = ReactionResult(vec4f(0.0, 0.0, 0.0, -1.0), vec4f(0.0));
+
+// Prefers the sim neighbor; falls back to the GO layer when the sim cell is air.
+fn sampleNeighborState(nc: vec2f, res: vec2f) -> vec4f {
+    let simState = textureLoad(identityTexture, vec2i(nc));
+    if isOccupiedState(simState) { return simState; }
+    return textureLoad(goIdentityTexture, vec2i(nc), 0);
+}
 
 fn checkReactions(coord: vec2f, res: vec2f, myState: vec4f, time: f32) -> ReactionResult {
     if !isOccupiedState(myState) { return NO_REACTION; }
@@ -22,7 +29,7 @@ fn checkReactions(coord: vec2f, res: vec2f, myState: vec4f, time: f32) -> Reacti
     for (var k = 0u; k < 8u; k++) {
         let nc  = coord + chebyshev[k];
         if !inBounds(nc, res) { continue; }
-        let ns  = textureLoad(identityTexture, vec2i(nc));
+        let ns  = sampleNeighborState(nc, res);
         let nid = select(0.0, getStateMaterialId(ns), isOccupiedState(ns));
         if reactionLookup[getReactionBase(myId, nid) + 2u] >= 0.0 {
             chebyshevReactiveCount += 1.0;
@@ -41,7 +48,7 @@ fn checkReactions(coord: vec2f, res: vec2f, myState: vec4f, time: f32) -> Reacti
             let neighborCoord = coord + select(cardinal[i], chebyshev[i], useChebyshev);
             if !inBounds(neighborCoord, res) { continue; }
 
-            let neighborState = textureLoad(identityTexture, vec2i(neighborCoord));
+            let neighborState = sampleNeighborState(neighborCoord, res);
             let neighborId    = select(0.0, getStateMaterialId(neighborState), isOccupiedState(neighborState));
             let neighborPhase = getMaterialPhaseId(neighborId);
 
@@ -55,8 +62,8 @@ fn checkReactions(coord: vec2f, res: vec2f, myState: vec4f, time: f32) -> Reacti
                 let offset    = chebyshev[i];
                 let bridge1   = coord + vec2f(offset.x, 0.0);
                 let bridge2   = coord + vec2f(0.0, offset.y);
-                let blocked1  = inBounds(bridge1, res) && isOccupiedState(textureLoad(identityTexture, vec2i(bridge1)));
-                let blocked2  = inBounds(bridge2, res) && isOccupiedState(textureLoad(identityTexture, vec2i(bridge2)));
+                let blocked1  = inBounds(bridge1, res) && isOccupiedState(sampleNeighborState(bridge1, res));
+                let blocked2  = inBounds(bridge2, res) && isOccupiedState(sampleNeighborState(bridge2, res));
                 if blocked1 && blocked2 { continue; }
             }
 
@@ -70,18 +77,17 @@ fn checkReactions(coord: vec2f, res: vec2f, myState: vec4f, time: f32) -> Reacti
 
             var probability: f32;
             if isChebyshevNeighbor {
-                let isFuelReaction = abs(productIdA - myId) > 0.5; // product differs from self = fuel catching fire
+                let isFuelReaction = abs(productIdA - myId) > 0.5;
                 if isFuelReaction {
-                    // Fuel catching fire — scale by air availability at both fuel and fire.
                     var fuelAirCount = 0u;
                     var fireAirCount = 0u;
                     for (var j = 0u; j < 4u; j++) {
                         let fuelNeighbor = coord + cardinal[j];
-                        if !inBounds(fuelNeighbor, res) || !isOccupiedState(textureLoad(identityTexture, vec2i(fuelNeighbor))) {
+                        if !inBounds(fuelNeighbor, res) || !isOccupiedState(sampleNeighborState(fuelNeighbor, res)) {
                             fuelAirCount++;
                         }
                         let fireNeighbor = neighborCoord + cardinal[j];
-                        if !inBounds(fireNeighbor, res) || !isOccupiedState(textureLoad(identityTexture, vec2i(fireNeighbor))) {
+                        if !inBounds(fireNeighbor, res) || !isOccupiedState(sampleNeighborState(fireNeighbor, res)) {
                             fireAirCount++;
                         }
                     }
@@ -89,7 +95,6 @@ fn checkReactions(coord: vec2f, res: vec2f, myState: vec4f, time: f32) -> Reacti
                     let surfaceScale = f32(min(fuelAirCount, fireAirCount)) / 4.0;
                     probability = 1.0 - exp(-chance / myDurability * surfaceScale * uniforms.deltaTime);
                 } else {
-                    // Non-fuel reacting with fire (e.g. water extinguishing) — flat probability, no air scaling.
                     probability = 1.0 - exp(-chance * uniforms.deltaTime);
                 }
             } else {
@@ -113,7 +118,7 @@ fn checkReactions(coord: vec2f, res: vec2f, myState: vec4f, time: f32) -> Reacti
                 for (var j = 0u; j < 8u; j++) {
                     let emitCoord = coord + chebyshev[j];
                     if !inBounds(emitCoord, res) { continue; }
-                    if isOccupiedState(textureLoad(identityTexture, vec2i(emitCoord))) { continue; }
+                    if isOccupiedState(sampleNeighborState(emitCoord, res)) { continue; }
                     let biproductState = makeStateWithSeed(biproductId, hash(emitCoord + vec2f(time, 0.0)));
                     let bpBase         = getMaterialStateBase(biproductId);
                     let bpLifetime     = materialStates[bpBase].lifetime;

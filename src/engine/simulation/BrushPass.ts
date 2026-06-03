@@ -32,7 +32,7 @@ interface BrushParams {
 /**
  * GPU compute pass that writes brush strokes into the simulation texture.
  *
- * Created and owned by {@link SimulationManager}. Each frame, {@link BrushManager} calls
+ * Created and owned by {@link BrushManager}. Each frame, calls
  * `Run()` via the manager — not directly.
  */
 export class BrushPass {
@@ -137,7 +137,8 @@ export class BrushPass {
         pass.end();
     }
 
-    public OnDestroy(): void {
+    // @omitfromdocs
+    public Destroy(): void {
         this.uniforms.destroy();
     }
 }

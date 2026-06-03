@@ -30,6 +30,8 @@ import { Nitrate } from '@Nitrate';
 [`input/`](input/README.md)  
 [`materials/`](materials/README.md)  
 &nbsp;&nbsp;&nbsp;&nbsp;↳ [`definitions/`](materials/definitions/README.md)  
+[`particle/`](particle/README.md)  
+&nbsp;&nbsp;&nbsp;&nbsp;↳ [`modules/`](particle/modules/README.md)  
 [`rendering/`](rendering/README.md)  
 &nbsp;&nbsp;&nbsp;&nbsp;↳ [`passes/`](rendering/passes/README.md)  
 [`scene/`](scene/README.md)  

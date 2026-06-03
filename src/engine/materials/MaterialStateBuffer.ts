@@ -1,4 +1,5 @@
 import type { MaterialName } from './definitions/MaterialIdentity';
+import type { SimulationResource } from '../simulation/SimulationManager';
 
 import { MaterialRegistry } from './MaterialRegistry';
 import { MaterialStateSchema } from './MaterialStateSchema';
@@ -10,7 +11,7 @@ import { MaterialStateSchema } from './MaterialStateSchema';
  * `Float32Array` indexed by material id, then uploads it as an immutable `STORAGE` buffer.
  * Layout is defined by {@link MaterialStateSchema}.
  */
-export class MaterialStateBuffer {
+export class MaterialStateBuffer implements SimulationResource {
     public readonly buffer: GPUBuffer;
 
     constructor(device: GPUDevice) {
@@ -36,7 +37,8 @@ export class MaterialStateBuffer {
         device.queue.writeBuffer(this.buffer, 0, data);
     }
 
-    public OnDestroy(): void {
+    // @omitfromdocs
+    public Destroy(): void {
         this.buffer.destroy();
     }
 }

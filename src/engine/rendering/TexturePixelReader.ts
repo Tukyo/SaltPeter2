@@ -1,3 +1,4 @@
+import type { SimulationResource } from "../simulation/SimulationManager";
 import type { Vec2 } from "../definitions/Primitives";
 
 type ReadPixelParams = {
@@ -12,7 +13,7 @@ type ReadPixelParams = {
  * Maintains a small reusable `MAP_READ` buffer for single-pixel reads. `ReadRegion` allocates
  * a temporary buffer sized to the requested rows and destroys it after the read.
  */
-export class TexturePixelReader {
+export class TexturePixelReader implements SimulationResource {
     private static readonly BytesPerRow = 256;
 
     private readonly device: GPUDevice;
@@ -114,7 +115,8 @@ export class TexturePixelReader {
         return { data, bytesPerRow };
     }
 
-    public OnDestroy(): void {
+    // @omitfromdocs
+    public Destroy(): void {
         this.buffer.destroy();
     }
 }

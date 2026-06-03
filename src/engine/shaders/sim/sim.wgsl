@@ -11,7 +11,8 @@
 @group(0) @binding(9) var nextCellStateTexture:            texture_storage_2d<rgba32float, write>;
 @group(0) @binding(10) var<storage, read> materialStates: array<MaterialStateEntry>;
 @group(0) @binding(11) var<storage, read> reactionLookup:  array<f32>;
-@group(0) @binding(12) var goOwnershipTexture:  texture_storage_2d<r32uint, read>;
+@group(0) @binding(12) var goOwnershipTexture:  texture_storage_2d<r32uint,    read>;
+@group(0) @binding(13) var goIdentityTexture:   texture_2d<f32>;
 @compute @workgroup_size(WG_SIZE, WG_SIZE)
 
 fn main(@builtin(global_invocation_id) id: vec3u) {
@@ -52,10 +53,8 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
             case 2: { accel = VELOCITY_ACCELERATION_LIQUID; }
             default: {}
         }
-        if moveDir.y != 0.0 {
-            finalVx = clamp(sourcePhysics.b + moveDir.x * accel, -MAX_VELOCITY, MAX_VELOCITY);
-            finalVy = clamp(sourcePhysics.a + moveDir.y * accel, -MAX_VELOCITY, MAX_VELOCITY);
-        }
+        finalVx = clamp(sourcePhysics.b + moveDir.x * accel, -MAX_VELOCITY, MAX_VELOCITY);
+        finalVy = clamp(sourcePhysics.a + moveDir.y * accel, -MAX_VELOCITY, MAX_VELOCITY);
     }
     textureStore(nextPhysicsTexture, vec2i(id.xy), vec4f(sourceTemp, currentPhysics.g, finalVx, finalVy));
 

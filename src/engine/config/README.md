@@ -27,6 +27,15 @@ Static configuration for all engine subsystems.
 
 ---
 
+### [`ParticleConfig`](ParticleConfig.ts)
+ Tunable constants for the particle system.
+
+| Method | Description |
+|--------|-------------|
+| [`static GetConfig()`](ParticleConfig.ts) | Returns the particle configuration. |
+
+---
+
 ### [`PhysicsConfig`](PhysicsConfig.ts)
  Tunable constants for the simulation's physics model.
 

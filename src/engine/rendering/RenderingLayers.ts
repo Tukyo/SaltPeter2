@@ -12,30 +12,41 @@ import { TextureFactory } from './TextureFactory';
 export class RenderingLayers {
     public readonly size: Size2D;
 
-    public readonly simTexture: GPUTexture;
     public readonly gameObjectsTexture: GPUTexture;
+    public readonly particleTexture: GPUTexture;
+    public readonly simTexture: GPUTexture;
 
-    private constructor(size: Size2D, simTexture: GPUTexture, gameObjectsTexture: GPUTexture) {
+    private constructor(
+        size: Size2D,
+        gameObjectsTexture: GPUTexture,
+        particleTexture: GPUTexture,
+        simTexture: GPUTexture,
+    ) {
         this.size = size;
-        this.simTexture = simTexture;
         this.gameObjectsTexture = gameObjectsTexture;
+        this.particleTexture = particleTexture;
+        this.simTexture = simTexture;
     }
 
     /** Allocates all layer textures and returns a ready-to-use instance. @internal */
     public static Create(device: GPUDevice, size: Size2D): RenderingLayers {
+        const textureUsage =
+            GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING |
+            GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST | GPUTextureUsage.COPY_SRC;
         const simTexture = TextureFactory.Create2D(device, size.width, size.height, 'rgba8unorm');
         const gameObjectsTexture = device.createTexture({
-            size: [size.width, size.height],
-            format: 'rgba8unorm',
-            usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING |
-                   GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_DST | GPUTextureUsage.COPY_SRC,
+            size: [size.width, size.height], format: 'rgba8unorm', usage: textureUsage,
         });
-        return new RenderingLayers(size, simTexture, gameObjectsTexture);
+        const particleTexture = device.createTexture({
+            size: [size.width, size.height], format: 'rgba8unorm', usage: textureUsage,
+        });
+        return new RenderingLayers(size, gameObjectsTexture, particleTexture, simTexture);
     }
 
     // @omitfromdocs
     public Destroy(): void {
         this.simTexture.destroy();
         this.gameObjectsTexture.destroy();
+        this.particleTexture.destroy();
     }
 }

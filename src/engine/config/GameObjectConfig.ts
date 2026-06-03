@@ -31,7 +31,9 @@ export class GameObjectConfig {
                 // Scale change for buoyancy of GameObjects in liquids
                 buoyancy: 10.0,
                 // Per-step velocity damping fraction when submerged (0=none, 1=instant stop)
-                drag: 0.015
+                drag: 0.015,
+                // Multiplier on liquid cell velocity before applying drag coupling to GOs
+                velocityScale: 100.0
             },
             sleep: {
                 linear: {

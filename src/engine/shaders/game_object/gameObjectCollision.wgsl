@@ -4,6 +4,7 @@
 @group(0) @binding(3) var                      identityTexture:  texture_2d<f32>;
 @group(0) @binding(4) var                      ownershipTexture: texture_2d<u32>;
 @group(0) @binding(5) var<storage, read>       physicsMaterials: array<MaterialPhysicsEntry>;
+@group(0) @binding(6) var                      simPhysicsTexture: texture_2d<f32>;
 
 // Returns how many cells to push along the collision normal to correct overlap.
 // fraction = hitCount / boundaryCount is raised to (1 / hardness) before scaling by force.
@@ -38,6 +39,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var contactHits:      u32 = 0u;
     var liquidHitCount:   u32 = 0u;
     var liquidDensitySum: f32 = 0.0;
+    var liquidVelSumX:    f32 = 0.0;
+    var liquidVelSumY:    f32 = 0.0;
 
     // selfEncoded = slotIndex + 1, used to skip own cells in the ownership texture
     let selfEncoded = gameObjectIdx + 1u;
@@ -91,6 +94,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             if (isMaterialPhaseId(phaseId, MATERIAL_PHASE_LIQUID)) {
                 let matIdx = clamp(i32(floor(getStateMaterialId(cellSample) + 0.5)), 0, MATERIAL_COUNT - 1);
                 liquidDensitySum += physicsMaterials[matIdx].density;
+                let physSample = textureLoad(simPhysicsTexture, coord, 0);
+                liquidVelSumX += physSample.b;
+                liquidVelSumY += physSample.a;
                 liquidHitCount++;
                 continue;
             }
@@ -146,9 +152,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let avgLiquidDensity   = liquidDensitySum / f32(liquidHitCount);
         let buoyancyAccel      = (avgLiquidDensity / max(0.001, state.density)) * submersionFraction * uniforms.gravity * uniforms.buoyancyScale;
         state.velY += buoyancyAccel * uniforms.simStepDuration;
-        let dragFactor = max(0.0, 1.0 - submersionFraction * uniforms.liquidDrag);
-        state.velX *= dragFactor;
-        state.velY *= dragFactor;
+        let avgLiquidVelX    = (liquidVelSumX / f32(liquidHitCount)) * uniforms.liquidVelocityScale;
+        let avgLiquidVelY    = (liquidVelSumY / f32(liquidHitCount)) * uniforms.liquidVelocityScale;
+        let couplingStrength = submersionFraction * uniforms.liquidDrag;
+        state.velX += (avgLiquidVelX - state.velX) * couplingStrength;
+        state.velY += (avgLiquidVelY - state.velY) * couplingStrength;
     }
 
     if (hitCount == 0u) {

@@ -198,7 +198,7 @@ export class ChunkOverlay {
     }
 
     /** Called by DebugOverlay on scene teardown. Removes the overlay canvas. @internal */
-    public OnDestroy(): void {
+    public Destroy(): void {
         if (this.renderer2D) { Renderer.Destroy2D(this.renderer2D); }
         this.renderer2D = null;
         

@@ -114,11 +114,12 @@ export class DebugOverlay extends NitrateProcess {
 
     public OnDestroy(): void {
         window.removeEventListener('keydown', this.handleKey);
-        this.chunk.OnDestroy();
-        this.gameObject.OnDestroy();
-        this.pressure.OnDestroy();
-        this.temperature.OnDestroy();
-        this.badge.OnDestroy();
+
+        this.chunk.Destroy();
+        this.gameObject.Destroy();
+        this.pressure.Destroy();
+        this.temperature.Destroy();
+        this.badge.Destroy();
 
         if (DebugOverlay.Instance === this) {
             DebugOverlay.Instance = null;
