@@ -32,7 +32,7 @@ One of the main goals in this project is to obtain a better understanding of gam
 ## Guides
 Guides are available for the proprietary systems such as the Editor.
 
-→ [`EDITOR GUIDE`](guides\EDITOR_GUIDE.md)
+→ [`EDITOR GUIDE`](guides/EDITOR_GUIDE.md)
 
 ## Engine
 Nitrate is the simulation engine powering this project — released separately under CC0, fully public domain.
