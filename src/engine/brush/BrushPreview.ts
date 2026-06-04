@@ -46,7 +46,7 @@ export class BrushPreview extends NitrateProcess {
     }
 
     public Update(now: number): void {
-        const mouse = Input.Instance?.GetState();
+        const mouse = Input.Instance?.GetMouseState();
         if (!mouse || !mouse.isInside) { this.Hide(); return; }
 
         const brushState = BrushManager.Instance?.state;

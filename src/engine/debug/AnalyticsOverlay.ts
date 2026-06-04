@@ -1,5 +1,6 @@
 import { Analytics } from './Analytics';
 import { AnalyticsMenu } from './AnalyticsMenu';
+import { Input } from '../input/Input';
 import { KeybindConfig } from '../config/KeybindConfig';
 import { NitrateProcess } from '../NitrateProcess';
 import { Renderer } from '../rendering/Renderer';
@@ -18,20 +19,18 @@ export class AnalyticsOverlay extends NitrateProcess {
     private menu: AnalyticsMenu | null = null;
     private readPending: boolean = false;
 
-    private readonly handleKey: (e: KeyboardEvent) => void;
+    private readonly unsubKey: (() => void) | undefined;
 
     constructor() {
         super();
-        this.handleKey = (e) => {
-            if (e.key !== KeybindConfig.GetConfig().debug.analytics) { return; }
+        this.unsubKey = Input.Instance?.OnKeyDown(KeybindConfig.GetConfig().debug.analytics, () => {
             if (this.menu) {
                 this.menu.Destroy();
                 this.menu = null;
             } else {
                 this.menu = new AnalyticsMenu();
             }
-        };
-        window.addEventListener('keydown', this.handleKey);
+        });
     }
 
     public Update(): void {
@@ -59,7 +58,7 @@ export class AnalyticsOverlay extends NitrateProcess {
     }
 
     public OnDestroy(): void {
-        window.removeEventListener('keydown', this.handleKey);
+        this.unsubKey?.();
         this.menu?.Destroy();
         this.menu = null;
     }

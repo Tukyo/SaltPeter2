@@ -60,7 +60,7 @@ export class BrushManager extends NitrateProcess {
     public Unblock(): void { this.blocked = false; }
 
     public Update(now: number): void {
-        const mouse = Input.Instance?.GetState();
+        const mouse = Input.Instance?.GetMouseState();
         const canvas = Renderer.Instance?.GetWebGPU()?.canvas;
         const simulationLayer = SimulationManager.Instance?.simulationLayer;
         if (!mouse || !canvas || !simulationLayer) { return; }

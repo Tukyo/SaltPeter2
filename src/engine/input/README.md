@@ -3,7 +3,7 @@
 <!-- HIERARCHY_END -->
 # Input
 
-Canvas-scoped mouse input. Tracks position, button state, and bounds, normalised to simulation space on every event.
+Input handler. Tracks mouse and keyboard events, providing game layer subscriptions and unsubscriptions with engine layer controls.
 
 <!-- API_START -->
 ---
@@ -11,7 +11,8 @@ Canvas-scoped mouse input. Tracks position, button state, and bounds, normalised
 ## API
 
 ### [`Input`](Input.ts)
-Tracks mouse input relative to the simulation canvas.
+Tracks mouse and keyboard input. All input should flow through this class
+so that guardrails like blur-clearing apply universally.
 
 ```ts
 new Nitrate.Input(canvas);
@@ -20,7 +21,7 @@ new Nitrate.Input(canvas);
 | Interfaces & Types |
 |--------------------|
 ```ts
-interface InputState {
+interface MouseState {
     pos: Vec2;
     leftDown: boolean;
     middleDown: boolean;
@@ -29,10 +30,20 @@ interface InputState {
 }
 ```
 
+```ts
+type MouseButton = 0 | 1 | 2;
+```
+
 | Method | Description |
 |--------|-------------|
-| [`GetState(): InputState`](Input.ts) | Returns a snapshot of the current mouse state. |
-| [`Reset(): void`](Input.ts) | Resets all mouse state to defaults. Call on scene transitions to prevent stale input. |
+| [`GetMouseState(): MouseState`](Input.ts) | Returns a snapshot of the current mouse state. |
+| [`OnMouseDown(button: MouseButton, callback: (e: MouseEvent) => void): () => void`](Input.ts) | Subscribes to mousedown on the canvas for a specific button. Returns an unsubscribe function. |
+| [`OnMouseUp(button: MouseButton, callback: (e: MouseEvent) => void): () => void`](Input.ts) | Subscribes to mouseup (window-level, catches drag-releases). Returns an unsubscribe function. |
+| [`OnMouseMove(callback: (e: MouseEvent) => void): () => void`](Input.ts) | Subscribes to mousemove on the canvas. Returns an unsubscribe function. |
+| [`ResetMouseState(): void`](Input.ts) | Resets all mouse state to defaults. Call on scene transitions to prevent stale input. |
+| [`IsKeyDown(key: string): boolean`](Input.ts) | Returns true while the given key is held. |
+| [`OnKeyDown(key: string, callback: () => void): () => void`](Input.ts) | Subscribes to the first keydown for a key (repeat events ignored). Returns an unsubscribe function. |
+| [`OnKeyUp(key: string, callback: () => void): () => void`](Input.ts) | Subscribes to keyup for a key. Returns an unsubscribe function. |
 
 ---
 

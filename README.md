@@ -29,6 +29,10 @@ One of the main goals in this project is to obtain a better understanding of gam
 | Bresenham's Circle | [Jack Elton Bresenham](https://en.wikipedia.org/wiki/Midpoint_circle_algorithm) | $d(x, y) = x^2 + y^2 - r^2$ |
 | Thermal conduction | [Joseph Fourier](https://en.wikipedia.org/wiki/Joseph_Fourier) | $q = -k\nabla T$ |
 
+## Guides
+Guides are available for the proprietary systems such as the Editor.
+
+→ [`EDITOR GUIDE`](guides\EDITOR_GUIDE.md)
 
 ## Engine
 Nitrate is the simulation engine powering this project — released separately under CC0, fully public domain.
@@ -36,7 +40,7 @@ Nitrate is the simulation engine powering this project — released separately u
 → [`src/engine/`](src/engine/README.md)
 
 ## Changelog
-→ [`CHANGELOG.md`](CHANGELOG.md)
+→ [`CHANGELOG`](CHANGELOG.md)
 
 ## License
 | Scope | License |

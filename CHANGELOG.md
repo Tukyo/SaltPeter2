@@ -2,6 +2,41 @@
 
 ---
 
+## [0.1.1] - [06/04/2026]
+### Updates & Changes
+
+#### Guides
+Added a guides folder with editor related guides. More will be added over time.
+
+#### Input System Overhaul
+`Input` has been expanded from a mouse-only tracker into a unified input bus. All engine and editor code now subscribes through `Input` instead of attaching raw DOM listeners directly — so blur-clearing, repeat-suppression, and future guardrails apply universally.
+
+- `InputState` renamed to `MouseState`; `GetState()` renamed to `GetMouseState()`; `Reset()` renamed to `ResetMouseState()`
+- `MouseButton` type alias added (`0 | 1 | 2`) for typed button subscriptions
+- Keyboard subsystem added: `InitKeyboard()` wires `keydown`/`keyup`/`blur` on `window`; repeat keydown events are suppressed (first press only fires callbacks); `blur` fires all pending keyup callbacks and calls `ResetMouseState()` so no keys stay stuck when the window loses focus
+- Subscription API added for all input events — each returns an unsubscribe function:
+  - `OnMouseDown(button, cb)` — canvas-level mousedown for a specific button
+  - `OnMouseUp(button, cb)` — window-level mouseup (catches drag-releases)
+  - `OnMouseMove(cb)` — canvas mousemove
+  - `OnKeyDown(key, cb)` — first keydown (repeats ignored)
+  - `OnKeyUp(key, cb)` — keyup
+- `IsKeyDown(key)` added for polling keyboard state
+- `OnDestroy` now removes all registered listeners (`mousemove`, `mousedown`, `mouseleave`, `mouseup`, `keydown`, `keyup`, `blur`)
+
+#### Editor Scripts — Input API Migration
+All editor controllers and overlays that previously attached raw DOM listeners have been migrated to the `Input` subscription API.
+
+- `EyedropperController` — removed local `altDown` boolean and raw `window`/`canvas` event listeners; now subscribes via `Input.OnKeyDown/OnKeyUp('Alt')` and `Input.OnMouseDown/OnMouseMove`; `IsKeyDown('Alt')` replaces the local flag throughout
+- `SelectionController` — removed local `shiftDown`/`ctrlDown` booleans and raw event listeners; now subscribes via `Input.OnKeyDown/OnKeyUp` for Shift and Control; `IsKeyDown` replaces local flags; `GetMouseState().leftDown` replaces `e.buttons & 1` check
+- `AnalyticsOverlay`, `DebugOverlay`, `UserInterfaceManager` — all raw `window.addEventListener('keydown')` calls replaced with `Input.OnKeyDown` subscriptions; `OnDestroy` now calls the returned unsubscribe functions instead of `removeEventListener`
+- `BrushManager`, `BrushPreview`, `Camera`, `DebugPanel` — call sites updated from `GetState()` to `GetMouseState()`
+
+### Bug Fixes
+- Fixed GameObject instantiation failing for custom assets — `Metadata.ResolveGuid()` previously only scanned shipped resources when building its GUID cache; it now scans both `resources` and `userdata` in parallel, so GOs authored and saved as custom assets can be found and spawned by GUID
+- Fixed `Metadata.GenerateOrPreserve()` silently discarding existing GUIDs for custom assets — now reads the `.meta` file directly via `window.api.assets.read()` and parses inline, instead of routing through `Metadata.Read()` which did not fall back to the userdata path in this context
+
+---
+
 ## [0.1.0] - [06/03/2026]
 ### Updates & Changes
 
@@ -70,8 +105,6 @@ The Resources browser now distinguishes between read-only shipped assets and use
 
 #### Removed Files
 - Deleted 6 legacy test gameobject files and their `.meta` files: `CircleTest`, `CubeTest`, `GunpowderTest`, `LavaTest`, `PhysicsTest`, `StoneTest`
-
-### Bug Fixes
 
 ---
 

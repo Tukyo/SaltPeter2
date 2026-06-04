@@ -36,7 +36,7 @@ export class Camera extends NitrateProcess {
     }
 
     public Update(now: number): void {
-        const state = Input.Instance?.GetState();
+        const state = Input.Instance?.GetMouseState();
         if (!state) { return; }
 
         if (state.middleDown) {

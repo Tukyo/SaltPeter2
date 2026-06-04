@@ -51,14 +51,18 @@ export class Metadata {
         type: AssetType,
         editor: { size: Size2D, pos?: Vec2 }
     ): Promise<AssetMetadata> {
-        const existing = await Metadata.Read(assetPath);
+        const metaPath = Metadata.GetMetaPath(assetPath);
+        const existingJson = await window.api.assets.read(metaPath).catch(() => null);
         const meta = Metadata.Generate(type, editor);
-        if (existing) {
-            meta.guid = existing.guid;
-            LogManager.Instance?.Log({
-                text: `Preserved GUID for ${assetPath}.`,
-                options: { tags: ['Metadata'] }
-            });
+        if (existingJson !== null) {
+            try {
+                const existing = JSON.parse(existingJson) as AssetMetadata;
+                meta.guid = existing.guid;
+                LogManager.Instance?.Log({
+                    text: `Preserved GUID for ${assetPath}.`,
+                    options: { tags: ['Metadata'] }
+                });
+            } catch { /* ignore malformed existing meta */ }
         }
         return meta;
     }
@@ -70,8 +74,11 @@ export class Metadata {
     public static async ResolveGuid(guid: string): Promise<string | null> {
         if (!Metadata.guidCache) {
             Metadata.guidCache = new Map();
-            const paths = await window.api.resources.list().catch(() => [] as string[]);
-            for (const path of paths) {
+            const [resourcePaths, userdataPaths] = await Promise.all([
+                window.api.resources.list().catch(() => [] as string[]),
+                window.api.userdata.list().catch(() => [] as string[]),
+            ]);
+            for (const path of [...resourcePaths, ...userdataPaths]) {
                 if (path.endsWith('/')) { continue; }
                 const meta = await Metadata.Read(path);
                 if (meta) { Metadata.guidCache.set(meta.guid, path); }

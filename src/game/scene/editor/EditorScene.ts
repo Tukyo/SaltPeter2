@@ -129,6 +129,7 @@ export class EditorScene extends Nitrate.Scene {
 
             this.materialsPanel = new Nitrate.MaterialsPanel({
                 activeMaterial: { defaultMaterial: 'sand' },
+                occupancy: { default: 'static', show: false },
                 style: { top: '655px' }
             });
 

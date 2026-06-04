@@ -14,17 +14,16 @@ export class EyedropperController extends Nitrate.NitrateProcess {
     private readonly nameSpan: HTMLSpanElement;
     private readonly idSpan: HTMLSpanElement;
 
-    private altDown: boolean = false;
     private isReading: boolean = false;
     private lastClientX: number = 0;
     private lastClientY: number = 0;
     private lastMaterialId: number = 0;
     private lastColorIndex: number = 0;
 
-    private readonly handleKeyDown: (e: KeyboardEvent) => void;
-    private readonly handleKeyUp: (e: KeyboardEvent) => void;
-    private readonly handleMouseMove: (e: MouseEvent) => void;
-    private readonly handleMouseDown: (e: MouseEvent) => void;
+    private readonly unsubAltDown: (() => void) | undefined;
+    private readonly unsubAltUp: (() => void) | undefined;
+    private readonly unsubMouseMove: (() => void) | undefined;
+    private readonly unsubMouseDown: (() => void) | undefined;
 
     constructor(
         canvas: HTMLElement,
@@ -62,39 +61,31 @@ export class EyedropperController extends Nitrate.NitrateProcess {
         this.tooltip.appendChild(info);
         document.body.appendChild(this.tooltip);
 
-        this.handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key !== 'Alt' || this.altDown) { return; }
-            e.preventDefault();
-            this.altDown = true;
+        const input = Nitrate.Input.Instance;
+
+        this.unsubAltDown = input?.OnKeyDown('Alt', () => {
             Nitrate.BrushManager.Instance?.Block();
             this.canvas.style.cursor = 'crosshair';
-        };
+        });
 
-        this.handleKeyUp = (e: KeyboardEvent) => {
-            if (e.key !== 'Alt') { return; }
-            this.altDown = false;
+        this.unsubAltUp = input?.OnKeyUp('Alt', () => {
             Nitrate.BrushManager.Instance?.Unblock();
             this.canvas.style.cursor = 'none';
             this.HideTooltip();
-        };
+        });
 
-        this.handleMouseMove = (e: MouseEvent) => {
+        this.unsubMouseMove = input?.OnMouseMove((e) => {
             this.lastClientX = e.clientX;
             this.lastClientY = e.clientY;
-            if (!this.altDown) { return; }
+            if (!input.IsKeyDown('Alt')) { return; }
             this.MoveTooltip(e.clientX, e.clientY);
-        };
+        });
 
-        this.handleMouseDown = (e: MouseEvent) => {
-            if (!this.altDown || e.button !== 0) { return; }
+        this.unsubMouseDown = input?.OnMouseDown(0, (e) => {
+            if (!input.IsKeyDown('Alt')) { return; }
             e.preventDefault();
             this.ApplyEyedropper();
-        };
-
-        window.addEventListener('keydown', this.handleKeyDown);
-        window.addEventListener('keyup', this.handleKeyUp);
-        this.canvas.addEventListener('mousemove', this.handleMouseMove);
-        this.canvas.addEventListener('mousedown', this.handleMouseDown);
+        });
     }
 
     private MoveTooltip(clientX: number, clientY: number): void {
@@ -106,13 +97,13 @@ export class EyedropperController extends Nitrate.NitrateProcess {
     }
 
     public Update(now: number): void {
-        if (!this.altDown || this.isReading) { return; }
+        if (!Nitrate.Input.Instance?.IsKeyDown('Alt') || this.isReading) { return; }
         void this.ReadAtPosition();
     }
 
     private async ReadAtPosition(): Promise<void> {
         if (this.isReading) { return; }
-        const mouse = Nitrate.Input.Instance?.GetState();
+        const mouse = Nitrate.Input.Instance?.GetMouseState();
         const simulationLayer = Nitrate.SimulationManager.Instance?.simulationLayer;
         const reader = Nitrate.SimulationManager.Instance?.texturePixelReader;
         const canvas = Nitrate.Renderer.Instance?.GetWebGPU()?.canvas;
@@ -137,7 +128,7 @@ export class EyedropperController extends Nitrate.NitrateProcess {
         }
         this.isReading = false;
 
-        if (!this.altDown) { return; }
+        if (!Nitrate.Input.Instance?.IsKeyDown('Alt')) { return; }
 
         const materialId = bytes[0];
         const colorIndex = Nitrate.MaterialQuery.DecodeColorIndex(bytes[1]);
@@ -160,7 +151,8 @@ export class EyedropperController extends Nitrate.NitrateProcess {
         const safeIndex = Math.min(colorIndex, material.colors.length - 1);
         const color = material.colors[safeIndex];
         if (color) {
-            this.colorSwatch.style.backgroundColor = `rgb(${Math.round(color.r)}, ${Math.round(color.g)}, ${Math.round(color.b)})`;
+            this.colorSwatch.style.backgroundColor =
+                `rgb(${Math.round(color.r)}, ${Math.round(color.g)}, ${Math.round(color.b)})`;
         }
 
         const displayName = material.name.charAt(0).toUpperCase() + material.name.slice(1);
@@ -183,14 +175,13 @@ export class EyedropperController extends Nitrate.NitrateProcess {
     }
 
     public OnDestroy(): void {
-        window.removeEventListener('keydown', this.handleKeyDown);
-        window.removeEventListener('keyup', this.handleKeyUp);
-        this.canvas.removeEventListener('mousemove', this.handleMouseMove);
-        this.canvas.removeEventListener('mousedown', this.handleMouseDown);
+        this.unsubAltDown?.();
+        this.unsubAltUp?.();
+        this.unsubMouseMove?.();
+        this.unsubMouseDown?.();
         this.tooltip.remove();
-        if (this.altDown) {
+        if (Nitrate.Input.Instance?.IsKeyDown('Alt')) {
             Nitrate.BrushManager.Instance?.Unblock();
-            this.altDown = false;
         }
     }
 }

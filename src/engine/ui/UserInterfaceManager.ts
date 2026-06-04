@@ -1,3 +1,4 @@
+import { Input } from '../input/Input';
 import { KeybindConfig } from '../config/KeybindConfig';
 import { NitrateProcess } from '../NitrateProcess';
 
@@ -15,12 +16,7 @@ export class UserInterfaceManager extends NitrateProcess {
     /** Full-screen positioning canvas. All panels mount here as absolute children. */
     public readonly panelContent: HTMLElement;
 
-    private readonly keyHandler = (e: KeyboardEvent) => {
-        if (e.key === KeybindConfig.GetConfig().editor.toggle && !e.altKey && !e.ctrlKey && !e.metaKey) {
-            e.preventDefault();
-            this.panelContent.classList.toggle('ui-hidden');
-        }
-    };
+    private readonly unsubToggle: (() => void) | undefined;
 
     constructor() {
         super();
@@ -30,11 +26,15 @@ export class UserInterfaceManager extends NitrateProcess {
         this.panelContent.id = 'ui-layer';
         document.body.appendChild(this.panelContent);
 
-        document.addEventListener('keydown', this.keyHandler);
+        this.unsubToggle = Input.Instance?.OnKeyDown(KeybindConfig.GetConfig().editor.toggle, () => {
+            if (Input.Instance?.IsKeyDown('Alt') || Input.Instance?.IsKeyDown('Control') ||
+                Input.Instance?.IsKeyDown('Meta')) { return; }
+            this.panelContent.classList.toggle('ui-hidden');
+        });
     }
 
     public OnDestroy(): void {
-        document.removeEventListener('keydown', this.keyHandler);
+        this.unsubToggle?.();
         this.panelContent.remove();
 
         if (UserInterfaceManager.Instance === this) {

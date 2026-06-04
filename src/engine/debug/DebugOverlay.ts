@@ -2,6 +2,7 @@ import { ChunkOverlay } from './ChunkOverlay';
 import { DebugOverlayBadge } from './DebugOverlayBadge';
 import { KeybindConfig } from '../config/KeybindConfig';
 import { LogManager } from './LogManager';
+import { Input } from '../input/Input';
 import { NitrateProcess } from '../NitrateProcess';
 import { GameObjectOverlay } from './GameObjectOverlay';
 import { PressureOverlay } from './PressureOverlay';
@@ -28,7 +29,7 @@ export class DebugOverlay extends NitrateProcess {
     private readonly pressure = new PressureOverlay();
     private readonly temperature = new TemperatureOverlay();
     private readonly badge = new DebugOverlayBadge();
-    private readonly handleKey: (e: KeyboardEvent) => void;
+    private readonly unsubKeys: Array<() => void> = [];
 
     private activeLayer: DebugLayer | null = null;
     private activeLayerIndex: number = 0;
@@ -39,17 +40,18 @@ export class DebugOverlay extends NitrateProcess {
 
         this.badge.SetLabel(DEBUG_SIM_LAYERS[this.activeLayerIndex]);
 
-        this.handleKey = (e) => {
+        const input = Input.Instance;
+        if (input) {
             const keys = KeybindConfig.GetConfig().debug.overlay;
-            if (e.key === keys.chunk) { this.SetLayer('chunk'); }
-            else if (e.key === keys.pressure) { this.SetLayer('pressure'); }
-            else if (e.key === keys.temperature) { this.SetLayer('temperature'); }
-            else if (e.key === keys.gameObject) { this.SetLayer('gameObject'); }
-            else if (e.key === keys.layer.down) { this.CycleLayer(-1); }
-            else if (e.key === keys.layer.up) { this.CycleLayer(1); }
-        };
-
-        window.addEventListener('keydown', this.handleKey);
+            this.unsubKeys.push(
+                input.OnKeyDown(keys.chunk, () => { this.SetLayer('chunk'); }),
+                input.OnKeyDown(keys.pressure, () => { this.SetLayer('pressure'); }),
+                input.OnKeyDown(keys.temperature, () => { this.SetLayer('temperature'); }),
+                input.OnKeyDown(keys.gameObject, () => { this.SetLayer('gameObject'); }),
+                input.OnKeyDown(keys.layer.down, () => { this.CycleLayer(-1); }),
+                input.OnKeyDown(keys.layer.up, () => { this.CycleLayer(1); }),
+            );
+        }
 
         LogManager.Instance?.Log({
             text: 'DebugOverlay ready.',
@@ -113,7 +115,7 @@ export class DebugOverlay extends NitrateProcess {
     }
 
     public OnDestroy(): void {
-        window.removeEventListener('keydown', this.handleKey);
+        for (const unsub of this.unsubKeys) { unsub(); }
 
         this.chunk.Destroy();
         this.gameObject.Destroy();

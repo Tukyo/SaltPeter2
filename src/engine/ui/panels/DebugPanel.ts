@@ -193,7 +193,7 @@ export class DebugPanel extends NitrateProcess {
     }
 
     public Update(now: number): void {
-        const mouse = Input.Instance?.GetState();
+        const mouse = Input.Instance?.GetMouseState();
         const sim = SimulationManager.Instance;
         const renderer = Renderer.Instance?.GetWebGPU();
         const simulationLayer = sim?.simulationLayer ?? null;
