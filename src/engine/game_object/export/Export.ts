@@ -6,6 +6,7 @@ import { LogManager } from '../../debug/LogManager';
 import { Metadata } from '../Metadata';
 import { Modal } from '../../ui/Modal';
 import { NitrateProcess } from '../../NitrateProcess';
+import { Resources } from '../../ui/Resources';
 
 /** Abstract base for game object export. Subclasses implement Run() to define the export target and format. */
 export abstract class Export extends NitrateProcess {
@@ -26,9 +27,9 @@ export abstract class Export extends NitrateProcess {
     protected async WriteFile(go: GameObject, type: AssetType, editor: { size: Size2D, pos?: Vec2 }): Promise<void> {
         const filename = this.GetFilename(go);
         const dir = filename.includes('/') ? filename.split('/').slice(0, -1).join('/') : null;
-        if (dir) { await window.api.resources.mkdir(dir).catch(() => null); }
+        if (dir) { await window.api.assets.mkdir(dir).catch(() => null); }
 
-        const existing = await window.api.resources.read(filename).catch(() => null);
+        const existing = await window.api.assets.read(filename).catch(() => null);
         if (existing !== null) {
             const confirmed = await Modal.Confirm({ title: `${filename} already exists. Overwrite?`, confirmLabel: 'Overwrite' });
             if (!confirmed) { return; }
@@ -36,7 +37,7 @@ export abstract class Export extends NitrateProcess {
 
         const output = { name: go.name, components: go.components };
         try {
-            await window.api.resources.write(filename, JSON.stringify(output, null, 2));
+            await window.api.assets.write(filename, JSON.stringify(output, null, 2));
         } catch {
             LogManager.Instance?.LogWarning({
                 text: `Failed to write ${filename}.`,
@@ -47,7 +48,7 @@ export abstract class Export extends NitrateProcess {
 
         const meta = await Metadata.GenerateOrPreserve(filename, type, editor);
         try {
-            await window.api.resources.write(Metadata.GetMetaPath(filename), JSON.stringify(meta, null, 2));
+            await window.api.assets.write(Metadata.GetMetaPath(filename), JSON.stringify(meta, null, 2));
         } catch {
             LogManager.Instance?.LogWarning({
                 text: `Failed to write meta for ${filename}.`,
@@ -57,6 +58,7 @@ export abstract class Export extends NitrateProcess {
         }
 
         Metadata.InvalidateGuidCache();
+        void Resources.Instance?.InvalidateFile(filename);
         LogManager.Instance?.Log({
             text: `Exported ${filename}.`,
             options: { tags: ['Export'] }

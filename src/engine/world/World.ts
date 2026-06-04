@@ -357,11 +357,10 @@ export class World extends NitrateProcess {
 
     /** Creates the world metadata file if it doesn't exist, or fetches any that already exist for the current save. */
     private async CreateOrFetchMeta(): Promise<void> {
-        const path = 'worlds/meta.json';
+        const { dev, save } = WorldConfig.GetConfig();
+        const path = `${save.worldPath}/meta.json`;
         const dm = DataPersistenceManager.Instance;
         if (!dm) { this.seed = Utils.Seed(); return; }
-
-        const { dev } = WorldConfig.GetConfig();
         if (dev.wipeSaveOnLoad) { await dm.DeleteSave(); }
 
         const existing = await dm.ReadFile(path, false);

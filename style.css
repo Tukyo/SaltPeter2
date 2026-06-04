@@ -18,11 +18,6 @@
 
 /* ─── Base ────────────────────────────────────────────────────────────────── */
 
-#left-docket.ui-hidden .docket-content,
-#right-docket.ui-hidden #tools-docket {
-    display: none;
-}
-
 body {
     margin: 0;
     background: var(--color-dark-primary);
@@ -39,103 +34,32 @@ canvas {
     inset: 0;
 }
 
-/* ─── Docket Parents ──────────────────────────────────────────────────────── */
+/* ─── UI Layer ────────────────────────────────────────────────────────────── */
 
-#left-docket,
-#right-docket {
+#ui-layer {
     position: fixed;
-    top: 0;
-    bottom: 0;
-    display: flex;
-    align-items: stretch;
+    inset: 0;
     pointer-events: none;
+    z-index: 10;
 }
 
-#left-docket {
-    left: 0;
-}
-
-#right-docket {
-    right: 0;
-}
-
-.docket-content {
-    position: relative;
-    flex: 1;
-    min-width: 0;
-    pointer-events: none;
-}
-
-.docket-toggle {
-    width: 18px;
-    background: var(--color-dark-primary);
-    border: none;
-    justify-content: center;
-    cursor: pointer;
-    pointer-events: auto;
-    padding: 0;
-    color: var(--color-light-tertiary);
-    font-size: var(--font-size-xs);
-}
-
-.docket-toggle:hover {
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--color-light-secondary);
-}
-
-#left-docket .docket-toggle {
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-#right-docket .docket-toggle {
-    border-left: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-#left-docket .docket-toggle::after {
-    content: '›';
-}
-
-#left-docket.ui-hidden .docket-toggle::after {
-    content: '‹';
-}
-
-#right-docket .docket-toggle::after {
-    content: '‹';
-}
-
-#right-docket.ui-hidden .docket-toggle::after {
-    content: '›';
-}
-
-/* ─── Tools Docket ────────────────────────────────────────────────────────────── */
-
-#tools-docket {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    flex-wrap: wrap;
-    align-content: flex-end;
-    gap: 8px;
-    padding-right: 4px;
-    padding-top: 14px;
-    padding-bottom: 14px;
-    box-sizing: border-box;
-    pointer-events: none;
-}
-
-#tools-docket .ui-panel {
-    pointer-events: auto;
+#ui-layer.ui-hidden {
+    display: none;
 }
 
 /* ─── Panel ───────────────────────────────────────────────────────────────── */
 
 .ui-panel {
-    width: 240px;
+    pointer-events: auto;
     background: rgba(22, 22, 22, 0.92);
     border: 1px solid rgba(255, 255, 255, 0.08);
     color: var(--color-light-primary);
     border-radius: 10px;
     user-select: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: absolute;
 }
 
 .panel-header {
@@ -163,6 +87,11 @@ canvas {
 
 .panel-header:hover {
     background: rgba(255, 255, 255, 0.055);
+    cursor: pointer;
+}
+
+.ui-panel.is-dragging .panel-header {
+    cursor: grabbing;
 }
 
 .ui-panel.is-collapsed .panel-header {
@@ -174,10 +103,52 @@ canvas {
 }
 
 .panel-body {
-    display: block;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .ui-panel.is-collapsed .panel-body {
+    display: none;
+}
+
+.panel-resize-handles {
+    width: 100%;
+    margin-top: 14px;
+}
+
+.panel-resize-handle {
+    position: absolute;
+    bottom: 0;
+    width: 18px;
+    height: 18px;
+    opacity: 0.4;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cline x1='3' y1='13' x2='13' y2='3' stroke='%23aaa' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='7' y1='13' x2='13' y2='7' stroke='%23aaa' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='11' y1='13' x2='13' y2='11' stroke='%23aaa' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    transition: opacity 0.15s;
+}
+
+.panel-resize-handle:hover {
+    opacity: 0.9;
+}
+
+.panel-resize-handle-left {
+    left: 0;
+    cursor: nesw-resize;
+    border-radius: 0 0 0 10px;
+    background-position: 2px bottom 2px;
+    transform: scaleX(-1);
+}
+
+.panel-resize-handle-right {
+    right: 0;
+    cursor: nwse-resize;
+    border-radius: 0 0 10px 0;
+    background-position: right 2px bottom 2px;
+}
+
+.ui-panel.is-collapsed .panel-resize-handles {
     display: none;
 }
 
@@ -493,11 +464,24 @@ button.action-button--warn:hover {
 
 /* ─── Toggle List ─────────────────────────────────────────────────────────── */
 
+.panel-section:has(.toggle-list) {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.control-item:has(.toggle-list) {
+    flex: 1;
+    min-height: 0;
+}
+
 .toggle-list {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    max-height: 75px;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
@@ -898,49 +882,7 @@ button.action-button--warn:hover {
     }
 }
 
-/* ─── Hierarchy Docket ────────────────────────────────────────────────────── */
-
-#hierarchy-docket {
-    position: absolute;
-    top: 14px;
-    left: 288px;
-    bottom: 210px;
-    width: 220px;
-    display: flex;
-    flex-direction: column;
-    pointer-events: none;
-}
-
 /* ─── Hierarchy ───────────────────────────────────────────────────────────── */
-
-.hierarchy {
-    pointer-events: auto;
-    background: rgba(22, 22, 22, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    flex: 1;
-    min-height: 0;
-}
-
-.hierarchy-header {
-    padding: 10px 14px 8px;
-    background: rgba(255, 255, 255, 0.035);
-    border-radius: 10px 10px 0 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    flex-shrink: 0;
-}
-
-.hierarchy-title {
-    margin: 0;
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.4);
-}
 
 .hierarchy-list {
     flex: 1;
@@ -1034,48 +976,9 @@ button.action-button--warn:hover {
     outline: none;
 }
 
-/* ─── Resources Docket ────────────────────────────────────────────────────── */
+/* ─── Lower Row & Dockets ─────────────────────────────────────────────────── */
 
-#resources-docket {
-    position: absolute;
-    bottom: 14px;
-    left: 14px;
-    width: 494px;
-    height: 188px;
-    pointer-events: none;
-}
 
-.resources {
-    pointer-events: auto;
-    background: rgba(22, 22, 22, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow: hidden;
-}
-
-.resources-header {
-    padding: 10px 14px 8px;
-    background: rgba(255, 255, 255, 0.035);
-    border-radius: 10px 10px 0 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.resources-title {
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.4);
-    margin: 0;
-    flex: 1;
-}
 
 .resources-folder-btn {
     font-size: var(--font-size-xs);
@@ -1102,13 +1005,13 @@ button.action-button--warn:hover {
 }
 
 .resources-body {
-    flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 4px 0;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
 }
+
 
 .resources-list {
     display: flex;
@@ -1170,6 +1073,18 @@ button.action-button--warn:hover {
     flex-shrink: 0;
     color: rgba(255, 255, 255, 0.3);
     margin-left: 4px;
+}
+
+.resources-section-lock {
+    width: 12px;
+    height: 12px;
+    margin-left: 6px;
+    opacity: 0.45;
+    flex-shrink: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Crect x='2' y='5' width='8' height='6' rx='1' fill='white'/%3E%3Crect x='3.5' y='2' width='5' height='4.5' rx='2.5' fill='none' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .resources-folder-label {
@@ -1354,33 +1269,34 @@ button.action-button--warn:hover {
     color: rgba(240, 120, 120, 1);
 }
 
-/* ─── Inspector Docket ────────────────────────────────────────────────────── */
+/* ─── Resource Preview Panel ─────────────────────────────────────────────── */
 
-#inspector-docket {
-    position: absolute;
-    top: 14px;
-    left: 14px;
-    bottom: 210px;
-    width: 260px;
+.resource-preview-name {
+    font-size: var(--font-size-xs);
+    color: rgba(255, 255, 255, 0.45);
+    padding: 6px 14px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.resource-preview-canvas-container {
+    flex: 1;
     display: flex;
-    flex-direction: column;
-    pointer-events: none;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+}
+
+
+.resource-preview-placeholder {
+    color: rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* ─── Inspector ───────────────────────────────────────────────────────────── */
-
-.inspector {
-    pointer-events: auto;
-    background: rgba(22, 22, 22, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    color: var(--color-light-primary);
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-}
 
 .inspector-body {
     flex: 1;
@@ -1390,30 +1306,13 @@ button.action-button--warn:hover {
     scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
     display: flex;
     flex-direction: column;
-}
-
-.inspector-header {
-    padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.035);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px 10px 0 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.inspector-title {
-    margin: 0;
-    font-size: var(--font-size-xs);
-    font-weight: 500;
-    letter-spacing: 1.2px;
-    text-transform: uppercase;
-    color: var(--color-light-secondary);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .inspector-name-input {
-    width: 100%;
+    width: calc(100% - 28px);
     height: 28px;
+    margin: 10px 14px 8px;
     padding: 0 10px;
     border-radius: 6px;
     border: 1px solid rgba(255, 255, 255, 0.1);

@@ -17,5 +17,22 @@ interface Window {
             mkdir: (path: string) => Promise<void>;
             delete: (path: string) => Promise<void>;
         };
+        userdata: {
+            label: () => Promise<string>;
+            list: () => Promise<string[]>;
+            read: (path: string) => Promise<string>;
+            write: (filename: string, content: string) => Promise<void>;
+            move: (from: string, to: string) => Promise<void>;
+            mkdir: (path: string) => Promise<void>;
+            delete: (path: string) => Promise<void>;
+        };
+        assets: {
+            list: () => Promise<string[]>;
+            read: (path: string) => Promise<string>;
+            write: (filename: string, content: string) => Promise<void>;
+            move: (from: string, to: string) => Promise<void>;
+            mkdir: (path: string) => Promise<void>;
+            delete: (path: string) => Promise<void>;
+        };
     };
 }

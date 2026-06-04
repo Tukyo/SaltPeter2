@@ -11,13 +11,13 @@ export class DataPersistenceManager {
     private root: string;
 
     constructor() {
-        this.root = 'save_00';
+        this.root = 'Save_00';
         DataPersistenceManager.Instance = this;
         this.ready = this.DetectSlot();
     }
 
     private static SlotName(index: number): string {
-        return `save_${String(index).padStart(2, '0')}`;
+        return `Save_${String(index).padStart(2, '0')}`;
     }
 
     /** Scans existing save slots on disk and sets the active root to the most recent one, or slot 0 if none exist. */

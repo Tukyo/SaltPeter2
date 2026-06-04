@@ -88,7 +88,8 @@ export class Metadata {
     /** Reads and parses the .meta file for the given asset path. Returns null if the file is missing or unparseable. @internal */
     public static async Read(assetPath: string): Promise<AssetMetadata | null> {
         const metaPath = Metadata.GetMetaPath(assetPath);
-        const json = await window.api.resources.read(metaPath).catch(() => null);
+        const fromResources = await window.api.resources.read(metaPath).catch(() => null);
+        const json = fromResources ?? await window.api.userdata.read(metaPath).catch(() => null);
         if (json === null) { return null; }
 
         try {

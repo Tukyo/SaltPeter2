@@ -9,10 +9,16 @@ import { MaterialRegistry } from '../../materials/MaterialRegistry';
 import { NitrateProcess } from '../../NitrateProcess';
 import { Renderer } from '../../rendering/Renderer';
 import { SimulationManager } from '../../simulation/SimulationManager';
+import { UserInterfaceConfig } from '../../config/UserInterfaceConfig';
 import { UserInterfaceManager } from '../UserInterfaceManager';
 import { Utils } from '../../utility/Utils';
 import { World } from '../../world/World';
 import { WorldConfig } from '../../config/WorldConfig';
+
+interface DebugPanelParams {
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
+}
 
 interface FrameStats {
     simulationSteps: number;
@@ -95,12 +101,14 @@ export class DebugPanel extends NitrateProcess {
     private lastSim: SimulationLayer | null = null;
     private layerIndex: number = 0;
 
-    constructor() {
+    constructor(params?: DebugPanelParams) {
         super();
+        const defaults = UserInterfaceConfig.GetConfig().defaults.debug;
         this.panel = new CollapsiblePanel({
             label: 'Debug',
-            parent: UserInterfaceManager.Instance?.toolsDocket as HTMLElement,
-            defaultCollapsed: true
+            parent: UserInterfaceManager.Instance?.panelContent,
+            collapsed: params?.collapsed ?? defaults.collapsed,
+            style: { ...defaults.style, ...params?.style }
         });
         const container = this.panel.body;
 

@@ -36,10 +36,14 @@ export class WorldScene extends Nitrate.Scene {
             density: { min: 0, max: 100, default: 90 },
             shape: { default: 'circle' },
             mode: { default: 'draw' },
-            type: { default: 'noise' }
+            type: { default: 'noise' },
+            style: { top: '57px' }
         });
-        new Nitrate.MaterialsPanel({ activeMaterial: { defaultMaterial: 'sand' } });
-        new Nitrate.ScenePanel();
+        new Nitrate.MaterialsPanel({
+            activeMaterial: { defaultMaterial: 'sand' },
+            style: { top: '440px' }
+        });
+        new Nitrate.ScenePanel({ style: { top: '915px ' } });
         new Nitrate.AnalyticsOverlay();
         new Nitrate.DebugOverlay();
     }

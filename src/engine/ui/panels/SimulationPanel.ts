@@ -5,7 +5,13 @@ import { CollapsiblePanel } from '../CollapsiblePanel';
 import { NitrateProcess } from '../../NitrateProcess';
 import { RangeControl } from '../controls/RangeControl';
 import { SimulationManager } from '../../simulation/SimulationManager';
+import { UserInterfaceConfig } from '../../config/UserInterfaceConfig';
 import { UserInterfaceManager } from '../UserInterfaceManager';
+
+interface SimulationPanelParams {
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
+}
 
 /**
  * Simulation controls panel. Provides play/pause buttons and a simulation speed slider.
@@ -42,12 +48,15 @@ export class SimulationPanel extends NitrateProcess {
         readout: true,
     };
 
-    constructor() {
+    constructor(params?: SimulationPanelParams) {
         super();
 
+        const defaults = UserInterfaceConfig.GetConfig().defaults.simulation;
         this.panel = new CollapsiblePanel({
             label: 'Simulation',
-            parent: UserInterfaceManager.Instance?.toolsDocket as HTMLElement
+            parent: UserInterfaceManager.Instance?.panelContent,
+            collapsed: params?.collapsed ?? defaults.collapsed,
+            style: { ...defaults.style, ...params?.style }
         });
 
         const section = this.panel.AddSection();

@@ -7,11 +7,14 @@ import { NitrateEngine } from '../../NitrateEngine';
 import { NitrateProcess } from '../../NitrateProcess';
 import { Renderer } from '../../rendering/Renderer';
 import { SceneManager } from '../../scene/SceneManager';
+import { UserInterfaceConfig } from '../../config/UserInterfaceConfig';
 import { UserInterfaceManager } from '../UserInterfaceManager';
 
 export interface ScenePanelParams {
     export?: { onExport?: () => void; }
     clear?: { onClear?: () => Promise<void> | void; }
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
 }
 
 /**
@@ -51,9 +54,12 @@ export class ScenePanel extends NitrateProcess {
     constructor(params?: ScenePanelParams) {
         super();
 
+        const defaults = UserInterfaceConfig.GetConfig().defaults.scene;
         this.panel = new CollapsiblePanel({
             label: 'Scene',
-            parent: UserInterfaceManager.Instance?.toolsDocket as HTMLElement
+            parent: UserInterfaceManager.Instance?.panelContent,
+            collapsed: params?.collapsed ?? defaults.collapsed,
+            style: { ...defaults.style, ...params?.style }
         });
 
         const section = this.panel.AddSection();

@@ -30,6 +30,8 @@ interface BrushOptions {
     mode?: { default?: BrushMode; show?: boolean; };
     type?: { default?: BrushType; show?: boolean; };
     snap?: { default?: boolean; show?: boolean; };
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
 }
 ```
 
@@ -93,6 +95,8 @@ interface MaterialsPanelParams {
         options?: string | string[];
         show?: boolean;
     };
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
 }
 ```
 
@@ -124,6 +128,8 @@ interface ScaledParams {
     type: 'scaled';
     resolution?: ReadonlyArray<{ value: number; label?: string }>;
     scale?: { min: number; max: number; default?: number; step?: number };
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
     onResolutionChange?: () => void;
     onScaleChange?: () => void;
 }
@@ -133,6 +139,8 @@ interface ScaledParams {
 interface GridParams {
     type: 'grid';
     sizes?: ReadonlyArray<{ width: number; height: number; label?: string }>;
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
     onChange?: () => void;
 }
 ```
@@ -143,6 +151,20 @@ interface GridParams {
 | [`GetResolutionScale(): number`](RenderingPanel.ts) | Returns the current resolution scale as a 0–1 value, or 1.0 if no scale control exists. |
 | [`GetGridDimensions(): { width: number; height: number }`](RenderingPanel.ts) | Returns the width and height of the currently selected grid size preset, or 64×64 if no grid control exists. |
 | [`SetGridSize(w: number, h: number): boolean`](RenderingPanel.ts) | Switches to the grid preset that matches (w, h) exactly, or the smallest preset whose dimensions both fit (w, h). Returns true if the active preset actually changed. |
+
+---
+
+### [`ResourcesPreviewPanel`](ResourcesPreviewPanel.ts)
+
+| Interfaces & Types |
+|--------------------|
+```ts
+interface ResourcesPreviewPanelParams {
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
+}
+```
+
 
 ---
 
@@ -160,6 +182,8 @@ new Nitrate.ScenePanel({params?: ScenePanelParams})
 interface ScenePanelParams {
     export?: { onExport?: () => void; }
     clear?: { onClear?: () => Promise<void> | void; }
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
 }
 ```
 

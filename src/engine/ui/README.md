@@ -19,7 +19,7 @@ Control settings are defined using the interfaces in [`UserInterfaceTypes.ts`](U
 ## API
 
 ### [`CollapsiblePanel`](CollapsiblePanel.ts)
-Creates a collapsible UI panel and appends it to the provided parent element.
+Creates a collapsible, resizable, draggable UI panel and appends it to the provided parent element.
 
 Specific panels are created via their respective classes, and use this parent class to instantiate.
 
@@ -29,14 +29,15 @@ Specific panels are created via their respective classes, and use this parent cl
 interface CollapsiblePanelParams {
     label?: string;
     parent?: HTMLElement;
-    defaultCollapsed?: boolean;
+    collapsed?: boolean;
+    style?: Partial<CSSStyleDeclaration>;
 }
 ```
 
 | Method | Description |
 |--------|-------------|
 | [`IsCollapsed(): boolean`](CollapsiblePanel.ts) | Returns true if the panel is currently collapsed. |
-| [`SetCollapsed(collapsed: boolean): void`](CollapsiblePanel.ts) | Sets the collapsed state of the panel. |
+| [`SetCollapsed(collapsed: boolean): void`](CollapsiblePanel.ts) | Sets the collapsed state of the panel. Stashes and restores height around collapse. |
 | [`AddSection(label?: string): HTMLElement`](CollapsiblePanel.ts) | Adds a new section to the panel body. Auto-hides if no content is appended synchronously. |
 
 ---
@@ -119,14 +120,14 @@ interface ModalOptions {
 
 ### [`Resources`](Resources.ts)
 File browser panel for the editor.
-Polls the native resources API for changes and renders a tree of folders and files with import, rename, delete, and drag-drop.
-Requires the Electron resources API — not applicable outside the editor context.
+Renders two root sections — Shipped (read-only, import only) and a user assets folder (full operations).
+Requires the Electron resources and userdata APIs.
 
 
 ---
 
 ### [`UserInterfaceManager`](UserInterfaceManager.ts)
-Creates and owns UI docket elements that panels mount into.
+Creates the full-screen UI layer that all panels float within.
 Add to a scene to activate the UI layer for that scene.
 
 ```ts

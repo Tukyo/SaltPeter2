@@ -9,6 +9,7 @@ import { Renderer } from '../../rendering/Renderer';
 import { SceneManager } from '../../scene/SceneManager';
 import { SelectControl } from '../controls/SelectControl';
 import { SimulationManager } from '../../simulation/SimulationManager';
+import { UserInterfaceConfig } from '../../config/UserInterfaceConfig';
 import { UserInterfaceManager } from '../UserInterfaceManager';
 
 export type RenderingPanelParams = ScaledParams | GridParams;
@@ -17,6 +18,8 @@ export interface ScaledParams {
     type: 'scaled';
     resolution?: ReadonlyArray<{ value: number; label?: string }>;
     scale?: { min: number; max: number; default?: number; step?: number };
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
     onResolutionChange?: () => void;
     onScaleChange?: () => void;
 }
@@ -24,6 +27,8 @@ export interface ScaledParams {
 export interface GridParams {
     type: 'grid';
     sizes?: ReadonlyArray<{ width: number; height: number; label?: string }>;
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
     onChange?: () => void;
 }
 
@@ -50,9 +55,12 @@ export class RenderingPanel extends NitrateProcess {
 
     constructor(params: RenderingPanelParams) {
         super();
+        const defaults = UserInterfaceConfig.GetConfig().defaults.rendering;
         this.panel = new CollapsiblePanel({
             label: 'Rendering',
-            parent: UserInterfaceManager.Instance?.toolsDocket as HTMLElement,
+            parent: UserInterfaceManager.Instance?.panelContent,
+            collapsed: params?.collapsed ?? defaults.collapsed,
+            style: { ...defaults.style, ...params?.style }
         });
         const section = this.panel.AddSection();
         if (params.type === 'scaled') { this.SetupScaled(params, section); }

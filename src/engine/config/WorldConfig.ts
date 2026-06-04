@@ -42,6 +42,10 @@ export class WorldConfig {
         performance: {
             scale: 0.25, // Sets the resolution scale for scenes that have a world
             simDebounce: 4 // Debouncer that pauses the sim for n frames when blitting
+        },
+        save: {
+            worldPath: 'World',
+            chunkPath: (cx: number, cy: number) => `Chunks/chunk_${cx}_${cy}.bin`,
         }
     }
 

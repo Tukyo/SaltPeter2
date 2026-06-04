@@ -1,5 +1,7 @@
 import { Nitrate } from '@Nitrate';
 
+import { GameObjectPlacementController } from './scripts/GameObjectPlacementController';
+
 export class SandboxScene extends Nitrate.Scene {
     private renderer: Nitrate.RendererWebGPU | null = null;
 
@@ -26,9 +28,12 @@ export class SandboxScene extends Nitrate.Scene {
         new Nitrate.BrushManager();
 
         new Nitrate.UserInterfaceManager();
+        new GameObjectPlacementController(this.renderer.canvas);
 
-        // new Nitrate.Hierarchy();
-        // new Nitrate.Resources();
+        new Nitrate.Resources({
+            style: { top: '14px', left: '14px', width: '250px', height: '150px' },
+            previewPanel: { style: { top: '175px', left: '14px', width: '170px', height: '170px' } },
+        });
 
         new Nitrate.DebugPanel();
         new Nitrate.RenderingPanel({
@@ -56,38 +61,10 @@ export class SandboxScene extends Nitrate.Scene {
             type: { default: 'noise' }
         });
         new Nitrate.MaterialsPanel({ activeMaterial: { defaultMaterial: 'sand' } });
-        new Nitrate.ScenePanel({clear: {}});
+        new Nitrate.ScenePanel({ clear: {} });
 
         new Nitrate.AnalyticsOverlay();
         new Nitrate.DebugOverlay();
-
-        // TEST - Specific amount of GOs
-        // TODO: remove hardcoded spawn — replace with resources panel drag-and-drop
-        // Nitrate.NitrateProcess.OnInit(Nitrate.SimulationManager, async () => {
-        //     await Nitrate.GameObject.Instantiate('480e1cf8-3571-4761-84d8-2647754bc63e', { x: 100, y: 300 });
-        // });
-
-        // TEST - Many GOs
-        // Nitrate.NitrateProcess.OnInit(Nitrate.SimulationManager, async () => {
-        //     const spawnCount: number = 100;
-        //     const spawnedObjects: Nitrate.GameObject[] = [];
-
-        //     for (let i: number = 0; i < spawnCount; i++) {
-        //         const randomX: number = Math.random() * window.innerWidth;
-        //         const randomY: number = Math.random() * window.innerHeight;
-
-        //         const gameObject = await Nitrate.GameObject.Instantiate(
-        //             '480e1cf8-3571-4761-84d8-2647754bc63e',
-        //             {
-        //                 x: randomX,
-        //                 y: randomY
-        //             }
-        //         );
-
-        //         if (!gameObject) continue;
-        //         spawnedObjects.push(gameObject);
-        //     }
-        // });
     }
 
     public Update(now: number): void { }

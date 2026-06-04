@@ -10,6 +10,7 @@ import { NitrateProcess } from '../../NitrateProcess';
 import { PaletteControl } from '../controls/PalletteControl';
 import { RangeControl } from '../controls/RangeControl';
 import { Renderer } from '../../rendering/Renderer';
+import { UserInterfaceConfig } from '../../config/UserInterfaceConfig';
 import { UserInterfaceManager } from '../UserInterfaceManager';
 import { Utils } from '../../utility/Utils';
 
@@ -20,6 +21,8 @@ export interface BrushOptions {
     mode?: { default?: BrushMode; show?: boolean; };
     type?: { default?: BrushType; show?: boolean; };
     snap?: { default?: boolean; show?: boolean; };
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
 }
 
 /** 
@@ -71,9 +74,12 @@ export class BrushPanel extends NitrateProcess {
     constructor(options: BrushOptions) {
         super();
 
+        const defaults = UserInterfaceConfig.GetConfig().defaults.brush;
         this.panel = new CollapsiblePanel({
             label: 'Brush',
-            parent: UserInterfaceManager.Instance?.toolsDocket as HTMLElement,
+            parent: UserInterfaceManager.Instance?.panelContent,
+            collapsed: options?.collapsed ?? defaults.collapsed,
+            style: { ...defaults.style, ...options?.style }
         });
 
         const brushManager = () => BrushManager.Instance?.state;

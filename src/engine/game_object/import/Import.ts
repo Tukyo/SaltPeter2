@@ -10,6 +10,12 @@ interface SerializedGameObject {
     components: Array<Record<string, unknown>>;
 }
 
+async function ReadFromAnySource(path: string): Promise<string | null> {
+    const fromResources = await window.api.resources.read(path).catch(() => null);
+    if (fromResources !== null) { return fromResources; }
+    return window.api.userdata.read(path).catch(() => null);
+}
+
 /** Abstract base for game object import. Subclasses implement Run() to define the import source and target. */
 export abstract class Import extends NitrateProcess {
     protected gameObjectProvider: (() => GameObject | null) | null = null;
@@ -29,10 +35,8 @@ export abstract class Import extends NitrateProcess {
         const path = filename ?? this.filenameProvider?.() ?? null;
         if (!path) { return null; }
 
-        let json: string;
-        try {
-            json = await window.api.resources.read(path);
-        } catch (error) {
+        const json = await ReadFromAnySource(path);
+        if (json === null) {
             LogManager.Instance?.LogWarning({
                 text: `Failed to read ${path}.`,
                 options: { tags: ['Import'] }
@@ -53,10 +57,8 @@ export abstract class Import extends NitrateProcess {
 
     /** Reads and parses a serialized game object from an explicit path. Returns null if the file cannot be read or parsed. @internal */
     public static async ReadFile(path: string): Promise<SerializedGameObject | null> {
-        let json: string;
-        try {
-            json = await window.api.resources.read(path);
-        } catch {
+        const json = await ReadFromAnySource(path);
+        if (json === null) {
             LogManager.Instance?.LogWarning({
                 text: `Failed to read ${path}.`,
                 options: { tags: ['Import'] }

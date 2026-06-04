@@ -1,12 +1,19 @@
 import type { AnyComponent } from '../component/Component';
 
+import { CollapsiblePanel } from './CollapsiblePanel';
 import { GameObject } from '../game_object/GameObject';
 import { Inspector } from './Inspector';
 import { LogManager } from '../debug/LogManager';
 import { NitrateProcess } from '../NitrateProcess';
 import { SceneManager } from '../scene/SceneManager';
 import { Transform } from '../component/definitions/transform/Transform';
+import { UserInterfaceConfig } from '../config/UserInterfaceConfig';
 import { UserInterfaceManager } from './UserInterfaceManager';
+
+interface HierarchyPanelParams {
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
+}
 
 export interface AddHierarchyObjectParams {
     name?: string;
@@ -17,7 +24,7 @@ export interface AddHierarchyObjectParams {
  * Scene hierarchy panel.
  * Lists all game objects in the scene, handles selection, rename, reorder, and delete.
  * Also owns and drives the {@link Inspector} for the currently selected object.
- * 
+ *
  * ```ts
  * new Nitrate.Hierarchy();
  * ```
@@ -25,7 +32,7 @@ export interface AddHierarchyObjectParams {
 export class Hierarchy extends NitrateProcess {
     public static Instance: Hierarchy | null = null;
 
-    private readonly container: HTMLElement;
+    private readonly panel: CollapsiblePanel;
     private readonly list: HTMLElement;
     private readonly contextMenu: HTMLElement;
     private readonly inspector: Inspector;
@@ -35,25 +42,22 @@ export class Hierarchy extends NitrateProcess {
 
     private readonly onDocumentClick: () => void;
 
-    constructor() {
+    constructor(params?: HierarchyPanelParams) {
         super();
 
-        this.container = document.createElement('div');
-        this.container.className = 'hierarchy';
-        UserInterfaceManager.Instance?.hierarchyDocket.appendChild(this.container);
-
-        const header = document.createElement('div');
-        header.className = 'hierarchy-header';
-        const title = document.createElement('h2');
-        title.className = 'hierarchy-title';
-        title.textContent = 'Hierarchy';
-        header.appendChild(title);
-        this.container.appendChild(header);
+        const defaults = UserInterfaceConfig.GetConfig().defaults.hierarchy;
+        this.panel = new CollapsiblePanel({
+            label: 'Hierarchy',
+            parent: UserInterfaceManager.Instance?.panelContent,
+            collapsed: params?.collapsed ?? defaults.collapsed,
+            style: { ...defaults.style, ...params?.style }
+        });
+        this.panel.body.classList.add('hierarchy');
 
         this.list = document.createElement('div');
         this.list.className = 'hierarchy-list';
         this.list.addEventListener('contextmenu', (e) => { this.ShowContextMenu(e); });
-        this.container.appendChild(this.list);
+        this.panel.body.appendChild(this.list);
 
         this.contextMenu = this.BuildContextMenu();
 
@@ -126,7 +130,6 @@ export class Hierarchy extends NitrateProcess {
         }
         this.SetupDragReorder(elements);
     }
-
 
     /** Builds a single hierarchy entry row for a game object, with click, double-click, and context menu handlers. */
     private BuildEntry(go: GameObject): HTMLElement {
@@ -305,7 +308,6 @@ export class Hierarchy extends NitrateProcess {
         this.contextMenu.classList.remove('is-open');
     }
 
-
     /** Creates and mounts the context menu element. */
     private BuildContextMenu(): HTMLElement {
         const menu = document.createElement('div');
@@ -319,7 +321,7 @@ export class Hierarchy extends NitrateProcess {
     }
 
     public OnDestroy(): void {
-        this.container.remove();
+        this.panel.OnDestroy();
         this.contextMenu.remove();
         document.removeEventListener('click', this.onDocumentClick);
 
@@ -327,7 +329,7 @@ export class Hierarchy extends NitrateProcess {
             Hierarchy.Instance = null;
             LogManager.Instance?.Log({
                 text: 'Cleared Hierarchy singleton instance.',
-                options: { tags: ["Hierarchy", "NitrateProcessDestroy"] }
+                options: { tags: ['Hierarchy', 'NitrateProcessDestroy'] }
             });
         }
     }

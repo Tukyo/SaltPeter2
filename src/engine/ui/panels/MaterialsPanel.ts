@@ -11,6 +11,7 @@ import { NitrateProcess } from '../../NitrateProcess';
 import { SelectControl } from '../controls/SelectControl';
 import { ToggleGroupControl } from '../controls/ToggleGroupControl';
 import { ToggleListControl } from '../controls/ToggleListControl';
+import { UserInterfaceConfig } from '../../config/UserInterfaceConfig';
 import { UserInterfaceManager } from '../UserInterfaceManager';
 
 export interface MaterialsPanelParams {
@@ -31,6 +32,8 @@ export interface MaterialsPanelParams {
         options?: string | string[];
         show?: boolean;
     };
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
 }
 
 /** 
@@ -64,9 +67,12 @@ export class MaterialsPanel extends NitrateProcess {
             ? MaterialRegistry.Materials[params.activeMaterial.defaultMaterial]?.id
             : undefined;
 
+        const defaults = UserInterfaceConfig.GetConfig().defaults.materials;
         this.panel = new CollapsiblePanel({
             label: 'Materials',
-            parent: UserInterfaceManager.Instance?.toolsDocket as HTMLElement
+            parent: UserInterfaceManager.Instance?.panelContent,
+            collapsed: params?.collapsed ?? defaults.collapsed,
+            style: { ...defaults.style, ...params?.style }
         });
 
         this.SetupMaterial(params, defaultMaterialId);

@@ -1,3 +1,4 @@
+/** Parameters and defaults for GameObjects. */
 export class GameObjectConfig {
     private static readonly config = {
         performance: {

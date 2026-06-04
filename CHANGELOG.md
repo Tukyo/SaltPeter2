@@ -2,6 +2,79 @@
 
 ---
 
+## [0.1.0] - [06/03/2026]
+### Updates & Changes
+
+**The GameObject system is live!** Try it out with one of the pre-authored GameObjects or make your own and drop them into the sandbox! All you need to do is drag and drop any GameObject from the resources panel to where you want it placed in the Sandbox scene! Enjoy!
+
+*All UserData is now saved to /Documents/SaltPeter, this is where your custom assets live.*
+
+#### Floating Panel UI System
+The UI layout has been completely rearchitected. Panels are no longer fixed inside left/right docked columns — they now float freely on a full-screen canvas and can be dragged, resized, and arranged freely.
+
+- `UserInterfaceManager` — replaced fixed left/right docket layout with a single `#ui-layer` div; all panels mount as `position: absolute` children; old `left-docket`, `right-docket`, `tools-docket`, `inspector-docket`, `hierarchyDocket`, `resourcesDocket` elements removed entirely
+- `CollapsiblePanel` — upgraded with drag-to-reposition (header drag), left and right corner resize handles (SVG icons), height stash/restore on collapse, and panel-to-panel snap alignment; collapse now pushes sibling panels in the same column downward (`PushPanelsInColumn`); panels that would go offscreen wrap to an adjacent column
+- `UserInterfaceConfig` (new) — centralized default positions, sizes, and collapsed states for every panel type; individual panels can override via `style` and `collapsed` constructor params
+- `Hierarchy` and `Inspector` converted from custom containers into `CollapsiblePanel` instances; legacy `hierarchy-header/title` and `inspector-header/title` CSS removed
+- `BrushPanel`, `DebugPanel`, `MaterialsPanel`, `RenderingPanel`, `ScenePanel`, `SimulationPanel` — all now accept `style` and `collapsed` constructor params, defaulting from `UserInterfaceConfig`
+- `style.css` — docket column styles removed; `.ui-panel` now uses `position: absolute`; resize handle styles and dragging cursor states added; `.toggle-list` scrolling changed to flex-based (removed `max-height: 75px` cap)
+
+#### Resources Panel — Shipped + Custom Assets
+The Resources browser now distinguishes between read-only shipped assets and user-authored custom assets, backed by a new `userdata` IPC channel.
+
+- Resources panel now renders two root sections: **Shipped** (read-only in production, lock icon badge, import only) and **CustomAssets** (full CRUD, userdata API)
+- File selection added — clicking a file highlights it and notifies the `ResourcesPreviewPanel`
+- Per-section drag-and-drop: items and folders cannot be dragged across sections
+- Context menus (rename, delete, new folder) only shown on the userdata section in production; always shown in dev
+- `.meta` files now moved and deleted automatically alongside their parent asset
+- `InvalidateFile()` public method added — called after export to refresh the icon strip without a full re-render
+- Cache keys namespaced as `u:path` / `r:path` to prevent collisions between sections
+- Poll now fetches both shipped and userdata paths and hashes them together for change detection
+
+#### Resources Preview Panel (new)
+- `src/engine/ui/panels/ResourcesPreviewPanel.ts` — new `CollapsiblePanel`-based panel that renders a pixel-art preview of the selected resource using `PixelDataRenderer`
+- Shows filename label; scales to fit a 72 px target; shows a placeholder SVG when no `PixelData` component is found
+- Created and managed by `Resources`; params forwarded as a `previewPanel` option on `ResourcesParams`
+
+#### PixelDataRenderer
+- `src/engine/component/PixelDataRenderer.ts` — standalone 2D canvas renderer for `PixelCell[]` data
+- Uses `MaterialQuery.GetById` and material color variants; renders via 2D canvas fill rects scaled to a given pixel size
+- Used by both `ResourcesPreviewPanel` and `GameObjectPlacementController`
+
+#### Drag-to-Place GameObjects (Sandbox)
+- `src/game/scene/sandbox/scripts/GameObjectPlacementController.ts` (new) — listens for `resource-drag-start` custom events from the Resources panel
+- Loads the `PixelData` component from the dragged asset and renders an animated drag preview that follows the cursor and tilts based on horizontal velocity, settling back to upright when the cursor stops
+- On drop onto the simulation canvas: reads metadata GUID, converts client coordinates to sim coordinates (Y-flipped), calls `GameObject.Instantiate`
+- Wired into `SandboxScene`; `Resources` panel enabled in sandbox with `GameObjectPlacementController` registered
+
+#### Electron IPC Refactor
+- Monolithic IPC handlers extracted from `electron/main.ts` into three dedicated modules:
+  - `electron/ipc/saves.ts` — save slot read/write/exists/delete
+  - `electron/ipc/resources.ts` — shipped resources CRUD (read-only in production)
+  - `electron/ipc/userdata.ts` — user custom assets CRUD; `userdata:label` returns the folder basename
+- Saves now stored at `~/Documents/SaltPeter/Saves/` (previously stored in Electron's `userData` path)
+- Custom assets stored at `~/Documents/SaltPeter/CustomAssets/`; `Blueprints/` and `GameObjects/` subdirectories auto-created on startup via `warmUserDirectories()`
+- `preload.ts` exposes `api.userdata` and `api.assets`; `api.assets` is a virtual bridge that routes to `resources` in dev and `userdata` in production
+- `vite-env.d.ts` updated with full type declarations for `userdata` and `assets`
+
+#### Export / Import — Userdata Aware
+- `Export.WriteFile()` now uses `window.api.assets` so exports always go to the correct location per environment
+- `Import.ReadFile()` and the import path now try resources first then fall back to userdata
+- `Metadata.Read()` falls back to userdata if a `.meta` file is not found in resources
+- After a successful export, `Resources.Instance?.InvalidateFile()` is called to refresh the icon strip
+
+#### Save Path Cleanup
+- `DataPersistenceManager` slot names changed from `save_XX` to `Save_XX`
+- World metadata path now config-driven via `WorldConfig.save.worldPath` (default `World`)
+- Chunk binary path now config-driven via `WorldConfig.save.chunkPath(cx, cy)` (default `Chunks/chunk_X_Y.bin`)
+
+#### Removed Files
+- Deleted 6 legacy test gameobject files and their `.meta` files: `CircleTest`, `CubeTest`, `GunpowderTest`, `LavaTest`, `PhysicsTest`, `StoneTest`
+
+### Bug Fixes
+
+---
+
 ## [0.0.7] - [06/02/2026]
 ### Updates & Changes
 

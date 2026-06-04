@@ -1,22 +1,29 @@
 import type { AnyComponent } from '../component/Component';
 import type { ComponentField } from './fields/ComponentField';
 
+import { CollapsiblePanel } from './CollapsiblePanel';
 import { ComponentFieldRegistry } from './fields/ComponentFieldRegistry';
 import { ComponentRegistry } from '../component/ComponentRegistry';
 import { GameObject } from '../game_object/GameObject';
 import { LogManager } from '../debug/LogManager';
 import { NitrateProcess } from '../NitrateProcess';
 import { Transform } from '../component/definitions/transform/Transform';
+import { UserInterfaceConfig } from '../config/UserInterfaceConfig';
 import { UserInterfaceManager } from './UserInterfaceManager';
+
+interface InspectorPanelParams {
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
+}
 
 /**
  * Component inspector panel.
- * 
+ *
  * Displays and edits the name and component fields of the currently selected game object.
  * No need to instantiate, created and managed by Hierarchy.
  */
 export class Inspector extends NitrateProcess {
-    private readonly container: HTMLElement;
+    private readonly panel: CollapsiblePanel;
     private readonly nameInput: HTMLInputElement;
     private readonly componentList: HTMLElement;
     private readonly addComponentWrapper: HTMLElement;
@@ -24,20 +31,17 @@ export class Inspector extends NitrateProcess {
     private gameObject: GameObject | null = null;
     private onNameChange: (() => void) | null = null;
 
-    constructor() {
+    constructor(params?: InspectorPanelParams) {
         super();
 
-        this.container = document.createElement('div');
-        this.container.className = 'inspector';
-        UserInterfaceManager.Instance?.inspectorDocket.appendChild(this.container);
-
-        const header = document.createElement('div');
-        header.className = 'inspector-header';
-
-        const title = document.createElement('h2');
-        title.className = 'inspector-title';
-        title.textContent = 'Inspector';
-        header.appendChild(title);
+        const defaults = UserInterfaceConfig.GetConfig().defaults.inspector;
+        this.panel = new CollapsiblePanel({
+            label: 'Inspector',
+            parent: UserInterfaceManager.Instance?.panelContent,
+            collapsed: params?.collapsed ?? defaults.collapsed,
+            style: { ...defaults.style, ...params?.style }
+        });
+        this.panel.body.classList.add('inspector');
 
         this.nameInput = document.createElement('input');
         this.nameInput.type = 'text';
@@ -48,9 +52,7 @@ export class Inspector extends NitrateProcess {
                 this.onNameChange?.();
             }
         });
-        header.appendChild(this.nameInput);
-
-        this.container.appendChild(header);
+        this.panel.body.appendChild(this.nameInput);
 
         this.componentList = document.createElement('div');
         this.componentList.className = 'inspector-component-list';
@@ -61,7 +63,7 @@ export class Inspector extends NitrateProcess {
         body.className = 'inspector-body';
         body.appendChild(this.componentList);
         body.appendChild(this.addComponentWrapper);
-        this.container.appendChild(body);
+        this.panel.body.appendChild(body);
     }
 
     /** Displays the inspector for the given game object, showing the name input and rendering all component fields. */
@@ -249,6 +251,6 @@ export class Inspector extends NitrateProcess {
     }
 
     public OnDestroy(): void {
-        this.container.remove();
+        this.panel.OnDestroy();
     }
 }

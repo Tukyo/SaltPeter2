@@ -11,6 +11,7 @@ Static configuration for all engine subsystems.
 ## API
 
 ### [`GameObjectConfig`](GameObjectConfig.ts)
+ Parameters and defaults for GameObjects.
 
 | Method | Description |
 |--------|-------------|
@@ -51,6 +52,15 @@ Static configuration for all engine subsystems.
 | Method | Description |
 |--------|-------------|
 | [`static GetConfig()`](SimulationConfig.ts) | Returns the simulation configuration. |
+
+---
+
+### [`UserInterfaceConfig`](UserInterfaceConfig.ts)
+ User interface defaults and settings.
+
+| Method | Description |
+|--------|-------------|
+| [`static GetConfig()`](UserInterfaceConfig.ts) | Returns the ui configuration. |
 
 ---
 

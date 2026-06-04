@@ -1,6 +1,12 @@
+import type { ResourcesPreviewPanelParams } from './panels/ResourcesPreviewPanel';
+
+import { CollapsiblePanel } from './CollapsiblePanel';
 import { ComponentRegistry } from '../component/ComponentRegistry';
 import { LogManager } from '../debug/LogManager';
+import { Metadata } from '../game_object/Metadata';
 import { NitrateProcess } from '../NitrateProcess';
+import { ResourcesPreviewPanel } from './panels/ResourcesPreviewPanel';
+import { UserInterfaceConfig } from '../config/UserInterfaceConfig';
 import { UserInterfaceManager } from './UserInterfaceManager';
 
 const componentIconMap = new Map<string, string>();
@@ -36,21 +42,25 @@ interface ContextTarget {
     isFolder: boolean;
     path: string;
     labelEl: HTMLElement;
+    isUserdata: boolean;
 }
 
 interface ResourcesParams {
     onImport?: (path: string) => void;
+    style?: Partial<CSSStyleDeclaration>;
+    collapsed?: boolean;
+    previewPanel?: ResourcesPreviewPanelParams;
 }
 
 /**
  * File browser panel for the editor.
- * Polls the native resources API for changes and renders a tree of folders and files with import, rename, delete, and drag-drop.
- * Requires the Electron resources API — not applicable outside the editor context.
+ * Renders two root sections — Shipped (read-only, import only) and a user assets folder (full operations).
+ * Requires the Electron resources and userdata APIs.
  */
 export class Resources extends NitrateProcess {
     public static Instance: Resources | null = null;
 
-    private readonly container: HTMLElement;
+    private readonly panel: CollapsiblePanel;
     private readonly body: HTMLElement;
     private readonly contextMenu: HTMLElement;
     private readonly fileDataCache = new Map<string, string[]>();
@@ -60,13 +70,18 @@ export class Resources extends NitrateProcess {
     private readonly folderOpeners = new Map<string, () => void>();
 
     private pollHandle: number | null = null;
-    private pollInterval: number = 1000;
+    private readonly pollInterval: number = 1000;
     private lastHash: string = '';
     private rowIndex: number = 0;
     private dragPath: string | null = null;
+    private dragIsUserdata: boolean = false;
     private contextTarget: ContextTarget | null = null;
-    private rootChildList: HTMLElement | null = null;
+    private userdataLabel: string = 'MyAssets';
+    private selectedPath: string | null = null;
+    private selectedIsUserdata: boolean = false;
+    private selectedEntry: HTMLElement | null = null;
 
+    private readonly previewPanel: ResourcesPreviewPanel;
     private readonly docClickHandler = () => { this.HideContextMenu(); };
     private readonly docContextMenuHandler = () => { this.HideContextMenu(); };
     private readonly onImport: ((path: string) => void) | undefined;
@@ -75,22 +90,19 @@ export class Resources extends NitrateProcess {
         super();
         Resources.Instance = this;
         this.onImport = options.onImport;
+        this.previewPanel = new ResourcesPreviewPanel(options.previewPanel);
 
-        this.container = document.createElement('div');
-        this.container.className = 'resources';
-        UserInterfaceManager.Instance?.resourcesDocket.appendChild(this.container);
-
-        const header = document.createElement('div');
-        header.className = 'resources-header';
-        const title = document.createElement('h2');
-        title.className = 'resources-title';
-        title.textContent = 'Resources';
-        header.appendChild(title);
-        this.container.appendChild(header);
+        const defaults = UserInterfaceConfig.GetConfig().defaults.resources;
+        this.panel = new CollapsiblePanel({
+            label: 'Resources',
+            parent: UserInterfaceManager.Instance?.panelContent,
+            collapsed: options?.collapsed ?? defaults.collapsed,
+            style: { ...defaults.style, ...options?.style }
+        });
 
         this.body = document.createElement('div');
         this.body.className = 'resources-body';
-        this.container.appendChild(this.body);
+        this.panel.body.appendChild(this.body);
 
         this.contextMenu = document.createElement('div');
         this.contextMenu.className = 'resources-context-menu';
@@ -101,58 +113,53 @@ export class Resources extends NitrateProcess {
         document.addEventListener('click', this.docClickHandler);
         document.addEventListener('contextmenu', this.docContextMenuHandler);
 
-        this.body.addEventListener('contextmenu', (e) => {
-            if ((e.target as HTMLElement).closest('.resources-entry, .resources-folder-header')) { return; }
-            e.preventDefault();
-            e.stopPropagation();
-            this.contextTarget = null;
-            this.ShowContextMenu(e.clientX, e.clientY, '');
-        });
-
-        this.body.addEventListener('dragover', (e) => {
-            if (!this.dragPath) { return; }
-            e.preventDefault();
-            this.body.classList.add('drop-target');
-        });
-        this.body.addEventListener('dragleave', (e) => {
-            if (this.body.contains(e.relatedTarget as Node)) { return; }
-            this.body.classList.remove('drop-target');
-        });
-        this.body.addEventListener('drop', (e) => {
-            e.preventDefault();
-            this.body.classList.remove('drop-target');
-            const from = this.dragPath;
-            if (!from) { return; }
-            this.dragPath = null;
-            const filename = from.split('/').pop() ?? '';
-            if (from !== filename) { void this.Move(from, filename); }
-        });
-
         void this.InitPolling();
     }
 
-    /** Fetches the initial file list, sets the baseline hash, renders the tree, and starts the poll interval. */
-    private async InitPolling(): Promise<void> {
-        const paths = (await window.api.resources.list()).sort();
-        this.lastHash = paths.join('|');
-        this.RenderPaths(paths);
-        this.pollHandle = window.setInterval(() => {
-            void this.Poll();
-        }, this.pollInterval);
+    private CacheKey(path: string, isUserdata: boolean): string {
+        return `${isUserdata ? 'u' : 'r'}:${path}`;
     }
 
-    /** Checks the resource API for file list changes every tick; re-renders if the list has changed. */
+    private FolderKey(path: string, isUserdata: boolean): string {
+        return `${isUserdata ? 'u' : 'r'}:${path}`;
+    }
+
+    private SectionKey(label: string, isUserdata: boolean): string {
+        return this.FolderKey(`__section__:${label}`, isUserdata);
+    }
+
+    private ApiFor(isUserdata: boolean): typeof window.api.resources {
+        return isUserdata ? window.api.userdata : window.api.resources;
+    }
+
+    private async InitPolling(): Promise<void> {
+        this.userdataLabel = await window.api.userdata.label().catch(() => 'MyAssets');
+
+        const [shippedPaths, userdataPaths] = await Promise.all([
+            window.api.resources.list().then(p => p.sort()),
+            window.api.userdata.list().then(p => p.sort()),
+        ]);
+
+        this.lastHash = [...shippedPaths, '||', ...userdataPaths].join('|');
+        this.RenderPaths(shippedPaths, userdataPaths);
+
+        this.pollHandle = window.setInterval(() => { void this.Poll(); }, this.pollInterval);
+    }
+
     private async Poll(): Promise<void> {
         try {
-            const paths = (await window.api.resources.list()).sort();
-            const hash = paths.join('|');
+            const [shippedPaths, userdataPaths] = await Promise.all([
+                window.api.resources.list().then(p => p.sort()),
+                window.api.userdata.list().then(p => p.sort()),
+            ]);
+            const hash = [...shippedPaths, '||', ...userdataPaths].join('|');
             if (hash === this.lastHash) { return; }
             this.lastHash = hash;
             LogManager.Instance?.Log({
-                text: `File list changed, re-rendering (${paths.length} paths).`,
+                text: `File list changed, re-rendering (${shippedPaths.length + userdataPaths.length} paths).`,
                 options: { tags: ['Resources'], noisy: true },
             });
-            this.RenderPaths(paths);
+            this.RenderPaths(shippedPaths, userdataPaths);
         } catch {
             LogManager.Instance?.LogWarning({
                 text: 'Poll failed — resources API unavailable.',
@@ -161,30 +168,131 @@ export class Resources extends NitrateProcess {
         }
     }
 
-    /** Clears and fully rebuilds the tree DOM from a flat sorted list of resource paths. */
-    private RenderPaths(paths: string[]): void {
+    private RenderPaths(shippedPaths: string[], userdataPaths: string[]): void {
         this.rowIndex = 0;
         this.body.innerHTML = '';
         this.fileIconStrips.clear();
         this.folderChildLists.clear();
         this.folderOpeners.clear();
+        this.selectedEntry = null;
 
-        if (paths.length === 0) {
-            const empty = document.createElement('div');
-            empty.className = 'resources-empty';
-            empty.textContent = 'No resources found.';
-            this.body.appendChild(empty);
-            this.rootChildList = null;
-            return;
-        }
+        this.body.appendChild(this.BuildSection('Shipped', shippedPaths, false));
+        this.body.appendChild(this.BuildSection(this.userdataLabel, userdataPaths, true));
 
-        const rootList = this.BuildTreeElement(this.BuildTree(paths), []);
-        this.rootChildList = rootList;
-        this.body.appendChild(rootList);
-        void this.LoadFileData(paths);
+        void this.LoadFileData(shippedPaths, false);
+        void this.LoadFileData(userdataPaths, true);
     }
 
-    /** Converts a flat list of relative paths into a nested TreeNode hierarchy. */
+    private BuildSection(label: string, paths: string[], isUserdata: boolean): HTMLElement {
+        const section = document.createElement('div');
+        section.className = 'resources-section';
+
+        const rowClass = this.rowIndex++ % 2 === 0 ? 'row-even' : 'row-odd';
+        const header = document.createElement('div');
+        header.className = `resources-folder-header ${rowClass}`;
+
+        const chevron = document.createElement('span');
+        chevron.className = 'resources-folder-chevron';
+        chevron.textContent = '▸';
+        header.appendChild(chevron);
+
+        const labelEl = document.createElement('span');
+        labelEl.className = 'resources-folder-label';
+        labelEl.textContent = label;
+        header.appendChild(labelEl);
+
+        if (!isUserdata) {
+            const lock = document.createElement('span');
+            lock.className = 'resources-section-lock';
+            header.appendChild(lock);
+        }
+
+        let children: HTMLElement;
+        if (paths.length === 0) {
+            children = document.createElement('div');
+            children.className = 'resources-empty';
+            children.textContent = isUserdata ? 'No custom assets yet.' : 'No shipped assets found.';
+        } else {
+            children = this.BuildTreeElement(this.BuildTree(paths), [], isUserdata);
+        }
+
+        const sectionKey = this.SectionKey(label, isUserdata);
+        this.folderChildLists.set(sectionKey, children);
+
+        const startOpen = this.openFolders.has(sectionKey);
+        children.style.display = startOpen ? '' : 'none';
+        if (startOpen) { chevron.classList.add('is-open'); chevron.textContent = '▾'; }
+
+        header.addEventListener('click', (e) => {
+            if ((e.target as HTMLElement).tagName === 'INPUT') { return; }
+            const open = chevron.classList.toggle('is-open');
+            chevron.textContent = open ? '▾' : '▸';
+            children.style.display = open ? '' : 'none';
+            this.openFolders[open ? 'add' : 'delete'](sectionKey);
+        });
+
+        header.addEventListener('dragover', (e) => {
+            if (!this.dragPath || this.dragIsUserdata !== isUserdata) { return; }
+            e.preventDefault();
+            e.stopPropagation();
+            header.classList.add('drop-target');
+        });
+        header.addEventListener('dragleave', (e) => {
+            if (header.contains(e.relatedTarget as Node)) { return; }
+            header.classList.remove('drop-target');
+        });
+        header.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            header.classList.remove('drop-target');
+            const from = this.dragPath;
+            if (!from || this.dragIsUserdata !== isUserdata) { return; }
+            this.dragPath = null;
+            const filename = from.split('/').pop() ?? '';
+            if (from !== filename) { void this.Move(from, filename, isUserdata); }
+        });
+
+        if (isUserdata || import.meta.env.DEV) {
+            header.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.contextTarget = null;
+                this.ShowContextMenu(e.clientX, e.clientY, '', isUserdata);
+            });
+
+            children.addEventListener('contextmenu', (e) => {
+                if ((e.target as HTMLElement).closest('.resources-entry, .resources-folder-header')) { return; }
+                e.preventDefault();
+                e.stopPropagation();
+                this.contextTarget = null;
+                this.ShowContextMenu(e.clientX, e.clientY, '', isUserdata);
+            });
+        }
+
+        children.addEventListener('dragover', (e) => {
+            if (!this.dragPath || this.dragIsUserdata !== isUserdata) { return; }
+            e.preventDefault();
+            children.classList.add('drop-target');
+        });
+        children.addEventListener('dragleave', (e) => {
+            if (children.contains(e.relatedTarget as Node)) { return; }
+            children.classList.remove('drop-target');
+        });
+        children.addEventListener('drop', (e) => {
+            e.preventDefault();
+            children.classList.remove('drop-target');
+            const from = this.dragPath;
+            if (!from || this.dragIsUserdata !== isUserdata) { return; }
+            this.dragPath = null;
+            const filename = from.split('/').pop() ?? '';
+            if (from !== filename) { void this.Move(from, filename, isUserdata); }
+        });
+
+        section.appendChild(header);
+        section.appendChild(children);
+        return section;
+    }
+
     private BuildTree(relativePaths: string[]): TreeNode[] {
         const root: FolderNode = { type: 'folder', name: '', path: '', children: [] };
 
@@ -218,23 +326,24 @@ export class Resources extends NitrateProcess {
         return root.children;
     }
 
-    /** Reads each uncached file, extracts its component type list, and updates the icon strip. Skips folders and already-cached paths. */
-    private async LoadFileData(paths: string[]): Promise<void> {
+    private async LoadFileData(paths: string[], isUserdata: boolean): Promise<void> {
+        const api = this.ApiFor(isUserdata);
         for (const path of paths) {
-            if (path.endsWith('/') || this.fileDataCache.has(path)) { continue; }
+            if (path.endsWith('/')) { continue; }
+            const cacheKey = this.CacheKey(path, isUserdata);
+            if (this.fileDataCache.has(cacheKey)) { continue; }
             try {
-                const content = await window.api.resources.read(path);
+                const content = await api.read(path);
                 const data = JSON.parse(content) as { components?: Array<{ type: string }> };
                 const types = (data.components ?? []).map(c => c.type).filter(Boolean);
-                this.fileDataCache.set(path, types);
-                this.RenderIconStrip(path, types);
+                this.fileDataCache.set(cacheKey, types);
+                this.RenderIconStrip(path, isUserdata, types);
             } catch { /* ignore */ }
         }
     }
 
-    /** Populates the icon strip element for a given path from a list of component type strings. */
-    private RenderIconStrip(path: string, types: string[]): void {
-        const strip = this.fileIconStrips.get(path);
+    private RenderIconStrip(path: string, isUserdata: boolean, types: string[]): void {
+        const strip = this.fileIconStrips.get(this.CacheKey(path, isUserdata));
         if (!strip) { return; }
         strip.innerHTML = '';
         for (const type of types) {
@@ -247,8 +356,7 @@ export class Resources extends NitrateProcess {
         }
     }
 
-    /** Builds a sorted div containing DOM rows for a list of tree nodes, folders first. */
-    private BuildTreeElement(nodes: TreeNode[], parentIsLast: boolean[]): HTMLElement {
+    private BuildTreeElement(nodes: TreeNode[], parentIsLast: boolean[], isUserdata: boolean): HTMLElement {
         const list = document.createElement('div');
         list.className = 'resources-list';
         const sorted = [...nodes].sort((a, b) => {
@@ -260,14 +368,13 @@ export class Resources extends NitrateProcess {
             const isLast = i === sorted.length - 1;
             list.appendChild(
                 node.type === 'folder'
-                    ? this.BuildFolder(node, isLast, parentIsLast)
-                    : this.BuildFile(node, isLast, parentIsLast)
+                    ? this.BuildFolder(node, isLast, parentIsLast, isUserdata)
+                    : this.BuildFile(node, isLast, parentIsLast, isUserdata)
             );
         }
         return list;
     }
 
-    /** Builds the indent-guide and branch connector spans for a tree row. */
     private BuildConnectors(parentIsLast: boolean[], isLast: boolean): HTMLElement {
         const wrap = document.createElement('span');
         wrap.className = 'resources-connectors';
@@ -289,8 +396,9 @@ export class Resources extends NitrateProcess {
         return wrap;
     }
 
-    /** Builds a folder row with a chevron toggle, context menu, and drag-drop target. */
-    private BuildFolder(node: FolderNode, isLast: boolean, parentIsLast: boolean[]): HTMLElement {
+    private BuildFolder(
+        node: FolderNode, isLast: boolean, parentIsLast: boolean[], isUserdata: boolean
+    ): HTMLElement {
         const wrapper = document.createElement('div');
         wrapper.className = 'resources-folder';
 
@@ -310,39 +418,56 @@ export class Resources extends NitrateProcess {
         label.textContent = node.name;
         header.appendChild(label);
 
-        const children = this.BuildTreeElement(node.children, [...parentIsLast, isLast]);
-        this.folderChildLists.set(node.path, children);
+        const children = this.BuildTreeElement(node.children, [...parentIsLast, isLast], isUserdata);
+        const folderKey = this.FolderKey(node.path, isUserdata);
+        this.folderChildLists.set(folderKey, children);
 
-        const startOpen = this.openFolders.has(node.path);
+        const startOpen = this.openFolders.has(folderKey);
         children.style.display = startOpen ? '' : 'none';
         if (startOpen) { chevron.classList.add('is-open'); chevron.textContent = '▾'; }
 
         const openFolder = () => {
-            if (this.openFolders.has(node.path)) { return; }
+            if (this.openFolders.has(folderKey)) { return; }
             chevron.classList.add('is-open');
             chevron.textContent = '▾';
             children.style.display = '';
-            this.openFolders.add(node.path);
+            this.openFolders.add(folderKey);
         };
-        this.folderOpeners.set(node.path, openFolder);
+        this.folderOpeners.set(folderKey, openFolder);
+
+        header.draggable = true;
+        header.addEventListener('dragstart', (e) => {
+            this.dragPath = node.path;
+            this.dragIsUserdata = isUserdata;
+            e.dataTransfer?.setData('text/plain', node.path);
+            e.stopPropagation();
+            header.classList.add('is-dragging');
+        });
+        header.addEventListener('dragend', () => {
+            this.dragPath = null;
+            this.dragIsUserdata = false;
+            header.classList.remove('is-dragging');
+        });
 
         header.addEventListener('click', (e) => {
             if ((e.target as HTMLElement).tagName === 'INPUT') { return; }
             const open = chevron.classList.toggle('is-open');
             chevron.textContent = open ? '▾' : '▸';
             children.style.display = open ? '' : 'none';
-            this.openFolders[open ? 'add' : 'delete'](node.path);
+            this.openFolders[open ? 'add' : 'delete'](folderKey);
         });
 
-        header.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.contextTarget = { isFolder: true, path: node.path, labelEl: label };
-            this.ShowContextMenu(e.clientX, e.clientY, node.path);
-        });
+        if (isUserdata || import.meta.env.DEV) {
+            header.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.contextTarget = { isFolder: true, path: node.path, labelEl: label, isUserdata };
+                this.ShowContextMenu(e.clientX, e.clientY, node.path, isUserdata);
+            });
+        }
 
         header.addEventListener('dragover', (e) => {
-            if (!this.dragPath) { return; }
+            if (!this.dragPath || this.dragIsUserdata !== isUserdata) { return; }
             e.preventDefault();
             e.stopPropagation();
             header.classList.add('drop-target');
@@ -356,11 +481,11 @@ export class Resources extends NitrateProcess {
             e.stopPropagation();
             header.classList.remove('drop-target');
             const from = this.dragPath;
-            if (!from) { return; }
+            if (!from || this.dragIsUserdata !== isUserdata) { return; }
             this.dragPath = null;
             const filename = from.split('/').pop() ?? '';
             const to = node.path ? `${node.path}/${filename}` : filename;
-            if (from !== to) { void this.Move(from, to); }
+            if (from !== to) { void this.Move(from, to, isUserdata); }
         });
 
         wrapper.appendChild(header);
@@ -368,8 +493,9 @@ export class Resources extends NitrateProcess {
         return wrapper;
     }
 
-    /** Builds a file row with a label, icon strip, drag handle, and context menu. */
-    private BuildFile(node: FileNode, isLast: boolean, parentIsLast: boolean[]): HTMLElement {
+    private BuildFile(
+        node: FileNode, isLast: boolean, parentIsLast: boolean[], isUserdata: boolean
+    ): HTMLElement {
         const rowClass = this.rowIndex++ % 2 === 0 ? 'row-even' : 'row-odd';
         const entry = document.createElement('div');
         entry.className = `resources-entry ${rowClass}`;
@@ -385,35 +511,66 @@ export class Resources extends NitrateProcess {
         const iconStrip = document.createElement('span');
         iconStrip.className = 'resources-entry-icons';
         entry.appendChild(iconStrip);
-        this.fileIconStrips.set(node.path, iconStrip);
+        this.fileIconStrips.set(this.CacheKey(node.path, isUserdata), iconStrip);
 
-        const cached = this.fileDataCache.get(node.path);
-        if (cached) { this.RenderIconStrip(node.path, cached); }
+        const cached = this.fileDataCache.get(this.CacheKey(node.path, isUserdata));
+        if (cached) { this.RenderIconStrip(node.path, isUserdata, cached); }
+
+        if (this.selectedPath === node.path && this.selectedIsUserdata === isUserdata) {
+            entry.classList.add('is-selected');
+            this.selectedEntry = entry;
+        }
+
+        entry.addEventListener('click', () => {
+            this.selectedEntry?.classList.remove('is-selected');
+            this.selectedPath = node.path;
+            this.selectedIsUserdata = isUserdata;
+            this.selectedEntry = entry;
+            entry.classList.add('is-selected');
+            this.previewPanel.OnSelect(node.path, isUserdata);
+        });
 
         entry.addEventListener('dragstart', (e) => {
             this.dragPath = node.path;
+            this.dragIsUserdata = isUserdata;
             e.dataTransfer?.setData('text/plain', node.path);
             entry.classList.add('is-dragging');
+
+            document.dispatchEvent(new CustomEvent('resource-drag-start', {
+                detail: { path: node.path, isUserdata }
+            }));
+
+            if (node.path.endsWith('.json')) {
+                const ghostCanvas = document.createElement('canvas');
+                ghostCanvas.width = 1;
+                ghostCanvas.height = 1;
+                e.dataTransfer?.setDragImage(ghostCanvas, 0, 0);
+            }
         });
         entry.addEventListener('dragend', () => {
             this.dragPath = null;
-            this.body.classList.remove('drop-target');
+            this.dragIsUserdata = false;
             entry.classList.remove('is-dragging');
+            document.dispatchEvent(new CustomEvent('resource-drag-end'));
         });
+
         entry.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            this.contextTarget = { isFolder: false, path: node.path, labelEl: label };
-            this.ShowContextMenu(e.clientX, e.clientY);
+            this.contextTarget = { isFolder: false, path: node.path, labelEl: label, isUserdata };
+            this.ShowContextMenu(e.clientX, e.clientY, undefined, isUserdata);
         });
 
         return entry;
     }
 
-    /** Positions and populates the context menu at screen coordinates. Pass newFolderParent to include the New Folder action. */
-    private ShowContextMenu(x: number, y: number, newFolderParent?: string): void {
+    private ShowContextMenu(
+        x: number, y: number, newFolderParent?: string, isUserdata?: boolean
+    ): void {
         this.contextMenu.innerHTML = '';
         this.contextMenu.classList.add('is-open');
+
+        const canMutate = isUserdata || import.meta.env.DEV;
 
         if (this.contextTarget) {
             if (!this.contextTarget.isFolder && this.onImport) {
@@ -427,50 +584,52 @@ export class Resources extends NitrateProcess {
                 this.contextMenu.appendChild(importBtn);
             }
 
-            const renameBtn = document.createElement('button');
-            renameBtn.textContent = 'Rename';
-            renameBtn.addEventListener('click', () => {
-                const target = this.contextTarget;
-                this.HideContextMenu();
-                if (target) { this.StartRename(target); }
-            });
-            this.contextMenu.appendChild(renameBtn);
+            if (canMutate) {
+                const renameBtn = document.createElement('button');
+                renameBtn.textContent = 'Rename';
+                renameBtn.addEventListener('click', () => {
+                    const target = this.contextTarget;
+                    this.HideContextMenu();
+                    if (target) { this.StartRename(target); }
+                });
+                this.contextMenu.appendChild(renameBtn);
 
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'is-danger';
-            deleteBtn.textContent = 'Delete';
-            deleteBtn.addEventListener('click', () => {
-                const target = this.contextTarget;
-                this.HideContextMenu();
-                if (target) { void this.Delete(target.path); }
-            });
-            this.contextMenu.appendChild(deleteBtn);
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'is-danger';
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.addEventListener('click', () => {
+                    const target = this.contextTarget;
+                    this.HideContextMenu();
+                    if (target) { void this.Delete(target.path, target.isUserdata); }
+                });
+                this.contextMenu.appendChild(deleteBtn);
+            }
         }
 
-        if (newFolderParent !== undefined) {
+        if (newFolderParent !== undefined && (isUserdata || import.meta.env.DEV)) {
             const newFolderBtn = document.createElement('button');
             newFolderBtn.textContent = 'New Folder';
             newFolderBtn.addEventListener('click', () => {
                 const parent = newFolderParent;
                 this.HideContextMenu();
-                this.StartNewFolder(parent);
+                this.StartNewFolder(parent, isUserdata ?? false);
             });
             this.contextMenu.appendChild(newFolderBtn);
         }
 
-        this.contextMenu.style.left = `${Math.min(x, window.innerWidth - 168)}px`;
-        this.contextMenu.style.top = `${Math.min(y, window.innerHeight - 90)}px`;
+        const menuWidth = this.contextMenu.offsetWidth;
+        const menuHeight = this.contextMenu.offsetHeight;
+        this.contextMenu.style.left = `${Math.min(x, window.innerWidth - menuWidth - 4)}px`;
+        this.contextMenu.style.top = `${Math.min(y, window.innerHeight - menuHeight - 4)}px`;
     }
 
-    /** Hides the context menu and clears the context target. */
     private HideContextMenu(): void {
         this.contextMenu.classList.remove('is-open');
         this.contextTarget = null;
     }
 
-    /** Replaces a label with an inline input to perform a rename. Commits on Enter or blur, cancels on Escape. */
     private StartRename(target: ContextTarget): void {
-        const { path, labelEl, isFolder } = target;
+        const { path, labelEl, isFolder, isUserdata } = target;
         const oldName = labelEl.textContent ?? '';
         const parent = labelEl.parentElement;
         if (!parent) { return; }
@@ -493,7 +652,7 @@ export class Resources extends NitrateProcess {
             const parts = path.split('/');
             const ext = path.match(/\.(\w+)\.json$/)?.[1];
             parts[parts.length - 1] = isFolder ? newName : ext ? `${newName}.${ext}.json` : `${newName}.json`;
-            await this.Move(path, parts.join('/'));
+            await this.Move(path, parts.join('/'), isUserdata);
         };
 
         input.addEventListener('keydown', (e) => {
@@ -503,15 +662,16 @@ export class Resources extends NitrateProcess {
         input.addEventListener('blur', () => { void commit(); });
     }
 
-    /** Injects a temporary input row for naming a new folder. Creates the folder on commit. */
-    private StartNewFolder(parentPath: string): void {
-        let container: HTMLElement | null;
-        if (parentPath === '') {
-            container = this.rootChildList ?? this.body;
-        } else {
-            this.folderOpeners.get(parentPath)?.();
-            container = this.folderChildLists.get(parentPath) ?? null;
+    private StartNewFolder(parentPath: string, isUserdata: boolean = true): void {
+        const containerKey = parentPath === ''
+            ? this.SectionKey(isUserdata ? this.userdataLabel : 'Shipped', isUserdata)
+            : this.FolderKey(parentPath, isUserdata);
+
+        if (parentPath !== '') {
+            this.folderOpeners.get(containerKey)?.();
         }
+
+        const container = this.folderChildLists.get(containerKey) ?? null;
         if (!container) { return; }
 
         const tempRow = document.createElement('div');
@@ -534,7 +694,7 @@ export class Resources extends NitrateProcess {
             const name = input.value.trim();
             if (!name) { return; }
             const folderPath = parentPath ? `${parentPath}/${name}` : name;
-            await this.MakeDirectory(folderPath);
+            await this.MakeDirectory(folderPath, isUserdata);
         };
 
         input.addEventListener('keydown', (e) => {
@@ -544,38 +704,47 @@ export class Resources extends NitrateProcess {
         input.addEventListener('blur', () => { void commit(); });
     }
 
-    /** Moves or renames a resource and updates the file data cache key. */
-    private async Move(from: string, to: string): Promise<void> {
-        await window.api.resources.move(from, to).catch(() => null);
+    private async Move(from: string, to: string, isUserdata: boolean): Promise<void> {
+        await this.ApiFor(isUserdata).move(from, to).catch(() => null);
+        await this.ApiFor(isUserdata).move(Metadata.GetMetaPath(from), Metadata.GetMetaPath(to)).catch(() => null);
 
-        const cached = this.fileDataCache.get(from);
+        const fromKey = this.CacheKey(from, isUserdata);
+        const toKey = this.CacheKey(to, isUserdata);
+        const cached = this.fileDataCache.get(fromKey);
         if (cached !== undefined) {
-            this.fileDataCache.delete(from);
-            this.fileDataCache.set(to, cached);
+            this.fileDataCache.delete(fromKey);
+            this.fileDataCache.set(toKey, cached);
             LogManager.Instance?.Log({
-                text: 'Moved resource from: ' + from + ' to: ' + to,
+                text: `Moved resource from: ${from} to: ${to}`,
                 options: { tags: ["Resources"] }
             });
         }
     }
 
-    /** Deletes a resource file or empty folder and removes it from the file data cache. */
-    private async Delete(path: string): Promise<void> {
-        await window.api.resources.delete(path).catch(() => null);
-
-        this.fileDataCache.delete(path);
+    private async Delete(path: string, isUserdata: boolean): Promise<void> {
+        await this.ApiFor(isUserdata).delete(path).catch(() => null);
+        await this.ApiFor(isUserdata).delete(Metadata.GetMetaPath(path)).catch(() => null);
+        this.fileDataCache.delete(this.CacheKey(path, isUserdata));
         LogManager.Instance?.Log({
-            text: 'Deleted path: ' + path,
+            text: `Deleted path: ${path}`,
             options: { tags: ["Resources"] }
         });
     }
 
-    /** Creates a new folder at the given relative path. */
-    private async MakeDirectory(path: string): Promise<void> {
-        await window.api.resources.mkdir(path).catch(() => null);
+    /** Clears the icon cache for a file and re-reads it. Call after overwriting an existing asset. @internal */
+    public async InvalidateFile(path: string): Promise<void> {
+        const userdataKey = this.CacheKey(path, true);
+        const resourcesKey = this.CacheKey(path, false);
+        const isUserdata = this.fileDataCache.has(userdataKey);
+        this.fileDataCache.delete(userdataKey);
+        this.fileDataCache.delete(resourcesKey);
+        await this.LoadFileData([path], isUserdata);
+    }
 
+    private async MakeDirectory(path: string, isUserdata: boolean): Promise<void> {
+        await this.ApiFor(isUserdata).mkdir(path).catch(() => null);
         LogManager.Instance?.Log({
-            text: 'Directory created: ' + path,
+            text: `Directory created: ${path}`,
             options: { tags: ["Resources"] }
         });
     }
@@ -586,7 +755,8 @@ export class Resources extends NitrateProcess {
         document.removeEventListener('click', this.docClickHandler);
         document.removeEventListener('contextmenu', this.docContextMenuHandler);
 
-        this.container.remove();
+        this.previewPanel.OnDestroy();
+        this.panel.OnDestroy();
         this.contextMenu.remove();
 
         if (Resources.Instance === this) {

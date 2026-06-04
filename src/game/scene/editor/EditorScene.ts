@@ -122,10 +122,15 @@ export class EditorScene extends Nitrate.Scene {
                     { width: 128, height: 128 },
                     { width: 256, height: 256 },
                 ],
+                style: { top: '120px', right: '14px' },
+                collapsed: false,
                 onChange: () => { this.ScheduleRestart(); },
             });
 
-            this.materialsPanel = new Nitrate.MaterialsPanel({ activeMaterial: { defaultMaterial: 'sand' } });
+            this.materialsPanel = new Nitrate.MaterialsPanel({
+                activeMaterial: { defaultMaterial: 'sand' },
+                style: { top: '655px' }
+            });
 
             this.brushPanel = new Nitrate.BrushPanel({
                 size: { min: 1, max: 10, default: 1 },
@@ -133,6 +138,7 @@ export class EditorScene extends Nitrate.Scene {
                 mode: { default: 'draw' },
                 type: { default: 'palette' },
                 snap: { default: true, show: false },
+                style: { top: '250px' }
             });
 
             if (renderer) {
@@ -154,6 +160,8 @@ export class EditorScene extends Nitrate.Scene {
                     { width: 128, height: 64 },
                     { width: 64, height: 128 },
                 ],
+                style: { top: '120px', right: '14px' },
+                collapsed: false,
                 onChange: () => { this.ScheduleRestart(); },
             });
 
@@ -162,6 +170,7 @@ export class EditorScene extends Nitrate.Scene {
                 occupancy: { default: 'static', show: false },
                 phases: { show: false },
                 tags: { show: false },
+                style: { top: '655px' }
             });
 
             this.brushPanel = new Nitrate.BrushPanel({
@@ -170,6 +179,7 @@ export class EditorScene extends Nitrate.Scene {
                 mode: { default: 'draw' },
                 type: { default: 'palette', show: false },
                 snap: { default: true, show: false },
+                style: { top: '250px' }
             });
         }
 
@@ -186,6 +196,7 @@ export class EditorScene extends Nitrate.Scene {
                     this.InitGPU();
                 },
             },
+            style: { top: '1130px' }
         });
     }
 
