@@ -11,6 +11,7 @@ interface PhysicsPassParams {
     simulationLayer: SimulationLayer;
     gameObjectLayer: GameObjectLayer;
     physicsBuffer: MaterialPhysicsBuffer;
+    goStateBuffer: GPUBuffer;
 }
 
 /**
@@ -24,6 +25,7 @@ export class PhysicsPass implements SimulationResource {
     private readonly simulationLayer: SimulationLayer;
     private readonly gameObjectLayer: GameObjectLayer;
     private readonly physicsBuffer: MaterialPhysicsBuffer;
+    private readonly goStateBuffer: GPUBuffer;
     private readonly uniforms: GPUBuffer;
     private readonly workgroupSize: number;
 
@@ -37,6 +39,7 @@ export class PhysicsPass implements SimulationResource {
         this.simulationLayer = params.simulationLayer;
         this.gameObjectLayer = params.gameObjectLayer;
         this.physicsBuffer = params.physicsBuffer;
+        this.goStateBuffer = params.goStateBuffer;
         this.workgroupSize = workgroupSize;
         this.uniforms = this.device.createBuffer({
             size: 4,
@@ -72,6 +75,8 @@ export class PhysicsPass implements SimulationResource {
                 { binding: 4, resource: { buffer: this.uniforms } },
                 { binding: 5, resource: this.gameObjectLayer.currentIdentity.createView() },
                 { binding: 6, resource: this.gameObjectLayer.currentPhysics.createView() },
+                { binding: 7, resource: this.gameObjectLayer.currentOwnership.createView() },
+                { binding: 8, resource: { buffer: this.goStateBuffer } },
             ],
         });
         const goBindGroup = this.device.createBindGroup({
@@ -84,6 +89,8 @@ export class PhysicsPass implements SimulationResource {
                 { binding: 4, resource: { buffer: this.uniforms } },
                 { binding: 5, resource: this.simulationLayer.currentIdentity.createView() },
                 { binding: 6, resource: this.simulationLayer.currentPhysics.createView() },
+                { binding: 7, resource: this.gameObjectLayer.currentOwnership.createView() },
+                { binding: 8, resource: { buffer: this.goStateBuffer } },
             ],
         });
 

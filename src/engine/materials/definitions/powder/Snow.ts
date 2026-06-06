@@ -23,6 +23,11 @@ export const Snow: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.15,
+            restitution: 0.1,
+            hardness: 0.05,
+        },
         density: 1.25,
         durability: 0.5,
         temperature: {

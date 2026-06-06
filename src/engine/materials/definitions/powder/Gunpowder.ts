@@ -23,8 +23,14 @@ export const Gunpowder: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.25,
+            restitution: 0.2,
+            hardness: 0.1,
+        },
         density: 1.6,
         durability: 1.15,
+        flammability: 0.925,
         temperature: {
             specificHeat: 1,
             restingTemperature: 0.5,

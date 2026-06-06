@@ -92,8 +92,14 @@ export const Cloth: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.75,
+            restitution: 0.15,
+            hardness: 0.1,
+        },
         density: 2,
         durability: 0.75,
+        flammability: 0.725,
         temperature: {
             specificHeat: 1.5,
             restingTemperature: 0.5,

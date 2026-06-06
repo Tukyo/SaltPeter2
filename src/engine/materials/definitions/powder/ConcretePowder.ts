@@ -23,6 +23,11 @@ export const ConcretePowder: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.4,
+            restitution: 0.2,
+            hardness: 0.2,
+        },
         density: 1.8,
         durability: 0,
         temperature: {

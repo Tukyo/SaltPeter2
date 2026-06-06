@@ -10,7 +10,12 @@ import { TemperatureOverlay } from './TemperatureOverlay';
 
 type DebugLayer = 'chunk' | 'pressure' | 'temperature' | 'gameObject';
 
-const DEBUG_SIM_LAYERS = ['Simulation', 'GameObject'] as const;
+const DEBUG_LAYER_LABELS: Record<DebugLayer, string> = {
+    chunk: 'Chunks',
+    pressure: 'Pressure',
+    temperature: 'Temperature',
+    gameObject: 'GameObjects',
+};
 
 /**
  * Toggles debug visualisation overlays for the active scene.
@@ -32,13 +37,10 @@ export class DebugOverlay extends NitrateProcess {
     private readonly unsubKeys: Array<() => void> = [];
 
     private activeLayer: DebugLayer | null = null;
-    private activeLayerIndex: number = 0;
 
     constructor() {
         super();
         DebugOverlay.Instance = this;
-
-        this.badge.SetLabel(DEBUG_SIM_LAYERS[this.activeLayerIndex]);
 
         const input = Input.Instance;
         if (input) {
@@ -48,8 +50,6 @@ export class DebugOverlay extends NitrateProcess {
                 input.OnKeyDown(keys.pressure, () => { this.SetLayer('pressure'); }),
                 input.OnKeyDown(keys.temperature, () => { this.SetLayer('temperature'); }),
                 input.OnKeyDown(keys.gameObject, () => { this.SetLayer('gameObject'); }),
-                input.OnKeyDown(keys.layer.down, () => { this.CycleLayer(-1); }),
-                input.OnKeyDown(keys.layer.up, () => { this.CycleLayer(1); }),
             );
         }
 
@@ -58,20 +58,6 @@ export class DebugOverlay extends NitrateProcess {
             options: { tags: ['DebugOverlay', 'NitrateProcessInit'] }
         });
     }
-
-    /** Cycles the active layer. Keybinds in {@link KeybindConfig}. @internal */
-    public CycleLayer(direction: 1 | -1): void {
-        const count = DEBUG_SIM_LAYERS.length;
-        this.activeLayerIndex = (this.activeLayerIndex + direction + count) % count;
-        this.badge.SetLabel(DEBUG_SIM_LAYERS[this.activeLayerIndex]);
-        this.temperature.SetLayerIndex(this.activeLayerIndex);
-    }
-
-    /** Returns the active layer index. @internal */
-    public GetActiveLayerIndex(): number { return this.activeLayerIndex; }
-
-    /** Returns the active layer name. @internal */
-    public GetActiveLayerName(): string { return DEBUG_SIM_LAYERS[this.activeLayerIndex]; }
 
     private SetLayer(layer: DebugLayer): void {
         if (this.activeLayer === layer) {
@@ -83,12 +69,8 @@ export class DebugOverlay extends NitrateProcess {
         if (this.activeLayer) { this.GetOverlay(this.activeLayer).Hide(); }
         this.GetOverlay(layer).Show();
         this.activeLayer = layer;
-
-        if (layer === 'temperature') {
-            this.badge.Show();
-        } else {
-            this.badge.Hide();
-        }
+        this.badge.SetLabel(DEBUG_LAYER_LABELS[layer]);
+        this.badge.Show();
     }
 
     private GetOverlay(layer: DebugLayer): ChunkOverlay | GameObjectOverlay | PressureOverlay | TemperatureOverlay {

@@ -33,7 +33,9 @@
             "y": 0
           },
           "materialId": 0,
-          "colorVariant": 0
+          "colorVariant": 0,
+          "variantId": 0,
+          "occupancy": 0
         },
         {
           "pos": {
@@ -41,7 +43,9 @@
             "y": 0
           },
           "materialId": 0,
-          "colorVariant": 0
+          "colorVariant": 0,
+          "variantId": 0,
+          "occupancy": 0
         },
         {
           "pos": {
@@ -49,7 +53,9 @@
             "y": 0
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -57,7 +63,9 @@
             "y": 0
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -65,7 +73,9 @@
             "y": 0
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -73,7 +83,9 @@
             "y": 0
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -81,7 +93,9 @@
             "y": 0
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -89,7 +103,9 @@
             "y": 0
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -97,7 +113,9 @@
             "y": 0
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -105,7 +123,9 @@
             "y": 0
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -113,7 +133,9 @@
             "y": 0
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -121,7 +143,9 @@
             "y": 0
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -129,7 +153,9 @@
             "y": 0
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -137,7 +163,9 @@
             "y": 0
           },
           "materialId": 37,
-          "colorVariant": 2
+          "colorVariant": 2,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -145,7 +173,9 @@
             "y": 0
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -153,7 +183,9 @@
             "y": 0
           },
           "materialId": 0,
-          "colorVariant": 0
+          "colorVariant": 0,
+          "variantId": 0,
+          "occupancy": 0
         },
         {
           "pos": {
@@ -161,7 +193,9 @@
             "y": 0
           },
           "materialId": 0,
-          "colorVariant": 0
+          "colorVariant": 0,
+          "variantId": 0,
+          "occupancy": 0
         },
         {
           "pos": {
@@ -169,7 +203,9 @@
             "y": 1
           },
           "materialId": 0,
-          "colorVariant": 0
+          "colorVariant": 0,
+          "variantId": 0,
+          "occupancy": 0
         },
         {
           "pos": {
@@ -177,7 +213,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -185,7 +223,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -193,7 +233,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -201,7 +243,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 2
+          "colorVariant": 2,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -209,7 +253,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -217,7 +263,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -225,7 +273,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -233,7 +283,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -241,7 +293,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -249,7 +303,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -257,7 +313,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -265,7 +323,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -273,7 +333,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -281,7 +343,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 2
+          "colorVariant": 2,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -289,7 +353,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -297,7 +363,9 @@
             "y": 1
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -305,7 +373,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -313,7 +383,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -321,7 +393,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -329,7 +403,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -337,7 +413,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -345,7 +423,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -353,7 +433,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -361,7 +443,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -369,7 +453,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -377,7 +463,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -385,7 +473,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -393,7 +483,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -401,7 +493,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -409,7 +503,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -417,7 +513,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -425,7 +523,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -433,7 +533,9 @@
             "y": 2
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -441,7 +543,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 2
+          "colorVariant": 2,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -449,7 +553,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 2
+          "colorVariant": 2,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -457,7 +563,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 2
+          "colorVariant": 2,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -465,7 +573,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 2
+          "colorVariant": 2,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -473,7 +583,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -481,7 +593,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -489,7 +603,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -497,7 +613,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -505,7 +623,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -513,7 +633,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -521,7 +643,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -529,7 +653,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -537,7 +663,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -545,7 +673,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -553,7 +683,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -561,7 +693,9 @@
             "y": 3
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -569,7 +703,9 @@
             "y": 3
           },
           "materialId": 0,
-          "colorVariant": 0
+          "colorVariant": 0,
+          "variantId": 0,
+          "occupancy": 0
         },
         {
           "pos": {
@@ -577,7 +713,9 @@
             "y": 4
           },
           "materialId": 0,
-          "colorVariant": 0
+          "colorVariant": 0,
+          "variantId": 0,
+          "occupancy": 0
         },
         {
           "pos": {
@@ -585,7 +723,9 @@
             "y": 4
           },
           "materialId": 0,
-          "colorVariant": 0
+          "colorVariant": 0,
+          "variantId": 0,
+          "occupancy": 0
         },
         {
           "pos": {
@@ -593,7 +733,9 @@
             "y": 4
           },
           "materialId": 37,
-          "colorVariant": 2
+          "colorVariant": 2,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -601,7 +743,9 @@
             "y": 4
           },
           "materialId": 37,
-          "colorVariant": 2
+          "colorVariant": 2,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -609,7 +753,9 @@
             "y": 4
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -617,7 +763,9 @@
             "y": 4
           },
           "materialId": 37,
-          "colorVariant": 2
+          "colorVariant": 2,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -625,7 +773,9 @@
             "y": 4
           },
           "materialId": 37,
-          "colorVariant": 2
+          "colorVariant": 2,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -633,7 +783,9 @@
             "y": 4
           },
           "materialId": 37,
-          "colorVariant": 2
+          "colorVariant": 2,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -641,7 +793,9 @@
             "y": 4
           },
           "materialId": 37,
-          "colorVariant": 2
+          "colorVariant": 2,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -649,7 +803,9 @@
             "y": 4
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -657,7 +813,9 @@
             "y": 4
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -665,7 +823,9 @@
             "y": 4
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -673,7 +833,9 @@
             "y": 4
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -681,7 +843,9 @@
             "y": 4
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -689,7 +853,9 @@
             "y": 4
           },
           "materialId": 37,
-          "colorVariant": 1
+          "colorVariant": 1,
+          "variantId": 0,
+          "occupancy": 2
         },
         {
           "pos": {
@@ -697,7 +863,9 @@
             "y": 4
           },
           "materialId": 0,
-          "colorVariant": 0
+          "colorVariant": 0,
+          "variantId": 0,
+          "occupancy": 0
         },
         {
           "pos": {
@@ -705,7 +873,9 @@
             "y": 4
           },
           "materialId": 0,
-          "colorVariant": 0
+          "colorVariant": 0,
+          "variantId": 0,
+          "occupancy": 0
         }
       ]
     },
@@ -717,17 +887,19 @@
         "y": 0
       },
       "type": "PixelBodyCollider",
-      "dirty": true
+      "dirty": true,
+      "mode": "Convex",
+      "vertices": []
     },
     {
       "enabled": true,
       "type": "Rigidbody",
       "bodyType": "Dynamic",
-      "mass": 1,
+      "mass": 0.4,
       "gravityScale": 1,
-      "drag": 0,
-      "angularDrag": 0,
-      "friction": 0.5,
+      "drag": 0.1,
+      "angularDrag": 0.15,
+      "friction": 0.55,
       "bounciness": 0.2,
       "velocity": {
         "x": 0,

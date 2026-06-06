@@ -78,6 +78,7 @@ fn resolveFireCell(
         if !isOccupiedState(nState) { hasAir = true; continue; }
         let nId = getStateMaterialId(nState);
         if isMaterialPhaseId(getMaterialPhaseId(nId), MATERIAL_PHASE_FIRE) { continue; }
+        if isLiquidOrGasPhase(getMaterialPhaseId(nId)) { hasAir = true; }
         let rBase     = getReactionBase(fireId, nId);
         let rChance   = reactionLookup[rBase + 2u];
         let rProductA = reactionLookup[rBase + 0u];

@@ -24,11 +24,11 @@ export class SimulationLayer implements SimulationResource {
         this.height = height;
 
         this.currentIdentity = TextureFactory.Create2D(device, width, height, 'rgba8unorm');
-        this.nextIdentity    = TextureFactory.Create2D(device, width, height, 'rgba8unorm');
-        this.currentPhysics  = TextureFactory.Create2D(device, width, height, 'rgba32float');
-        this.nextPhysics     = TextureFactory.Create2D(device, width, height, 'rgba32float');
-        this.currentState    = TextureFactory.Create2D(device, width, height, 'rgba32float');
-        this.nextState       = TextureFactory.Create2D(device, width, height, 'rgba32float');
+        this.nextIdentity = TextureFactory.Create2D(device, width, height, 'rgba8unorm');
+        this.currentPhysics = TextureFactory.Create2D(device, width, height, 'rgba32float');
+        this.nextPhysics = TextureFactory.Create2D(device, width, height, 'rgba32float');
+        this.currentState = TextureFactory.Create2D(device, width, height, 'rgba32float');
+        this.nextState = TextureFactory.Create2D(device, width, height, 'rgba32float');
     }
 
     /**

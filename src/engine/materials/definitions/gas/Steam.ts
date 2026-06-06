@@ -24,6 +24,11 @@ export const Steam: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0,
+            restitution: 0,
+            hardness: 0,
+        },
         density: 0.01,
         durability: 0,
         temperature: {

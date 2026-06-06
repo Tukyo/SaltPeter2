@@ -31,22 +31,27 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let simW     = i32(uniforms.simWidth);
     let simH     = i32(uniforms.simHeight);
 
-    var normalX:          f32 = 0.0;
-    var normalY:          f32 = 0.0;
-    var hitCount:         u32 = 0u;
-    var contactSumX:      f32 = 0.0;
-    var contactSumY:      f32 = 0.0;
-    var contactHits:      u32 = 0u;
-    var liquidHitCount:   u32 = 0u;
-    var liquidDensitySum: f32 = 0.0;
-    var liquidVelSumX:    f32 = 0.0;
-    var liquidVelSumY:    f32 = 0.0;
+    var normalX:             f32 = 0.0;
+    var normalY:             f32 = 0.0;
+    var hitCount:            u32 = 0u;
+    var contactSumX:         f32 = 0.0;
+    var contactSumY:         f32 = 0.0;
+    var contactHits:         u32 = 0u;
+    var liquidHitCount:      u32 = 0u;
+    var liquidDensitySum:    f32 = 0.0;
+    var liquidVelSumX:       f32 = 0.0;
+    var liquidVelSumY:       f32 = 0.0;
+    var materialFrictionSum: f32 = 0.0;
+    var materialHardnessSum: f32 = 0.0;
+    var simulationHitCount:  u32 = 0u;
 
     // selfEncoded = slotIndex + 1, used to skip own cells in the ownership texture
     let selfEncoded = gameObjectIdx + 1u;
 
     // First other-GameObject cell detected — its slot index drives the velocity response
     var detectedOtherEncoded: u32 = 0u;
+    // First GO cell detected above the pivot — contributes load to accumulatedMass
+    var upperGoEncoded: u32 = 0u;
 
     let neighbors = chebyshevOffsets();
 
@@ -79,7 +84,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let coord      = vec2<i32>(wx, wy);
         let cellSample = textureLoad(identityTexture,  coord, 0);
         let cellOwner  = textureLoad(ownershipTexture, coord, 0).r;
-        let isOtherGo  = cellOwner != 0u && cellOwner != selfEncoded;
+        let isOtherGo  = cellOwner != 0u && cellOwner != selfEncoded && gameObjectStates[cellOwner - 1u].boundaryCount > 0u;
+
+        // Detect a GO resting above this boundary cell. Scans several cells upward to handle
+        // the variable gap size left by depenetration (often 1-3 cells above the boundary).
+        // Runs before the occupancy continue so it fires even for boundary cells adjacent to air.
+        for (var lookUp: i32 = 1; lookUp <= 2 && upperGoEncoded == 0u; lookUp++) {
+            let checkY = wy + lookUp;
+            if (checkY < simH) {
+                let aboveOwner = textureLoad(ownershipTexture, vec2<i32>(wx, checkY), 0).r;
+                if (aboveOwner != 0u && aboveOwner != selfEncoded &&
+                    gameObjectStates[aboveOwner - 1u].boundaryCount > 0u) {
+                    upperGoEncoded = aboveOwner;
+                }
+            }
+        }
 
         // Identity texture has sim cells only (GameObject cells were erased this frame).
         // Ownership texture has last-frame GameObject stamps — used to detect other GOs.
@@ -121,7 +140,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let neighborCoord     = vec2<i32>(neighborX, neighborY);
             let neighborSample    = textureLoad(identityTexture,  neighborCoord, 0);
             let neighborOwner     = textureLoad(ownershipTexture, neighborCoord, 0).r;
-            let neighborIsOtherGo = neighborOwner != 0u && neighborOwner != selfEncoded;
+            let neighborIsOtherGo = neighborOwner != 0u && neighborOwner != selfEncoded && gameObjectStates[neighborOwner - 1u].boundaryCount > 0u;
             let neighborIsSelf    = neighborOwner == selfEncoded;
 
             if (!isOccupiedState(neighborSample) && !neighborIsOtherGo && !neighborIsSelf) {
@@ -140,6 +159,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         contactSumX += f32(wx) + 0.5;
         contactSumY += f32(wy) + 0.5;
         contactHits++;
+        if (!isOtherGo) {
+            let matIdx = clamp(i32(floor(getStateMaterialId(cellSample) + 0.5)), 0, MATERIAL_COUNT - 1);
+            materialFrictionSum += physicsMaterials[matIdx].friction;
+            materialHardnessSum += physicsMaterials[matIdx].hardness;
+            simulationHitCount++;
+        }
 
         if (state.velX * cellNormalX + state.velY * cellNormalY >= 0.0) { continue; }
 
@@ -147,14 +172,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         normalY += cellNormalY;
     }
 
+    let loadMass = select(0.0, gameObjectStates[upperGoEncoded - 1u].accumulatedMass, upperGoEncoded != 0u);
+    state.accumulatedMass = state.mass + loadMass;
+
+    var avgContactFriction: f32 = 1.0;
+    var avgContactHardness: f32 = uniforms.depenetrationHardness;
+    if (simulationHitCount > 0u) {
+        avgContactFriction      = materialFrictionSum / f32(simulationHitCount);
+        let sampledHardness     = materialHardnessSum / f32(simulationHitCount);
+        if (sampledHardness > 0.001) { avgContactHardness = sampledHardness; }
+    } else if (detectedOtherEncoded != 0u) {
+        avgContactFriction = gameObjectStates[detectedOtherEncoded - 1u].friction;
+    }
+    let effectiveFriction = sqrt(max(0.0, state.friction) * max(0.0, avgContactFriction));
+
     if (liquidHitCount > 0u) {
         let submersionFraction = f32(liquidHitCount) / max(1.0, f32(state.boundaryCount));
         let avgLiquidDensity   = liquidDensitySum / f32(liquidHitCount);
-        let buoyancyAccel      = (avgLiquidDensity / max(0.001, state.density)) * submersionFraction * uniforms.gravity * uniforms.buoyancyScale;
+        let buoyancyAccel      = (avgLiquidDensity / max(0.001, state.accumulatedMass)) * submersionFraction * uniforms.gravity * uniforms.buoyancyScale;
         state.velY += buoyancyAccel * uniforms.simStepDuration;
         let avgLiquidVelX    = (liquidVelSumX / f32(liquidHitCount)) * uniforms.liquidVelocityScale;
         let avgLiquidVelY    = (liquidVelSumY / f32(liquidHitCount)) * uniforms.liquidVelocityScale;
-        let couplingStrength = submersionFraction * uniforms.liquidDrag;
+        let couplingStrength = submersionFraction * uniforms.liquidDrag / max(0.001, state.accumulatedMass);
         state.velX += (avgLiquidVelX - state.velX) * couplingStrength;
         state.velY += (avgLiquidVelY - state.velY) * couplingStrength;
     }
@@ -196,6 +235,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let nx = normalX / normalLen;
     let ny = normalY / normalLen;
 
+    // Contact centroid lever arm — used for both impulse torque and rolling friction.
+    let contactCentroidX = select(state.posX, contactSumX / f32(contactHits), contactHits > 0u);
+    let contactCentroidY = select(state.posY, contactSumY / f32(contactHits), contactHits > 0u);
+    let leverArmX = contactCentroidX - state.posX;
+    let leverArmY = contactCentroidY - state.posY;
+
+    // 2D scalar cross product of the lever arm and collision normal. Non-zero when contact is
+    // off-center from the pivot — the impulse along n also produces torque.
+    let rCrossN        = leverArmX * ny - leverArmY * nx;
+    let rotationalTerm = (rCrossN * rCrossN) / max(0.001, state.momentOfInertia);
+
     // Resolve collision partner. Default = terrain: infinite mass, zero velocity.
     var otherVelX: f32 = 0.0;
     var otherVelY: f32 = 0.0;
@@ -207,19 +257,37 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         if (otherState.isActive != 0u) {
             otherVelX = otherState.velX;
             otherVelY = otherState.velY;
-            otherMass = max(0.001, otherState.mass);
+            otherMass = max(0.001, otherState.accumulatedMass);
         }
     }
 
-    let selfMass       = max(0.001, state.mass);
+    let selfMass       = max(0.001, state.accumulatedMass);
     let e              = state.bounciness;
-    let inverseMassSum = 1.0 / selfMass + 1.0 / otherMass;
+    let inverseMassSum = 1.0 / selfMass + 1.0 / otherMass + rotationalTerm;
+
+    // Penetration tolerance: skip depenetration push for shallow overlaps.
+    // Also skip if the push direction from the pivot leads into occupied sim cells —
+    // prevents GOs from being ejected upward through material piled on top of them.
+    let hitFraction       = f32(hitCount) / max(1.0, f32(state.boundaryCount));
+    let pushCheckX        = i32(round(state.posX + nx));
+    let pushCheckY        = i32(round(state.posY + ny));
+    var pushDirectionFree = true;
+    if (pushCheckX >= 0 && pushCheckY >= 0 && pushCheckX < simW && pushCheckY < simH) {
+        let pushCoord     = vec2<i32>(pushCheckX, pushCheckY);
+        let pushSimBlocked = isOccupiedState(textureLoad(identityTexture,  pushCoord, 0));
+        let pushOwner      = textureLoad(ownershipTexture, pushCoord, 0).r;
+        let pushGoBlocked  = pushOwner != 0u && pushOwner != selfEncoded;
+        pushDirectionFree  = !pushSimBlocked && !pushGoBlocked;
+    }
+    let applyDepenetration = hitFraction > uniforms.penetrationAllowance && pushDirectionFree;
 
     // Relative velocity in normal direction — negative means approaching
     let relVelDotNormal = (state.velX - otherVelX) * nx + (state.velY - otherVelY) * ny;
+    // Contact-point velocity includes the angular contribution at the lever arm position.
+    let vRelAtContact = relVelDotNormal + state.omega * rCrossN;
 
-    if (relVelDotNormal < 0.0) {
-        let relApproachSpeed = -relVelDotNormal;
+    if (vRelAtContact < 0.0) {
+        let relApproachSpeed = -vRelAtContact;
 
         let selfDotNormal = state.velX * nx + state.velY * ny;
         let selfLateralX  = state.velX - selfDotNormal * nx;
@@ -237,13 +305,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             //   → new normal speed = selfDotNormal + normalDeltaV = −v_in + (1+e)×v_in = e×v_in ✓
             let impulse      = (1.0 + e) * relApproachSpeed / inverseMassSum;
             let normalDeltaV = impulse / selfMass;
-            let frictionFactor = max(0.0, 1.0 - state.friction);
+            if (pushDirectionFree) { state.omega += rCrossN * impulse / max(0.001, state.momentOfInertia); }
+            let frictionFactor = max(0.0, 1.0 - effectiveFriction);
             state.velX = (selfDotNormal + normalDeltaV) * nx + selfLateralX * frictionFactor;
             state.velY = (selfDotNormal + normalDeltaV) * ny + selfLateralY * frictionFactor;
-            let bouncePush = depenetrationPush(hitCount, state.boundaryCount, uniforms.depenetrationForce, uniforms.depenetrationHardness);
-            state.posX += nx * bouncePush;
-            state.posY += ny * bouncePush;
+            if (applyDepenetration) {
+                let bouncePush = depenetrationPush(hitCount, state.boundaryCount, uniforms.depenetrationForce, avgContactHardness);
+                state.posX += nx * bouncePush;
+                state.posY += ny * bouncePush;
+            }
         } else {
+            // Normal constraint impulse (e=0) to stop approach at the contact point;
+            // produces torque when contact is off-center from the pivot.
+            let normalRestImpulse = relApproachSpeed / inverseMassSum;
+            if (pushDirectionFree) { state.omega += rCrossN * normalRestImpulse / max(0.001, state.momentOfInertia); }
+
             // Rest — Coulomb friction on lateral velocity relative to other surface.
             // For terrain (otherVel = 0): relLateral = selfLateral — same as before.
             let otherDotNormal  = otherVelX * nx + otherVelY * ny;
@@ -254,7 +330,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let relLateralSpeed = sqrt(relLateralX * relLateralX + relLateralY * relLateralY);
 
             if (relLateralSpeed > uniforms.settleThreshold) {
-                let frictionDecel   = state.friction * uniforms.gravity * uniforms.simStepDuration;
+                let frictionDecel   = effectiveFriction * abs(ny) * uniforms.gravity * uniforms.simStepDuration;
                 let newLateralSpeed = max(0.0, relLateralSpeed - frictionDecel);
                 let lateralScale    = newLateralSpeed / relLateralSpeed;
                 state.velX = otherLateralX + relLateralX * lateralScale;
@@ -266,41 +342,36 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
             // microCorrection cancels further sinking this step; depenetration push corrects accumulated overlap
             let microCorrection = relApproachSpeed * uniforms.simStepDuration;
-            let settlePush      = depenetrationPush(hitCount, state.boundaryCount, uniforms.depenetrationForce, uniforms.depenetrationHardness);
-            state.posX += nx * (microCorrection + settlePush);
-            state.posY += ny * (microCorrection + settlePush);
+            if (applyDepenetration) {
+                let settlePush = depenetrationPush(hitCount, state.boundaryCount, uniforms.depenetrationForce, avgContactHardness);
+                state.posX += nx * (microCorrection + settlePush);
+                state.posY += ny * (microCorrection + settlePush);
+            } else {
+                state.posX += nx * microCorrection;
+                state.posY += ny * microCorrection;
+            }
         }
 
     }
 
-    // Rolling friction: ground contact friction couples velX and omega.
-    // Contact point velocity = velX - omega * leverY, where leverY = contactY - posY.
-    // In texture Y-down coordinates, leverY is positive when contact is below the pivot.
-    // Any sliding at the contact is opposed by friction, simultaneously changing velX and omega,
-    // driving the system toward the rolling constraint: velX = omega * leverY.
-    // This is the only mechanism changing omega — no separate collision torque block — so it also
-    // generates spin when an object slides on the ground (friction accelerates rotation), and
-    // drains existing spin when the object is settled.
-    if (contactHits > 0u) {
-        let contactCentroidY = contactSumY / f32(contactHits);
-        let leverY = contactCentroidY - state.posY;  // positive when contact is below pivot (Y-down)
-        if (abs(leverY) > 0.1) {
-            let contactVelX  = state.velX - state.omega * leverY;
-            let invEffMass   = 1.0 / selfMass + (leverY * leverY) / max(0.001, state.momentOfInertia);
+    // Rolling friction: surface tangent slip couples linear velocity and omega, driving toward
+    // the no-slip rolling constraint. Slip is projected onto the surface tangent (-ny, nx) so
+    // this works correctly on slopes, not just flat ground. Friction limit scales with abs(ny)
+    // (normal force) so steep slopes correctly reduce friction, same as the sliding path above.
+    if (contactHits > 0u && pushDirectionFree) {
+        let leverLen = sqrt(leverArmX * leverArmX + leverArmY * leverArmY);
+        if (leverLen > uniforms.minLeverArm) {
+            let contactVelTangent = (state.velX - state.omega * leverArmY) * (-ny)
+                                  + (state.velY + state.omega * leverArmX) * nx;
+            let rCrossT       = leverArmX * nx + leverArmY * ny;
+            let invEffMass    = 1.0 / selfMass + (rCrossT * rCrossT) / max(0.001, state.momentOfInertia);
             let effectiveMass = 1.0 / max(0.0001, invEffMass);
-            let frictionLimit = state.friction * uniforms.gravity * uniforms.simStepDuration * selfMass;
-            let impulse      = clamp(-contactVelX * effectiveMass, -frictionLimit, frictionLimit);
-            state.velX  += impulse / selfMass;
-            state.omega -= leverY * impulse / max(0.001, state.momentOfInertia);
+            let frictionLimit = effectiveFriction * abs(ny) * uniforms.gravity * uniforms.simStepDuration * selfMass;
+            let rollingImpulse = clamp(-contactVelTangent * effectiveMass, -frictionLimit, frictionLimit);
+            state.velX  += rollingImpulse * (-ny) / selfMass;
+            state.velY  += rollingImpulse * nx / selfMass;
+            state.omega += rCrossT * rollingImpulse / max(0.001, state.momentOfInertia);
         }
-    }
-
-    // Near-point contact is physically unstable — a single boundary point touching a surface
-    // produces zero torque and lets the GO balance indefinitely. Inject a small lateral jitter
-    // so the instability resolves naturally rather than locking in place.
-    if (hitCount <= 2u) {
-        let jitter = (hash(vec2f(state.posX * 0.37, state.posY * 0.53)) - 0.5) * 0.4;
-        state.velX += jitter;
     }
 
     state.hitCount = hitCount;

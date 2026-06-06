@@ -208,6 +208,13 @@ export class MaterialsPanel extends NitrateProcess {
         const initialId = this.GetMaterialId();
         BrushManager.Instance?.SetMaterial(initialId);
         this.UpdateVariants(initialId);
+
+        if (this.occupancyElement && this.occupancySetting) {
+            const initialOccupancy = ChoiceControl.Instance.GetRawValue(
+                this.occupancyElement, this.occupancySetting
+            );
+            BrushManager.Instance?.SetOccupancy(initialOccupancy as MaterialOccupancy);
+        }
     }
 
     /** Sets the active material by ID, updating the control UI and BrushManager. */

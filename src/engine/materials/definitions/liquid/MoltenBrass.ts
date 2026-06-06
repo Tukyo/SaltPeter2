@@ -23,7 +23,12 @@ export const MoltenBrass: MaterialDefinition = {
         }
     },
     physics: {
-        density: 0.95,
+        contact: {
+            friction: 0.04,
+            restitution: 0.12,
+            hardness: 0,
+        },
+        density: 0.91,
         durability: 0,
         temperature: {
             specificHeat: 4,

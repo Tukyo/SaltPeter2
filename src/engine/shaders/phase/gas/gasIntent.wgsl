@@ -45,18 +45,18 @@ fn chooseGasIntentForState(
         if canRight { return MATERIAL_INTENT_LATERAL_RIGHT; }
     }
 
-    // Rise straight up — only into air (gas-gas displacement is handled by phaseIntent)
+    // Rise straight up — only into air or fire (gas-gas displacement is handled by phaseIntent)
     let above = coord + up;
     let myState = textureLoad(identityTexture, vec2i(coord));
-    if isAirCoord(above, res) && riseRoll < sim.upwardRiseChance {
+    if (isAirCoord(above, res) || isFirePhaseCoord(above, res)) && riseRoll < sim.upwardRiseChance {
         return MATERIAL_INTENT_RISE;
     }
 
     // Diagonal rise
     let aboveLeft  = coord + up + CELL_LEFT;
     let aboveRight = coord + up + CELL_RIGHT;
-    let canDiagLeft  = isAirCoord(aboveLeft,  res);
-    let canDiagRight = isAirCoord(aboveRight, res);
+    let canDiagLeft  = isAirCoord(aboveLeft,  res)  || isFirePhaseCoord(aboveLeft,  res);
+    let canDiagRight = isAirCoord(aboveRight, res) || isFirePhaseCoord(aboveRight, res);
 
     if (canDiagLeft || canDiagRight) && riseRoll < sim.diagonalRiseChance {
         if canDiagLeft && canDiagRight {

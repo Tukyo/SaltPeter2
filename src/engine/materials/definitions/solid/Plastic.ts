@@ -21,8 +21,14 @@ export const Plastic: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.4,
+            restitution: 0.55,
+            hardness: 0.65,
+        },
         density: 3,
         durability: 3,
+        flammability: 0.6,
         temperature: {
             specificHeat: 0.8,
             restingTemperature: 0.5,

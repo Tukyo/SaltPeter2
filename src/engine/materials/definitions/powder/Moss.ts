@@ -23,8 +23,14 @@ export const Moss: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.75,
+            restitution: 0.1,
+            hardness: 0.1,
+        },
         density: 0.505,
         durability: 1.2,
+        flammability: 0.55,
         temperature: {
             specificHeat: 0.5,
             restingTemperature: 0.5,

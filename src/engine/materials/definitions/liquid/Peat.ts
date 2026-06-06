@@ -23,8 +23,14 @@ export const Peat: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.18,
+            restitution: 0.03,
+            hardness: 0,
+        },
         density: 0.475,
         durability: 0.5,
+        flammability: 0.45,
         temperature: {
             specificHeat: 1.5,
             restingTemperature: 0.5,

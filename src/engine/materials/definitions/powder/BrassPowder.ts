@@ -23,6 +23,11 @@ export const BrassPowder: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.3,
+            restitution: 0.35,
+            hardness: 0.15,
+        },
         density: 1.7,
         durability: 1,
         temperature: {

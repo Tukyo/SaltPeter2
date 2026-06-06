@@ -49,8 +49,7 @@ fn resolveCellForState(
     let phaseId = getStatePhaseId(currentIdentityState);
     if !sameCoord(intentTarget, coord) &&
        isOwnedCell(textureLoad(goOwnershipTexture, vec2i(intentTarget)).r) &&
-       !isMaterialPhaseId(phaseId, MATERIAL_PHASE_LIQUID) &&
-       !isMaterialPhaseId(phaseId, MATERIAL_PHASE_GAS) {
+       !isLiquidOrGasPhase(phaseId) {
         return ResolvedCell(currentIdentityState, coord);
     }
 

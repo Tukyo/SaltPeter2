@@ -20,12 +20,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     state.velY -= uniforms.gravity * state.gravityScale * uniforms.simStepDuration;
 
     // Linear drag — effective drag is drag/mass so heavier objects have higher terminal velocity
-    let dragFactor = max(0.0, 1.0 - (state.drag / max(0.001, state.mass)) * uniforms.simStepDuration);
+    let dragFactor = max(0.0, 1.0 - (state.drag / max(0.001, state.accumulatedMass)) * uniforms.simStepDuration);
     state.velX *= dragFactor;
     state.velY *= dragFactor;
 
     // Angular drag — same formula as linear drag so angularDrag/mass gives consistent units
-    let angularDragFactor = max(0.0, 1.0 - (state.angularDrag / max(0.001, state.mass)) * uniforms.simStepDuration);
+    let angularDragFactor = max(0.0, 1.0 - (state.angularDrag / max(0.001, state.accumulatedMass)) * uniforms.simStepDuration);
     state.omega *= angularDragFactor;
 
     // Clamp velocity so displacement stays <= maxSpeed cells per step — GOs live on the same

@@ -66,7 +66,9 @@ export class ExportGameObject extends Export {
                     const byteOffset = (y2 - cy) * bytesPerRow + cx * 4;
                     const materialId = data[byteOffset] as MaterialId;
                     const colorVariant = MaterialQuery.DecodeColorIndex(data[byteOffset + 1]);
-                    pixelData.cells.push({ pos: { x: cx - x1, y: cy - y1 }, materialId, colorVariant });
+                    const variantId = data[byteOffset + 2];
+                    const occupancy = data[byteOffset + 3];
+                    pixelData.cells.push({ pos: { x: cx - x1, y: cy - y1 }, materialId, colorVariant, variantId, occupancy });
                 }
             }
         }

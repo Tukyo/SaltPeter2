@@ -23,6 +23,11 @@ export const MilkPowder: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.2,
+            restitution: 0.1,
+            hardness: 0.05,
+        },
         density: 1.4,
         durability: 0,
         temperature: {

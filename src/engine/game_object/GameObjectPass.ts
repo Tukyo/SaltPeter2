@@ -1,11 +1,13 @@
 import type { GameObjectLayer } from './GameObjectLayer';
 import type { MaterialPhysicsBuffer } from '../materials/MaterialPhysicsBuffer';
 import type { MaterialStateBuffer } from '../materials/MaterialStateBuffer';
+import type { PixelCell } from '../component/definitions/pixeldata/PixelData';
 import type { ReactionLookupBuffer } from '../materials/ReactionLookupBuffer';
 import type { SimulationLayer } from '../simulation/SimulationLayer';
 import type { SimulationResource } from '../simulation/SimulationManager';
 
 import { ColliderGenerator } from '../component/ColliderGenerator';
+import { GameObjectConfig } from '../config/GameObjectConfig';
 import { GameObjectCellSchema } from './GameObjectCellSchema';
 import { GameObjectColliderSchema } from './GameObjectColliderSchema';
 import { GameObjectBuffers } from './GameObjectBuffers';
@@ -183,9 +185,22 @@ export class GameObjectPass implements SimulationResource {
         if (!transform || !pixelData) { return; }
 
         const rigidbody = gameObject.GetComponent(Rigidbody);
+        const colorsPerMaterial = MaterialVisualSchema.GetColorsPerMaterial();
+        const pivotX = pixelData.pivot.x;
+        const pivotY = pixelData.pivot.y;
+
+        const filledCells = pixelData.cells.filter(c => c.materialId !== 0);
+        const staticCells = filledCells.filter(c => (c.occupancy ?? 2) !== 1);
+        const dynamicCells = filledCells.filter(c => (c.occupancy ?? 2) === 1);
+
+        if (staticCells.length === 0) {
+            this.WriteDynamicCellsToSim(dynamicCells, transform, pivotX, pivotY);
+            this.gameObjectSlots.set(gameObject.id, -1);
+            return;
+        }
+
         const slot = this.nextSlot++;
         const cellOffset = this.totalCells;
-        const filledCells = pixelData.cells.filter(c => c.materialId !== 0);
 
         // Build boundary points from the first non-trigger collider found
         const boxCollider = gameObject.GetComponent(BoxCollider);
@@ -198,7 +213,6 @@ export class GameObjectPass implements SimulationResource {
         const activeCollider = boxCollider ?? circleCollider ?? pixelBodyCollider;
         if (activeCollider && !activeCollider.isTrigger) {
             let boundaryPoints;
-            const { x: pivotX, y: pivotY } = pixelData.pivot;
             if (boxCollider) {
                 // Box/circle offsets are pivot-relative; add pivot to match cell.pos space so the
                 // shader's pivot subtraction doesn't double-subtract.
@@ -208,7 +222,7 @@ export class GameObjectPass implements SimulationResource {
                 boundaryPoints = ColliderGenerator.BuildCircleBoundary(circleCollider.offset, circleCollider.radius)
                     .map(p => ({ x: p.x + pivotX, y: p.y + pivotY }));
             } else {
-                boundaryPoints = ColliderGenerator.BuildPixelBodyBoundary(pixelData.cells);
+                boundaryPoints = ColliderGenerator.BuildPixelBodyBoundary(staticCells);
             }
 
             if (boundaryPoints.length > 0) {
@@ -219,7 +233,7 @@ export class GameObjectPass implements SimulationResource {
                 const pi = new Int32Array(pointBuf);
                 for (let i = 0; i < boundaryPoints.length; i++) {
                     pi[i * GameObjectColliderSchema.stride] = boundaryPoints[i].x;
-                    pi[i * GameObjectColliderSchema.stride + 1] = -boundaryPoints[i].y; // stored in canvas-Y (0=top); shaders expect sim-Y (0=bottom)
+                    pi[i * GameObjectColliderSchema.stride + 1] = -boundaryPoints[i].y; // canvas-Y → sim-Y
                 }
                 this.device.queue.writeBuffer(
                     this.gameObjectBuffers.colliderBuffer,
@@ -243,11 +257,11 @@ export class GameObjectPass implements SimulationResource {
         sf[5] = rigidbody ? rigidbody.velocity.y : 0;
         sf[6] = rigidbody ? rigidbody.gravityScale : 0;
         sf[7] = rigidbody ? rigidbody.drag : 0;
-        sf[8] = pixelData.pivot.x;
-        sf[9] = -pixelData.pivot.y; // stored in canvas-Y (0=top); shaders expect sim-Y (0=bottom)
+        sf[8] = pivotX;
+        sf[9] = -pivotY; // canvas-Y → sim-Y
         su[10] = gameObject.id;
         su[11] = cellOffset;
-        su[12] = filledCells.length;
+        su[12] = staticCells.length;
         su[13] = rigidbody ? Rigidbody.BodyTypeValue[rigidbody.bodyType] : Rigidbody.BodyTypeValue.Static;
         su[14] = 1; // isActive
         su[15] = 0; // colliderDirty
@@ -265,20 +279,15 @@ export class GameObjectPass implements SimulationResource {
         su[27] = 0; // sleepTimer
 
         // Moment of inertia about the pivot: I = mass * Σ(dx² + dy²) / cellCount
-        // where dx/dy is each cell's offset from the pivot in local space.
-        // Determines how easily the GameObject rotates under a given torque.
-        const pivotX = pixelData.pivot.x;
-        const pivotY = pixelData.pivot.y;
-        const sumSquaredRadius = filledCells.reduce((acc, c) => {
+        const sumSquaredRadius = staticCells.reduce((acc, c) => {
             const dx = c.pos.x - pivotX;
             const dy = c.pos.y - pivotY;
             return acc + dx * dx + dy * dy;
         }, 0);
         const mass = rigidbody ? rigidbody.mass : 1;
-        sf[28] = Math.max(0.001, mass * sumSquaredRadius / Math.max(1, filledCells.length));
+        sf[28] = Math.max(0.001, mass * sumSquaredRadius / Math.max(1, staticCells.length));
+        sf[29] = mass; // accumulatedMass — equals intrinsic mass on spawn, updated by collision pass
 
-        const totalDensity = filledCells.reduce((sum, c) => sum + (MaterialQuery.GetById(c.materialId)?.physics.density ?? 1.0), 0);
-        sf[29] = Math.max(0.001, totalDensity / Math.max(1, filledCells.length));
 
         this.device.queue.writeBuffer(
             this.gameObjectBuffers.stateBuffer,
@@ -286,25 +295,23 @@ export class GameObjectPass implements SimulationResource {
             stateBuf
         );
 
-        // Pack all cells for this GameObject into the flat cell buffer.
-        // Material identity (materialId, colorVariant) is permanent and stored here.
-        // Dynamic per-cell state (temperature, health, lifetime) is NOT stored here —
-        // the stamp pass carries those forward from the simulation textures at the cell's previous position.
-        const colorsPerMaterial = MaterialVisualSchema.GetColorsPerMaterial();
-        const cellBuf = new ArrayBuffer(filledCells.length * GameObjectCellSchema.byteStride);
+        // Pack static cells into the flat GPU cell buffer
+        const cellBuf = new ArrayBuffer(staticCells.length * GameObjectCellSchema.byteStride);
         const ci = new Int32Array(cellBuf);
         const cu = new Uint32Array(cellBuf);
         const cf = new Float32Array(cellBuf);
 
-        for (let i = 0; i < filledCells.length; i++) {
-            const cell = filledCells[i];
+        for (let i = 0; i < staticCells.length; i++) {
+            const cell = staticCells[i];
             const base = i * GameObjectCellSchema.stride;
             ci[base] = cell.pos.x;
-            ci[base + 1] = -cell.pos.y; // stored in canvas-Y (0=top); shaders expect sim-Y (0=bottom)
+            ci[base + 1] = -cell.pos.y; // canvas-Y → sim-Y
             cu[base + 2] = slot;
             cu[base + 3] = gameObject.id;
             cu[base + 4] = cell.materialId;
             cf[base + 5] = (cell.colorVariant + 0.5) / colorsPerMaterial;
+            cu[base + 6] = cell.variantId ?? 0;
+            cu[base + 7] = cell.occupancy ?? 2;
         }
 
         this.device.queue.writeBuffer(
@@ -313,9 +320,68 @@ export class GameObjectPass implements SimulationResource {
             cellBuf
         );
 
+        if (dynamicCells.length > 0) {
+            this.WriteDynamicCellsToSim(dynamicCells, transform, pivotX, pivotY);
+        }
+
         this.gameObjectSlots.set(gameObject.id, slot);
         this.maxBoundaryCounts.set(slot, boundaryCount);
-        this.totalCells += filledCells.length;
+        this.totalCells += staticCells.length;
+    }
+
+    private WriteDynamicCellsToSim(
+        cells: PixelCell[],
+        transform: Transform,
+        pivotX: number,
+        pivotY: number
+    ): void {
+        const simW = this.simulationLayer.width;
+        const simH = this.simulationLayer.height;
+        const maxDensity = MaterialQuery.GetMaxDensity();
+        const colorsPerMaterial = MaterialVisualSchema.GetColorsPerMaterial();
+
+        for (const cell of cells) {
+            const simX = Math.round(transform.position.x + cell.pos.x - pivotX);
+            const simY = Math.round(transform.position.y - cell.pos.y + pivotY);
+            if (simX < 0 || simY < 0 || simX >= simW || simY >= simH) { continue; }
+            const texY = simY;
+
+            const material = MaterialQuery.GetById(cell.materialId);
+            if (!material) { continue; }
+
+            const identityData = new Uint8Array([
+                cell.materialId,
+                Math.round(((cell.colorVariant + 0.5) / colorsPerMaterial) * 255),
+                cell.variantId ?? 0,
+                1, // OCCUPANCY_DYNAMIC
+            ]);
+            this.device.queue.writeTexture(
+                { texture: this.simulationLayer.nextIdentity, origin: { x: simX, y: texY, z: 0 } },
+                identityData,
+                { bytesPerRow: 4 },
+                { width: 1, height: 1 }
+            );
+
+            const physicsData = new Float32Array([
+                material.physics.temperature.restingTemperature,
+                material.physics.density / maxDensity,
+                0, 0,
+            ]);
+            this.device.queue.writeTexture(
+                { texture: this.simulationLayer.nextPhysics, origin: { x: simX, y: texY, z: 0 } },
+                physicsData,
+                { bytesPerRow: 16 },
+                { width: 1, height: 1 }
+            );
+
+            const spawnLifetime = (material.state.lifetime ?? 0) > 0 ? 1.0 : 0.0;
+            this.device.queue.writeTexture(
+                { texture: this.simulationLayer.nextState, origin: { x: simX, y: texY, z: 0 } },
+                new Float32Array([1.0, spawnLifetime, 0, 0]),
+                { bytesPerRow: 16 },
+                { width: 1, height: 1 }
+            );
+        }
     }
 
     /** Uploads new GOs and dispatches the erase pass. Call before submitting encoder A. @internal */
@@ -343,10 +409,14 @@ export class GameObjectPass implements SimulationResource {
 
         gameObjectLayer.ClearNextTextures(encoder);
 
-        device.queue.writeBuffer(
-            gameObjectBuffers.eraseUniformBuffer, 0,
-            new Uint32Array([this.totalCells, gameObjectLayer.width, gameObjectLayer.height, 0])
-        );
+        const eraseUniformData = new ArrayBuffer(32);
+        const eraseU32 = new Uint32Array(eraseUniformData);
+        const eraseF32 = new Float32Array(eraseUniformData);
+        eraseU32[0] = this.totalCells;
+        eraseU32[1] = gameObjectLayer.width;
+        eraseU32[2] = gameObjectLayer.height;
+        eraseF32[5] = GameObjectConfig.GetConfig().physics.bleed.threshold;
+        device.queue.writeBuffer(gameObjectBuffers.eraseUniformBuffer, 0, eraseUniformData);
 
         const eraseBindGroup = device.createBindGroup({
             layout: this.erasePipeline.getBindGroupLayout(0),
@@ -381,6 +451,7 @@ export class GameObjectPass implements SimulationResource {
         stampU32[2] = gameObjectLayer.height;
         stampF32[3] = simStepDuration;
         stampF32[4] = time;
+        stampF32[5] = GameObjectConfig.GetConfig().physics.bleed.threshold;
         device.queue.writeBuffer(gameObjectBuffers.stampUniformBuffer, 0, stampUniformData);
 
         // Physics — save prevPos, integrate velocity, update positions in state buffer
@@ -468,6 +539,7 @@ export class GameObjectPass implements SimulationResource {
         const toDestroy: number[] = [];
 
         for (const [gameObjectId, slot] of this.gameObjectSlots) {
+            if (slot === -1) { continue; }
             const base = slot * GameObjectStateSchema.stride;
             const gameObject = GameObjectManager.Instance?.Get(gameObjectId);
             if (!gameObject) { continue; }
@@ -507,7 +579,7 @@ export class GameObjectPass implements SimulationResource {
 
         for (const gameObjectId of toDestroy) {
             const slot = this.gameObjectSlots.get(gameObjectId);
-            if (slot === undefined) { continue; }
+            if (slot === undefined || slot === -1) { continue; }
             this.gameObjectSlots.delete(gameObjectId);
             GameObjectManager.Instance?.Get(gameObjectId)?.Destroy();
             const inactiveOffset = slot * GameObjectStateSchema.byteStride + 14 * 4;

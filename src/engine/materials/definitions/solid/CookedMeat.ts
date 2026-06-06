@@ -21,6 +21,11 @@ export const CookedMeat: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.55,
+            restitution: 0.15,
+            hardness: 0.3,
+        },
         density: 3,
         durability: 2,
         temperature: {

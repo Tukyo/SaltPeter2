@@ -23,6 +23,11 @@ export const Poison: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.02,
+            restitution: 0.1,
+            hardness: 0,
+        },
         density: 0.7,
         durability: 0,
         temperature: {

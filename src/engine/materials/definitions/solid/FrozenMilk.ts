@@ -21,6 +21,11 @@ export const FrozenMilk: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.12,
+            restitution: 0.25,
+            hardness: 0.55,
+        },
         density: 3,
         durability: 1,
         temperature: {

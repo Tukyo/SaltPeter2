@@ -21,6 +21,11 @@ export const Lead: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.45,
+            restitution: 0.15,
+            hardness: 0.5,
+        },
         density: 7,
         durability: 3,
         temperature: {

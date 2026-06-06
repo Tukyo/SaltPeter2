@@ -23,6 +23,11 @@ export const Dirt: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.55,
+            restitution: 0.15,
+            hardness: 0.2,
+        },
         density: 2.2,
         durability: 3,
         temperature: {

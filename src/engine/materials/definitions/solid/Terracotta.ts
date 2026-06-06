@@ -21,6 +21,11 @@ export const Terracotta: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.72,
+            restitution: 0.25,
+            hardness: 0.8,
+        },
         density: 5.5,
         durability: 7,
         temperature: {

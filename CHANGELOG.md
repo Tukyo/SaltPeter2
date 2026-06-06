@@ -2,7 +2,93 @@
 
 ---
 
-## [0.1.1] - [06/04/2026]
+## [0.1.2] - Patch - [06/06/2026]
+### Updates & Changes
+
+#### Contact Physics — Material Properties
+- Added `friction`, `restitution`, and `hardness` to the material contact physics model — exposed per-material and uploaded to GPU; the collision pass now reads these values directly from `physicsMaterials` at each contact point
+- Added `flammability` as a dedicated material physics field — replaces `1/durability` as the ignition probability driver in the fire reaction system; `flammability/(1−flammability)` now controls how quickly a material catches fire relative to its surface exposure
+- `MaterialPhysicsSchema` and `MaterialPhysicsBuffer` updated with all four new fields; `MaterialPhysics` interface extracted from `MaterialModel.ts` into its own file
+- All materials updated with the new contact and flammability values
+
+#### PixelCell Occupancy — Static vs. Dynamic Cells
+- `PixelCell` gains `variantId` and `occupancy` fields; `GameObjectCellSchema` extended with both per-cell
+- `GameObjectPass.Register` now splits cells by occupancy on spawn:
+  - **Static cells** (`occupancy !== 1`) — uploaded to the GO layer as before; participate in physics, collision, and rendering
+  - **Dynamic cells** (`occupancy === 1`) — written directly to the sim layer as free particles at spawn; never stamped to the GO layer
+  - GameObjects composed entirely of dynamic cells receive slot `-1` and are excluded from the GO pipeline entirely
+- `gameObjectStamp.wgsl` now writes `variantId` and actual `occupancy` into identity texture bytes 2–3 (previously always `0.0` and `OCCUPANCY_STATIC`)
+- `ExportGameObject` now reads `variantId` (byte 2) and `occupancy` (byte 3) from the identity texture when capturing cells
+- `PixelDataRenderer` now resolves variant-specific colors for cells with `variantId > 0`
+- `MaterialsPanel` now reads and applies the occupancy choice on initialization so `BrushManager` starts with the correct value
+
+#### Accumulated Mass — GO Load Stacking
+- `GameObjectStateSchema.density` renamed to `accumulatedMass`; on spawn it is initialized to the GO's intrinsic mass rather than average material density
+- Collision pass now computes `accumulatedMass` each step: scans up to 2 cells above each boundary point for a resting GO and adds that GO's `accumulatedMass` to this GO's own — stacked GOs transfer their full load downward through the stack
+- Physics and collision passes (drag, buoyancy, impulses, depenetration) all use `accumulatedMass` in place of `mass`
+
+#### Collision Overhaul — Torque, Material Friction, and Penetration Allowance
+- **Off-center torque** — collision and rest-constraint impulses now produce angular acceleration (`rCrossN`) when the contact centroid is offset from the pivot; torque fires on both bounce and rest paths
+- **Rolling friction on slopes** — rolling friction projected onto the surface tangent `(−ny, nx)` so it works correctly on any slope; friction limit scales with `abs(ny)` (normal force) so steep surfaces correctly reduce friction
+- **Material-sampled friction and hardness** — collision pass reads `friction` and `hardness` from `physicsMaterials` at each sim-cell contact; GO-vs-GO contacts use the other GO's friction; effective friction is the geometric mean of both surfaces
+- **Penetration allowance** — depenetration push only fires when `hitFraction > penetrationAllowance` AND the push direction is unoccupied; prevents GOs from being ejected upward through material piled on top
+- Removed near-point contact jitter (random lateral impulse on `hitCount ≤ 2`); torque-based balancing now handles unstable point contacts
+- `GameObjectConfig` gains `angular.minLeverArm`, `bleed.threshold`, and `collision.depenetration.allowance`
+- Collision uniform buffer extended from `16 → 18` f32 slots; `penetrationAllowance` and `minLeverArm` added
+- `buoyancyScale` default changed `10.0 → 1.0`; `liquidDrag` changed `0.015 → 0.01`; `settleThreshold` changed `0.001 → 0.0`
+
+#### Bleed Threshold Configurability
+- Erase and stamp shaders replaced the hardcoded `0.001` bleed threshold with `uniforms.bleedThreshold`, sourced from `GameObjectConfig.physics.bleed.threshold` (default `0`)
+
+#### Pressure — GO-Aware Propagation
+- `pressurePropagation.wgsl` now accounts for GameObjects in the pressure field:
+  - A GO cell directly above a sim cell contributes its `accumulatedMass` as pressure (downward load)
+  - GO cells beside a sim cell block lateral pressure propagation (treated as solid walls)
+- `physics.wgsl` gains bindings 7 (`goOwnershipTexture`) and 8 (`goStateBuffer`) for both sim and GO dispatch passes; `SimulationManager` passes `goStateBuffer` to `PhysicsPass`
+- `ShaderFactory.GenerateGameObjectStateConstants()` generates `GO_STATE_STRIDE`, `GO_MASS_OFFSET`, and `GO_ACCUMULATED_MASS_OFFSET` WGSL constants; injected into the physics shader via `ShaderAssembler`
+
+#### Pressure-Driven Powder and Solid Spreading
+- `PhysicsConfig.pressure.spread` block added: independent `threshold`, `scale`, and `maxChance` for both powder and solid phases; `stepScale` changed from `0.95 → 0.25`
+- `SimulationSchema` now has dedicated `intentUniformFields` (6 additional pressure-spread parameters, separate from `sharedUniformFields`); `IntentPass` uploads them each step
+- Powders under sufficient pressure can now spread laterally even on a surface (probabilistic, chance scales with pressure)
+- Solids under sufficient pressure can now spread laterally over a grounded surface (probabilistic); new `isValidSolidSurfaceSlideTarget` helper added to `solidIntent.wgsl`
+
+#### Phase Changes
+- Fire
+  - `fireIntent.wgsl`: `isValidFireGroundedTarget` replaced by `isValidFireTarget` — fire can now target gas-phase cells and any cell adjacent to an occupied neighbor (no longer requires the cell directly below to be solid)
+  - New `getAdjacentFuelFlammability` helper returns the highest flammability among all 8 Chebyshev neighbors
+  - Fire `surfaceSlideChance` and `lateralSpreadChance` now scale with adjacent fuel flammability: fire moves more aggressively when surrounded by highly flammable material
+  - Fire can now spread straight upward (added as an explicit settle target)
+
+- Gas
+  - `gasIntent.wgsl` — gas can now rise directly into fire-phase cells (straight-up, diagonal-up); previously blocked by anything that wasn't air
+
+#### Debugging Changes
+- `DebugOverlay` badge now shows for all active debug layers (Chunks, Pressure, Temperature, GameObjects) using a `DEBUG_LAYER_LABELS` map; previously only shown for temperature
+- Layer cycling (`[ ]` keybinds) moved from `DebugOverlay` into `DebugPanel`, which now owns a `CycleLayer()` method with proper `Input` subscription and `OnDestroy` cleanup
+- `DebugOverlay.CycleLayer`, `GetActiveLayerIndex`, and `GetActiveLayerName` removed
+
+- Pressure Overlay
+  - `PressureOverlay` now reads both sim and GO physics layers in parallel; per-pixel pressure displayed is `max(simPressure, goPressure)`, so GO-generated pressure is visible in the overlay
+
+- Temperature Overlay
+  - `TemperatureOverlay` no longer supports layer switching; `layerIndex`/`SetLayerIndex` removed — always reads from the sim physics layer
+
+### Bug Fixes
+- Fixed GO-vs-GO ghost contacts — GOs with `boundaryCount == 0` (all-dynamic cells or slot -1) were still being detected as solid in collision and erase passes; guarded `isOtherGo` checks with `gameObjectStates[cellOwner - 1u].boundaryCount > 0u`
+- Fixed liquid density values above `1.0` being uploaded raw — liquid materials with density > 1.0 could cause displacement anomalies; density is now clamped to `1.0` at physics buffer upload
+- Fixed fire spreading diagonally through liquids and gases — the bridge-cell blocker check in `reactions.wgsl` was treating liquid/gas cells as solid walls, preventing fire from spreading around water surfaces; liquid/gas cells now excluded from bridge blocking
+- Fixed fuel burning probability scaling with `1/durability` — materials with very low durability burned unrealistically fast; probability now uses the dedicated `flammability` field
+- Fixed fire sustaining next to liquid/gas neighbors — fire adjacent only to liquid/gas was incorrectly failing its sustain check; liquid/gas cells now count as air exposure in `fireResolution.wgsl`
+- Fixed gas being blocked by fire when rising — gas could not displace fire cells directly above; `gasIntent.wgsl` updated to allow rising into fire-phase cells
+- Fixed pressure not respecting gravity direction — `computePressure` was receiving the raw signed `gravity` float instead of `getGravityDirection(gravity)`, causing incorrect pressure direction at non-default gravity
+- Fixed temperature not averaging correctly when both sim and GO cells occupy the same coordinate — sim temperature was unconditionally preferred; now averaged when both layers report an occupied cell
+- Fixed `ExportGameObject` discarding `variantId` and `occupancy` — bytes 2 and 3 from the identity texture were not captured on export; saved GameObjects lost these values entirely
+- Fixed a bug causing `molten` tagged materials to not burn `burns` tagged materials 
+
+---
+
+## [0.1.1] - Patch - [06/04/2026]
 ### Updates & Changes
 
 #### Guides
@@ -37,7 +123,7 @@ All editor controllers and overlays that previously attached raw DOM listeners h
 
 ---
 
-## [0.1.0] - [06/03/2026]
+## [0.1.0] - Minor - [06/03/2026]
 ### Updates & Changes
 
 **The GameObject system is live!** Try it out with one of the pre-authored GameObjects or make your own and drop them into the sandbox! All you need to do is drag and drop any GameObject from the resources panel to where you want it placed in the Sandbox scene! Enjoy!
@@ -108,7 +194,7 @@ The Resources browser now distinguishes between read-only shipped assets and use
 
 ---
 
-## [0.0.7] - [06/02/2026]
+## [0.0.7] - Patch - [06/02/2026]
 ### Updates & Changes
 
 #### Particles!

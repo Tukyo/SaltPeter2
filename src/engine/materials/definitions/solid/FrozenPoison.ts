@@ -21,6 +21,11 @@ export const FrozenPoison: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.15,
+            restitution: 0.3,
+            hardness: 0.6,
+        },
         density: 3,
         durability: 2,
         temperature: {

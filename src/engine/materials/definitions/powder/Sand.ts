@@ -23,6 +23,11 @@ export const Sand: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.4,
+            restitution: 0.2,
+            hardness: 0.15,
+        },
         density: 1.8,
         durability: 2,
         temperature: {

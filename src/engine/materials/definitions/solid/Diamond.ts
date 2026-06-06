@@ -21,6 +21,11 @@ export const Diamond: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.2,
+            restitution: 0.8,
+            hardness: 1.0,
+        },
         density: 8,
         durability: 20,
         temperature: {

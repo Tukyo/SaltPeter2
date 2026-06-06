@@ -23,7 +23,12 @@ export const Gravel: MaterialDefinition = {
         }
     },
     physics: {
-        density: 3.5,
+        contact: {
+            friction: 0.65,
+            restitution: 0.45,
+            hardness: 0.6,
+        },
+        density: 2.5,
         durability: 4,
         temperature: {
             specificHeat: 1,

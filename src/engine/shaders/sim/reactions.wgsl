@@ -59,11 +59,15 @@ fn checkReactions(coord: vec2f, res: vec2f, myState: vec4f, time: f32) -> Reacti
             // For diagonal fire spread, require at least one cardinal bridge cell to be open.
             // Prevents fire from cutting corners through solid fuel.
             if useChebyshev && i >= 4u {
-                let offset    = chebyshev[i];
-                let bridge1   = coord + vec2f(offset.x, 0.0);
-                let bridge2   = coord + vec2f(0.0, offset.y);
-                let blocked1  = inBounds(bridge1, res) && isOccupiedState(sampleNeighborState(bridge1, res));
-                let blocked2  = inBounds(bridge2, res) && isOccupiedState(sampleNeighborState(bridge2, res));
+                let offset       = chebyshev[i];
+                let bridge1      = coord + vec2f(offset.x, 0.0);
+                let bridge2      = coord + vec2f(0.0, offset.y);
+                let bridge1State = sampleNeighborState(bridge1, res);
+                let bridge2State = sampleNeighborState(bridge2, res);
+                let blocked1     = inBounds(bridge1, res) && isOccupiedState(bridge1State) &&
+                                   !isLiquidOrGasPhase(getMaterialPhaseId(getStateMaterialId(bridge1State)));
+                let blocked2     = inBounds(bridge2, res) && isOccupiedState(bridge2State) &&
+                                   !isLiquidOrGasPhase(getMaterialPhaseId(getStateMaterialId(bridge2State)));
                 if blocked1 && blocked2 { continue; }
             }
 
@@ -82,18 +86,23 @@ fn checkReactions(coord: vec2f, res: vec2f, myState: vec4f, time: f32) -> Reacti
                     var fuelAirCount = 0u;
                     var fireAirCount = 0u;
                     for (var j = 0u; j < 4u; j++) {
-                        let fuelNeighbor = coord + cardinal[j];
-                        if !inBounds(fuelNeighbor, res) || !isOccupiedState(sampleNeighborState(fuelNeighbor, res)) {
+                        let fuelNeighbor      = coord + cardinal[j];
+                        let fuelNeighborState = sampleNeighborState(fuelNeighbor, res);
+                        let fuelNeighborIsFluid = isLiquidOrGasPhase(getMaterialPhaseId(getStateMaterialId(fuelNeighborState)));
+                        if !inBounds(fuelNeighbor, res) || !isOccupiedState(fuelNeighborState) || fuelNeighborIsFluid {
                             fuelAirCount++;
                         }
-                        let fireNeighbor = neighborCoord + cardinal[j];
-                        if !inBounds(fireNeighbor, res) || !isOccupiedState(sampleNeighborState(fireNeighbor, res)) {
+                        let fireNeighbor        = neighborCoord + cardinal[j];
+                        let fireNeighborState   = sampleNeighborState(fireNeighbor, res);
+                        let fireNeighborIsFluid = isLiquidOrGasPhase(getMaterialPhaseId(getStateMaterialId(fireNeighborState)));
+                        if !inBounds(fireNeighbor, res) || !isOccupiedState(fireNeighborState) || fireNeighborIsFluid {
                             fireAirCount++;
                         }
                     }
-                    let myDurability = physicsMaterials[u32(myId)].durability;
-                    let surfaceScale = f32(min(fuelAirCount, fireAirCount)) / 4.0;
-                    probability = 1.0 - exp(-chance / myDurability * surfaceScale * uniforms.deltaTime);
+                    let myFlammability = physicsMaterials[u32(myId)].flammability;
+                    let burnRate       = myFlammability / max(0.01, 1.0 - myFlammability);
+                    let surfaceScale   = f32(min(fuelAirCount, fireAirCount)) / 4.0;
+                    probability = 1.0 - exp(-chance * burnRate * surfaceScale * uniforms.deltaTime);
                 } else {
                     probability = 1.0 - exp(-chance * uniforms.deltaTime);
                 }

@@ -23,6 +23,11 @@ export const Air: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0,
+            restitution: 0,
+            hardness: 0,
+        },
         density: 0,
         durability: 0,
         temperature: {
@@ -30,5 +35,5 @@ export const Air: MaterialDefinition = {
             restingTemperature: 0.5,
             restingStrength: 0.5
         }
-    },
+    }
 };

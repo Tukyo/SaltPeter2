@@ -23,8 +23,14 @@ export const AluminumPowder: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.3,
+            restitution: 0.35,
+            hardness: 0.15,
+        },
         density: 1.6,
         durability: 1,
+        flammability: 0.825,
         temperature: {
             specificHeat: 2,
             restingTemperature: 0.5,
@@ -37,5 +43,5 @@ export const AluminumPowder: MaterialDefinition = {
             condition: { temperature: 0.765 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'burns']
 };

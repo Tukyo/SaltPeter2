@@ -23,7 +23,12 @@ export const Lava: MaterialDefinition = {
         }
     },
     physics: {
-        density: 1.0,
+        contact: {
+            friction: 0.15,
+            restitution: 0.05,
+            hardness: 0,
+        },
+        density: 0.75,
         durability: 1,
         temperature: {
             specificHeat: 10,

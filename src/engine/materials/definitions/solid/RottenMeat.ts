@@ -21,6 +21,11 @@ export const RottenMeat: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.55,
+            restitution: 0.05,
+            hardness: 0.1,
+        },
         density: 3,
         durability: 0,
         temperature: {

@@ -23,6 +23,11 @@ export const MoltenLead: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.03,
+            restitution: 0.12,
+            hardness: 0,
+        },
         density: 0.98,
         durability: 0,
         temperature: {

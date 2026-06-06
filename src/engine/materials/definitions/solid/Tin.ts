@@ -21,6 +21,11 @@ export const Tin: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.38,
+            restitution: 0.4,
+            hardness: 0.65,
+        },
         density: 6,
         durability: 4,
         temperature: {

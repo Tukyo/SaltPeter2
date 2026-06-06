@@ -21,6 +21,11 @@ export const Mud: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.72,
+            restitution: 0.05,
+            hardness: 0.1,
+        },
         density: 4,
         durability: 0,
         temperature: {

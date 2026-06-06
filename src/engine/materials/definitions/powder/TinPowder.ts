@@ -23,6 +23,11 @@ export const TinPowder: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.28,
+            restitution: 0.3,
+            hardness: 0.15,
+        },
         density: 2.2,
         durability: 0,
         temperature: {

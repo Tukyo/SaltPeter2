@@ -21,6 +21,11 @@ export const Gold: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.28,
+            restitution: 0.45,
+            hardness: 0.75,
+        },
         density: 5,
         durability: 4,
         temperature: {

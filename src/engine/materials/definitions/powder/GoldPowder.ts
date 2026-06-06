@@ -23,6 +23,11 @@ export const GoldPowder: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.25,
+            restitution: 0.35,
+            hardness: 0.15,
+        },
         density: 2.0,
         durability: 1,
         temperature: {

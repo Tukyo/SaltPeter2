@@ -82,8 +82,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Only spread to a neighbor if the float position genuinely bleeds past an integer boundary.
     // At theta=0 with integer-aligned coords fracX/fracY are ~0, collapsing to a single write.
-    let bleedX = fracX > 0.001;
-    let bleedY = fracY > 0.001;
+    let bleedX = fracX > uniforms.bleedThreshold;
+    let bleedY = fracY > uniforms.bleedThreshold;
 
     let encodedOwner = cell.gameObjectIdx + 1u;
     let simW = i32(uniforms.simWidth);
@@ -99,11 +99,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let matIdx        = clamp(i32(cell.materialId), 0, MATERIAL_COUNT - 1);
     let restingTemp   = physicsMaterials[matIdx].restingTemperature;
-    let density       = physicsMaterials[matIdx].density / MAX_DENSITY;
     let stateBase     = getMaterialStateBase(f32(cell.materialId));
     let spawnLifetime = select(0.0, 1.0, materialStates[stateBase].lifetime > 0.0);
 
-    var physicsSample     = vec4<f32>(restingTemp, density, 0.0, 0.0);
+    var physicsSample     = vec4<f32>(restingTemp, 0.0, 0.0, 0.0);
     var stateSample       = vec4<f32>(1.0, spawnLifetime, 0.0, 0.0);
     var materialIdEncoded = f32(cell.materialId) / MATERIAL_ID_SCALE;
     if (prevWx >= 0 && prevWy >= 0 && prevWx < simW && prevWy < simH) {
@@ -119,8 +118,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let identityValue = vec4<f32>(
         materialIdEncoded,
         cell.colorSeed,
-        0.0,
-        OCCUPANCY_STATIC
+        encodeVariantId(f32(cell.variantId)),
+        f32(cell.occupancy) / 255.0
     );
 
     // Transition check — if temperature crosses this cell's phase threshold, eject into the sim.

@@ -21,6 +21,11 @@ export const Meat: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.65,
+            restitution: 0.1,
+            hardness: 0.2,
+        },
         density: 3,
         durability: 2,
         temperature: {

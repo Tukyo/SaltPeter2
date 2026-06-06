@@ -23,7 +23,12 @@ export const MoltenIron: MaterialDefinition = {
         }
     },
     physics: {
-        density: 0.97,
+        contact: {
+            friction: 0.05,
+            restitution: 0.12,
+            hardness: 0,
+        },
+        density: 0.87,
         durability: 0,
         temperature: {
             specificHeat: 6,

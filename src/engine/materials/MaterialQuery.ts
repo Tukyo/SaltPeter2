@@ -40,6 +40,11 @@ export class MaterialQuery {
         return Math.floor((seedByte / 255) * MaterialVisualSchema.GetColorsPerMaterial());
     }
 
+    /** Returns the highest density value across all registered materials. */
+    public static GetMaxDensity(): number {
+        return Math.max(...Object.values(MaterialRegistry.Materials).map(m => m.physics.density));
+    }
+
     /** Filters non-air materials by phase and tag requirements, then returns them as sorted value/label pairs. */
     public static GetFilteredOptions(filter: MaterialFilter): ReadonlyArray<{ value: number; label: string }> {
         return (Object.keys(MaterialRegistry.Materials) as MaterialName[])

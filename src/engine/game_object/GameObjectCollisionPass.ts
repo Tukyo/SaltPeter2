@@ -83,7 +83,7 @@ export class GameObjectCollisionPass {
 
         // Mixed u32/f32 fields — use a shared ArrayBuffer with typed views
         const physics = GameObjectConfig.GetConfig().physics;
-        const uniformData = new ArrayBuffer(16 * 4);
+        const uniformData = new ArrayBuffer(18 * 4);
         const uu = new Uint32Array(uniformData);
         const uf = new Float32Array(uniformData);
         uu[0] = gameObjectLayer.width;
@@ -102,6 +102,8 @@ export class GameObjectCollisionPass {
         uf[13] = physics.liquid.buoyancy;
         uf[14] = physics.liquid.drag;
         uf[15] = physics.liquid.velocityScale;
+        uf[16] = physics.collision.depenetration.allowance;
+        uf[17] = physics.angular.minLeverArm;
         device.queue.writeBuffer(buffers.collisionUniformBuffer, 0, uniformData);
 
         const bindGroup = device.createBindGroup({

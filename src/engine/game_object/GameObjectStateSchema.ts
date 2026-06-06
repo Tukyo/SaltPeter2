@@ -36,7 +36,7 @@ export class GameObjectStateSchema {
         ['angularDrag', 'f32'],
         ['sleepTimer', 'u32'],
         ['momentOfInertia', 'f32'],
-        ['density', 'f32'],
+        ['accumulatedMass', 'f32'],
     ] as const satisfies ReadonlyArray<readonly [string, string]>;
 
     /** Number of 32-bit words per GameObjectState entry. */

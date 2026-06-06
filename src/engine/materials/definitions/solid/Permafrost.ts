@@ -21,6 +21,11 @@ export const Permafrost: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.3,
+            restitution: 0.2,
+            hardness: 0.5,
+        },
         density: 2.0,
         durability: 3,
         temperature: {

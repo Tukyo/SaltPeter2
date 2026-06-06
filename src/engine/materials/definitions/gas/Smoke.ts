@@ -24,6 +24,11 @@ export const Smoke: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0,
+            restitution: 0,
+            hardness: 0,
+        },
         density: 0.02,
         durability: 0,
         temperature: {
@@ -31,5 +36,5 @@ export const Smoke: MaterialDefinition = {
             restingTemperature: 0.5,
             restingStrength: 0.3
         }
-    },
+    }
 };

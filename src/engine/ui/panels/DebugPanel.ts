@@ -5,6 +5,7 @@ import type { TexturePixelReader } from '../../rendering/TexturePixelReader';
 import { Camera } from '../../camera/Camera';
 import { CollapsiblePanel } from '../CollapsiblePanel'
 import { Input } from '../../input/Input';
+import { KeybindConfig } from '../../config/KeybindConfig';
 import { MaterialRegistry } from '../../materials/MaterialRegistry';
 import { NitrateProcess } from '../../NitrateProcess';
 import { Renderer } from '../../rendering/Renderer';
@@ -100,6 +101,7 @@ export class DebugPanel extends NitrateProcess {
     private hoveredReadVersion: number = 0;
     private lastSim: SimulationLayer | null = null;
     private layerIndex: number = 0;
+    private readonly unsubKeys: Array<() => void> = [];
 
     constructor(params?: DebugPanelParams) {
         super();
@@ -139,12 +141,7 @@ export class DebugPanel extends NitrateProcess {
         const layerPrev = document.createElement('button');
         layerPrev.className = 'debug-layer-nav-btn';
         layerPrev.textContent = '<';
-        layerPrev.addEventListener('click', () => {
-            this.layerIndex = (this.layerIndex - 1 + DebugPanel.LayerNames.length) % DebugPanel.LayerNames.length;
-            this.layerNavLabel.textContent = DebugPanel.LayerNames[this.layerIndex];
-            this.lastHoveredCellKey = null;
-            this.ClearHoveredCellInfo();
-        });
+        layerPrev.addEventListener('click', () => { this.CycleLayer(-1); });
 
         this.layerNavLabel = document.createElement('span');
         this.layerNavLabel.className = 'debug-layer-nav-label';
@@ -153,12 +150,16 @@ export class DebugPanel extends NitrateProcess {
         const layerNext = document.createElement('button');
         layerNext.className = 'debug-layer-nav-btn';
         layerNext.textContent = '>';
-        layerNext.addEventListener('click', () => {
-            this.layerIndex = (this.layerIndex + 1) % DebugPanel.LayerNames.length;
-            this.layerNavLabel.textContent = DebugPanel.LayerNames[this.layerIndex];
-            this.lastHoveredCellKey = null;
-            this.ClearHoveredCellInfo();
-        });
+        layerNext.addEventListener('click', () => { this.CycleLayer(1); });
+
+        const input = Input.Instance;
+        if (input) {
+            const keys = KeybindConfig.GetConfig().debug.overlay.layer;
+            this.unsubKeys.push(
+                input.OnKeyDown(keys.down, () => { this.CycleLayer(-1); }),
+                input.OnKeyDown(keys.up, () => { this.CycleLayer(1); }),
+            );
+        }
 
         layerNav.appendChild(layerPrev);
         layerNav.appendChild(this.layerNavLabel);
@@ -486,6 +487,14 @@ export class DebugPanel extends NitrateProcess {
         }
     }
 
+    /** Cycles the active layer shown in the DebugPanel. */
+    private CycleLayer(direction: 1 | -1): void {
+        this.layerIndex = (this.layerIndex + direction + DebugPanel.LayerNames.length) % DebugPanel.LayerNames.length;
+        this.layerNavLabel.textContent = DebugPanel.LayerNames[this.layerIndex];
+        this.lastHoveredCellKey = null;
+        this.ClearHoveredCellInfo();
+    }
+
     private ShouldApplyHoveredRead(version: number): boolean {
         return version === this.hoveredReadVersion && this.IsAdvancedEnabled();
     }
@@ -514,6 +523,7 @@ export class DebugPanel extends NitrateProcess {
     }
 
     public OnDestroy(): void {
+        for (const unsub of this.unsubKeys) { unsub(); }
         this.panel.OnDestroy();
     }
 }

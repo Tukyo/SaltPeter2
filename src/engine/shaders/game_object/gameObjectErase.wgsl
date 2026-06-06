@@ -43,8 +43,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let x0     = i32(floor(fx));
     let y0     = i32(floor(fy));
-    let bleedX = (fx - f32(x0)) > 0.001;
-    let bleedY = (fy - f32(y0)) > 0.001;
+    let bleedX = (fx - f32(x0)) > uniforms.bleedThreshold;
+    let bleedY = (fy - f32(y0)) > uniforms.bleedThreshold;
 
     let encodedOwner = cell.gameObjectIdx + 1u;
     let simW = i32(uniforms.simWidth);
@@ -66,8 +66,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let prevFy = state.prevPosY + sinPrevTheta * localFX + cosPrevTheta * localFY;
     let px0     = i32(floor(prevFx));
     let py0     = i32(floor(prevFy));
-    let pBleedX = (prevFx - f32(px0)) > 0.001;
-    let pBleedY = (prevFy - f32(py0)) > 0.001;
+    let pBleedX = (prevFx - f32(px0)) > uniforms.bleedThreshold;
+    let pBleedY = (prevFy - f32(py0)) > uniforms.bleedThreshold;
 
     clearOwnershipAt(vec2<i32>(px0, py0),             simW, simH);
     if (pBleedX) { clearOwnershipAt(vec2<i32>(px0 + 1, py0),         simW, simH); }

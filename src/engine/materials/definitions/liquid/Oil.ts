@@ -23,8 +23,14 @@ export const Oil: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.01,
+            restitution: 0.08,
+            hardness: 0,
+        },
         density: 0.25,
         durability: 0.5,
+        flammability: 0.8,
         temperature: {
             specificHeat: 2,
             restingTemperature: 0.5,

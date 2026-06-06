@@ -21,6 +21,11 @@ export const Rust: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.7,
+            restitution: 0.1,
+            hardness: 0.25,
+        },
         density: 4,
         durability: 2,
         temperature: {

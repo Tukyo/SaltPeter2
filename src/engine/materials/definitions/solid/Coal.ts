@@ -21,8 +21,14 @@ export const Coal: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.65,
+            restitution: 0.25,
+            hardness: 0.6,
+        },
         density: 5,
         durability: 4,
+        flammability: 0.75,
         temperature: {
             specificHeat: 1.5,
             restingTemperature: 0.5,

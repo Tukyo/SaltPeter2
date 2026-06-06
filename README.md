@@ -28,6 +28,7 @@ One of the main goals in this project is to obtain a better understanding of gam
 | Baumgarte Stabilization | [Joachim Baumgarte](https://www.researchgate.net/publication/227225246_Investigation_on_the_Baumgarte_Stabilization_Method_for_Dynamic_Analysis_of_Constrained_Multibody_Systems) | $Jv + \beta \frac{C}{\Delta t} = 0$ |
 | Bresenham's Circle | [Jack Elton Bresenham](https://en.wikipedia.org/wiki/Midpoint_circle_algorithm) | $d(x, y) = x^2 + y^2 - r^2$ |
 | Thermal conduction | [Joseph Fourier](https://en.wikipedia.org/wiki/Joseph_Fourier) | $q = -k\nabla T$ |
+| Euler's Identity | [Leonhard Euler](https://en.wikipedia.org/wiki/Euler%27s_identity) | $Δω += (r × n) * j / I$ |
 
 ## Guides
 Guides are available for the proprietary systems such as the Editor.

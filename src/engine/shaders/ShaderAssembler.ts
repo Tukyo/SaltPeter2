@@ -179,6 +179,7 @@ export class ShaderAssembler {
             ShaderFactory.GenerateMaterialCount(),
             ShaderFactory.GenerateWorkgroupSize(workgroupSize),
             ShaderFactory.GeneratePhysicsConstants(),
+            ShaderFactory.GenerateGameObjectStateConstants(),
             ShaderFactory.GenerateMaxDensity(),
             ShaderFactory.GenerateVelocityConstants(),
             ShaderFactory.GenerateMaterialPhaseConstants(),

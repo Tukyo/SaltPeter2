@@ -21,6 +21,11 @@ export const Basalt: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.75,
+            restitution: 0.4,
+            hardness: 0.95,
+        },
         density: 4.5,
         durability: 6,
         temperature: {

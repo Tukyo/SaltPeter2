@@ -23,6 +23,11 @@ export const SilverPowder: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.28,
+            restitution: 0.35,
+            hardness: 0.15,
+        },
         density: 2.5,
         durability: 0,
         temperature: {

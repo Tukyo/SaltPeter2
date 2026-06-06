@@ -23,8 +23,14 @@ export const MoltenPlastic: MaterialDefinition = {
         }
     },
     physics: {
-        density: 0.5,
+        contact: {
+            friction: 0.15,
+            restitution: 0.05,
+            hardness: 0,
+        },
+        density: 0.7,
         durability: 0,
+        flammability: 0.5,
         temperature: {
             specificHeat: 3,
             restingTemperature: 0.875,

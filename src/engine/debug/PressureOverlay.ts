@@ -35,9 +35,9 @@ export class PressureOverlay {
         if (!this.visible || this.readPending) { return; }
         const sim = SimulationManager.Instance;
         const renderer = Renderer.Instance?.GetWebGPU();
-        if (!sim?.simulationLayer || !renderer) { return; }
+        if (!sim?.simulationLayer || !sim.gameObjectLayer || !renderer) { return; }
 
-        const { simulationLayer } = sim;
+        const { simulationLayer, gameObjectLayer } = sim;
         const { device } = renderer;
         const { width, height } = simulationLayer;
 
@@ -57,29 +57,36 @@ export class PressureOverlay {
         this.readPending = true;
         const bytesPerPixel = 16;
         const bytesPerRow = Math.ceil(contentW * bytesPerPixel / 256) * 256;
-        const gpuBuffer = device.createBuffer({
-            size: bytesPerRow * contentH,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-        });
+        const bufferSize = bytesPerRow * contentH;
+        const gpuBufferSim = device.createBuffer({ size: bufferSize, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+        const gpuBufferGO  = device.createBuffer({ size: bufferSize, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
 
         const enc = device.createCommandEncoder();
         enc.copyTextureToBuffer(
             { texture: simulationLayer.currentPhysics, origin: [camOriginX, camOriginY] },
-            { buffer: gpuBuffer, bytesPerRow },
+            { buffer: gpuBufferSim, bytesPerRow },
+            [contentW, contentH]
+        );
+        enc.copyTextureToBuffer(
+            { texture: gameObjectLayer.currentPhysics, origin: [camOriginX, camOriginY] },
+            { buffer: gpuBufferGO, bytesPerRow },
             [contentW, contentH]
         );
         device.queue.submit([enc.finish()]);
 
-        void gpuBuffer.mapAsync(GPUMapMode.READ).then(() => {
+        void Promise.all([gpuBufferSim.mapAsync(GPUMapMode.READ), gpuBufferGO.mapAsync(GPUMapMode.READ)]).then(() => {
             if (!this.ctx || !this.renderer2D || !this.tmpCanvas) { return; }
-            const floats = new Float32Array(gpuBuffer.getMappedRange());
+            const simFloats = new Float32Array(gpuBufferSim.getMappedRange());
+            const goFloats  = new Float32Array(gpuBufferGO.getMappedRange());
             const floatsPerRow = bytesPerRow / 4;
             const imageData = this.ctx.createImageData(contentW, contentH);
             const pixels = imageData.data;
             for (let y = 0; y < contentH; y++) {
                 for (let x = 0; x < contentW; x++) {
                     const src = y * floatsPerRow + x * 4;
-                    const pressure = Math.max(0, Math.min(1, floats[src + 1]));
+                    const simPressure = Math.max(0, Math.min(1, simFloats[src + 1]));
+                    const goPressure  = Math.max(0, Math.min(1, goFloats[src + 1]));
+                    const pressure    = Math.max(simPressure, goPressure);
                     const dst = ((Utils.FlipY(y, contentH) - 1) * contentW + x) * 4;
                     pixels[dst] = 255;
                     pixels[dst + 1] = 255;
@@ -92,8 +99,10 @@ export class PressureOverlay {
             this.tmpCanvas.getContext('2d')?.putImageData(imageData, 0, 0);
             this.ctx.clearRect(0, 0, this.renderer2D.canvas.width, this.renderer2D.canvas.height);
             this.ctx.drawImage(this.tmpCanvas, 0, 0, this.renderer2D.canvas.width, this.renderer2D.canvas.height);
-            gpuBuffer.unmap();
-            gpuBuffer.destroy();
+            gpuBufferSim.unmap();
+            gpuBufferSim.destroy();
+            gpuBufferGO.unmap();
+            gpuBufferGO.destroy();
         }).finally(() => {
             this.readPending = false;
         });

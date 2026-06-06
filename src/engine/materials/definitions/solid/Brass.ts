@@ -21,6 +21,11 @@ export const Brass: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.35,
+            restitution: 0.5,
+            hardness: 0.8,
+        },
         density: 4,
         durability: 6,
         temperature: {

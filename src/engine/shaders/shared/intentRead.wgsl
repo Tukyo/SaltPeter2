@@ -41,6 +41,14 @@ fn chooseIncomingDisplacementSource(
         if isOccupiedState(aboveIdentityState) &&
            canDisplace(aboveIdentityState, currentIdentityState) &&
            materialIntentClaimsTarget(above, coord, res, gravityDirection) {
+            // Non-liquid/gas cells are blocked from entering GO-owned cells by resolveCellForState.
+            // Accepting them here as a fill source would duplicate the material — the cell above
+            // stays in place while also being copied into this GO cell via the vacation path.
+            let abovePhaseId = getMaterialPhaseId(getStateMaterialId(aboveIdentityState));
+            if isOwnedCell(textureLoad(goOwnershipTexture, vec2i(coord)).r) &&
+               !isLiquidOrGasPhase(abovePhaseId) {
+                return INVALID_COORD;
+            }
             return above;
         }
     }

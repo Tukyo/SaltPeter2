@@ -16,6 +16,21 @@ export class PhysicsConfig {
                 powder: 0.01, // How resistant powders are to pressure-driven swaps
                 solid: 0.925, // How resistant solids are to pressure-driven swaps
             },
+            spread: {
+                threshold: {
+                    powder: 0.25,
+                    solid: 0.9
+                },
+                scale: {
+                    powder: 0.3,
+                    solid: 0.25
+                },
+                maxChance: {
+                    powder: 0.25,
+                    solid: 0.1
+                }
+            },
+            stepScale: 0.25, // Controls how gradual pressure scaling is
             swapScale: { // Probability multiplier once pressure difference exceeds threshold
                 gas: 15.0,
                 liquid: 10.0,
@@ -28,7 +43,6 @@ export class PhysicsConfig {
                 powder: 0.135,
                 solid: 0.135,
             },
-            stepScale: 0.95, // Controls how gradual pressure scaling is
             weight: {
                 lateral: 0.25,
                 vertical: 0.5
@@ -55,7 +69,5 @@ export class PhysicsConfig {
     }
 
     /** Returns the physics configuration. */
-    public static GetConfig() {
-        return PhysicsConfig.config;
-    }
+    public static GetConfig() { return PhysicsConfig.config; }
 }

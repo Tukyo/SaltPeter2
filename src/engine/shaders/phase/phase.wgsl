@@ -13,6 +13,11 @@ fn getStatePhaseId(identityState: vec4f) -> f32 {
     return getMaterialPhaseId(getStateMaterialId(identityState));
 }
 
+fn isLiquidOrGasPhase(phaseId: f32) -> bool {
+    return isMaterialPhaseId(phaseId, MATERIAL_PHASE_LIQUID) ||
+           isMaterialPhaseId(phaseId, MATERIAL_PHASE_GAS);
+}
+
 fn isDisplaceablePhase(phaseId: f32) -> bool {
     return isMaterialPhaseId(phaseId, MATERIAL_PHASE_LIQUID) ||
            isMaterialPhaseId(phaseId, MATERIAL_PHASE_POWDER) ||

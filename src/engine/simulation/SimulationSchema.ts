@@ -5,10 +5,22 @@
  * generation) so both sides stay in sync from a single source of truth.
  */
 export class SimulationSchema {
-    private static readonly sharedUniformFields = [
+    private static readonly simUniformFields = [
         ['time', 'f32'],
         ['gravity', 'f32'],
         ['deltaTime', 'f32'],
+    ] as const satisfies ReadonlyArray<readonly [string, string]>;
+
+    private static readonly intentUniformFields = [
+        ['time', 'f32'],
+        ['gravity', 'f32'],
+        ['deltaTime', 'f32'],
+        ['powderPressureSpreadThreshold', 'f32'],
+        ['powderPressureSpreadScale', 'f32'],
+        ['powderPressureSpreadMaxChance', 'f32'],
+        ['solidPressureSpreadThreshold', 'f32'],
+        ['solidPressureSpreadScale', 'f32'],
+        ['solidPressureSpreadMaxChance', 'f32'],
     ] as const satisfies ReadonlyArray<readonly [string, string]>;
 
     private static readonly diffusionUniformFields = [
@@ -30,10 +42,10 @@ export class SimulationSchema {
     ] as const satisfies ReadonlyArray<readonly [string, string]>;
 
     // @omitfromdocs
-    public static GetIntentUniformFields() { return SimulationSchema.sharedUniformFields; }
+    public static GetIntentUniformFields() { return SimulationSchema.intentUniformFields; }
 
     // @omitfromdocs
-    public static GetSimUniformFields() { return SimulationSchema.sharedUniformFields; }
+    public static GetSimUniformFields() { return SimulationSchema.simUniformFields; }
 
     // @omitfromdocs
     public static GetDiffusionUniformFields() { return SimulationSchema.diffusionUniformFields; }

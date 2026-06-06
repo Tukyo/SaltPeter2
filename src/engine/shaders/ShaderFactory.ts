@@ -293,7 +293,7 @@ export class ShaderFactory {
             ['simHeight', 'u32'],
             ['deltaTime', 'f32'],
             ['time', 'f32'],
-            ['pad0', 'u32'],
+            ['bleedThreshold', 'f32'],
             ['pad1', 'u32'],
             ['pad2', 'u32'],
         ]);
@@ -329,7 +329,20 @@ export class ShaderFactory {
             ['buoyancyScale', 'f32'],
             ['liquidDrag', 'f32'],
             ['liquidVelocityScale', 'f32'],
+            ['penetrationAllowance', 'f32'],
+            ['minLeverArm', 'f32'],
         ]);
+    }
+
+    // @omitfromdocs
+    public static GenerateGameObjectStateConstants(): string {
+        const massOffset = GameObjectStateSchema.fields.findIndex(([name]) => name === 'mass');
+        const accumulatedMassOffset = GameObjectStateSchema.fields.findIndex(([name]) => name === 'accumulatedMass');
+        return [
+            `const GO_STATE_STRIDE: u32 = ${GameObjectStateSchema.stride}u;`,
+            `const GO_MASS_OFFSET: u32 = ${massOffset}u;`,
+            `const GO_ACCUMULATED_MASS_OFFSET: u32 = ${accumulatedMassOffset}u;`,
+        ].join('\n');
     }
 
     // @omitfromdocs

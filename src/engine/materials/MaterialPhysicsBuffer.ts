@@ -33,7 +33,8 @@ export class MaterialPhysicsBuffer implements SimulationResource {
             const trans = material.transitions ?? {};
 
             data[base + 0] = MaterialPhaseIds[material.phase];
-            data[base + 1] = material.physics.density;
+            const isLiquid = material.phase === 'liquid';
+            data[base + 1] = isLiquid ? Math.min(material.physics.density, 1.0) : material.physics.density;
             data[base + 2] = material.physics.durability;
             data[base + 3] = material.physics.temperature.specificHeat;
             data[base + 4] = material.physics.temperature.restingTemperature;
@@ -46,6 +47,10 @@ export class MaterialPhysicsBuffer implements SimulationResource {
             data[base + 11] = trans.condenses?.condition.temperature ?? 0;
             data[base + 12] = resolveId(trans.condenses?.to);
             data[base + 13] = material.physics.temperature.restingStrength;
+            data[base + 14] = material.physics.contact.friction;
+            data[base + 15] = material.physics.contact.restitution;
+            data[base + 16] = material.physics.contact.hardness;
+            data[base + 17] = material.physics.flammability ?? 0;
         }
 
         this.buffer = device.createBuffer({

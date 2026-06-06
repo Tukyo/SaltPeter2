@@ -54,6 +54,7 @@ interface MaterialFilter {
 | [`static GetPhaseOptions(): ReadonlyArray<{ value: string; label: string }>`](MaterialQuery.ts) | Returns all unique non-air material phases, formatted as value/label pairs. |
 | [`static GetTagOptions(): ReadonlyArray<{ value: string; label: string }>`](MaterialQuery.ts) | Returns all unique non-air material tags, formatted as value/label pairs. |
 | [`static DecodeColorIndex(seedByte: number): number`](MaterialQuery.ts) | Decodes the G-channel seed byte from an rgba8unorm identity texture pixel into a 0-based color index. |
+| [`static GetMaxDensity(): number`](MaterialQuery.ts) | Returns the highest density value across all registered materials. |
 | [`static GetFilteredOptions(filter: MaterialFilter): ReadonlyArray<{ value: number; label: string }>`](MaterialQuery.ts) | Filters non-air materials by phase and tag requirements, then returns them as sorted value/label pairs. |
 
 ---

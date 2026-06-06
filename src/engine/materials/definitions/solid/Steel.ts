@@ -21,6 +21,11 @@ export const Steel: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.4,
+            restitution: 0.6,
+            hardness: 0.95,
+        },
         density: 9,
         durability: 12,
         temperature: {

@@ -19,6 +19,8 @@ export class GameObjectCellSchema {
         ['gameObjectId', 'u32'],
         ['materialId', 'u32'],
         ['colorSeed', 'f32'],
+        ['variantId', 'u32'],
+        ['occupancy', 'u32'],
     ] as const satisfies ReadonlyArray<readonly [string, string]>;
 
     /** Number of 32-bit words per GameObjectCell entry. */

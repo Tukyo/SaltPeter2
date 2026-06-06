@@ -21,6 +21,11 @@ export const Feces: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.7,
+            restitution: 0.05,
+            hardness: 0.1,
+        },
         density: 3,
         durability: 0,
         temperature: {

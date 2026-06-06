@@ -23,6 +23,11 @@ export const BonePowder: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.35,
+            restitution: 0.2,
+            hardness: 0.15,
+        },
         density: 1.5,
         durability: 0,
         temperature: {

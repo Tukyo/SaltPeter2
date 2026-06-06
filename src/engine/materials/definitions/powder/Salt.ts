@@ -23,6 +23,11 @@ export const Salt: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.4,
+            restitution: 0.25,
+            hardness: 0.2,
+        },
         density: 0.675,
         durability: 1,
         temperature: {

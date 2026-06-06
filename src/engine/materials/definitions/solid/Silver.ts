@@ -21,6 +21,11 @@ export const Silver: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.3,
+            restitution: 0.5,
+            hardness: 0.75,
+        },
         density: 5,
         durability: 6,
         temperature: {

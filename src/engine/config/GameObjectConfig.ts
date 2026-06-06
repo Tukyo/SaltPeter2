@@ -9,7 +9,15 @@ export class GameObjectConfig {
         physics: {
             angular: {
                 // Maximum angular velocity in rad/s. Set to 0 to disable rotation.
-                maxAngularSpeed: 5
+                maxAngularSpeed: 5,
+                // Minimum distance (in cells) from pivot to contact centroid before rolling friction applies.
+                // Below this the lever arm is too short for stable torque computation.
+                minLeverArm: 0.1
+            },
+            bleed: {
+                // Minimum fractional pixel displacement required to bleed a cell into neighboring pixels.
+                // 0 = always bleed on any non-integer position, filling all rotation gaps.
+                threshold: 0
             },
             collision: {
                 depenetration: {
@@ -17,7 +25,10 @@ export class GameObjectConfig {
                     force: 1.0,
                     // Power curve exponent on penetration fraction. 1 = linear. Higher values push harder at shallow
                     // overlaps, resisting objects phasing into each other before penetration depth becomes significant.
-                    hardness: 1.0
+                    hardness: 1.0,
+                    // Fraction of boundary points that must be inside a collider before the push fires.
+                    // Below this threshold, shallow overlaps are ignored entirely.
+                    allowance: 0.2
                 },
                 detection: {
                     // Minimum collision normal strength required to trigger a response. Filters degenerate contacts.
@@ -25,14 +36,14 @@ export class GameObjectConfig {
                 },
                 settle: {
                     // Minimum relative lateral speed in cells/s to apply sliding friction. Below this, velocity locks to surface.
-                    threshold: 0.001
+                    threshold: 0.0
                 }
             },
             liquid: {
                 // Scale change for buoyancy of GameObjects in liquids
-                buoyancy: 10.0,
+                buoyancy: 1.0,
                 // Per-step velocity damping fraction when submerged (0=none, 1=instant stop)
-                drag: 0.015,
+                drag: 0.01,
                 // Multiplier on liquid cell velocity before applying drag coupling to GOs
                 velocityScale: 100.0
             },
@@ -59,7 +70,5 @@ export class GameObjectConfig {
     };
 
     /** Returns the GameObject configuration. */
-    public static GetConfig() {
-        return GameObjectConfig.config;
-    }
+    public static GetConfig() { return GameObjectConfig.config; }
 }

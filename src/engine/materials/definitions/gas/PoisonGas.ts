@@ -24,6 +24,11 @@ export const PoisonGas: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0,
+            restitution: 0,
+            hardness: 0,
+        },
         density: 0.05,
         durability: 0,
         temperature: {

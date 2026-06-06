@@ -23,6 +23,11 @@ export const Coffee: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.03,
+            restitution: 0.08,
+            hardness: 0,
+        },
         density: 0.82,
         durability: 0,
         temperature: {

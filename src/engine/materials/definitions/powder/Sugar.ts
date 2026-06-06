@@ -23,6 +23,11 @@ export const Sugar: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.3,
+            restitution: 0.15,
+            hardness: 0.1,
+        },
         density: 1.5,
         durability: 0,
         temperature: {

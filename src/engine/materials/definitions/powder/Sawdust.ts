@@ -23,8 +23,14 @@ export const Sawdust: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.65,
+            restitution: 0.1,
+            hardness: 0.08,
+        },
         density: 1.5,
         durability: 1.05,
+        flammability: 0.85,
         temperature: {
             specificHeat: 0.5,
             restingTemperature: 0.5,

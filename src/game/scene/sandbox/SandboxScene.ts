@@ -31,8 +31,8 @@ export class SandboxScene extends Nitrate.Scene {
         new GameObjectPlacementController(this.renderer.canvas);
 
         new Nitrate.Resources({
-            style: { top: '14px', left: '14px', width: '250px', height: '150px' },
-            previewPanel: { style: { top: '175px', left: '14px', width: '170px', height: '170px' } },
+            style: { top: '14px', left: '14px', width: '300px', height: '200px' },
+            previewPanel: { style: { top: '223px', left: '14px', width: '170px', height: '190px' } },
         });
 
         new Nitrate.DebugPanel();

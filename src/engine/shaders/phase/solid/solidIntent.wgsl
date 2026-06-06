@@ -35,6 +35,14 @@ fn isValidSolidSlideTarget(targetCoord: vec2f, res: vec2f, gravityDirection: f32
     return isAirCoord(targetCoord, res) && isAirCoord(belowTarget, res);
 }
 
+fn isValidSolidSurfaceSlideTarget(targetCoord: vec2f, res: vec2f, gravityDirection: f32) -> bool {
+    let down        = vec2f(0.0, -gravityDirection);
+    let belowTarget = targetCoord + down;
+    return isAirCoord(targetCoord, res) &&
+           inBounds(belowTarget, res) &&
+           isOccupiedState(textureLoad(identityTexture, vec2i(belowTarget)));
+}
+
 fn chooseSolidTarget(
     sourceCoord:      vec2f,
     res:              vec2f,
@@ -84,6 +92,30 @@ fn chooseSolidTarget(
         let slideTarget = chooseRandomValidTarget(left, right, biasedSideRoll, leftValid, rightValid);
 
         if isValidCoord(slideTarget) { return slideTarget; }
+    }
+
+    let pressure = textureLoad(physicsTexture, vec2i(sourceCoord)).g;
+
+    if pressure > uniforms.solidPressureSpreadThreshold {
+        let spreadRoll   = displacementHash(sourceCoord, time);
+        let spreadChance = clamp(
+            pressure * uniforms.solidPressureSpreadScale,
+            0.0,
+            uniforms.solidPressureSpreadMaxChance
+        );
+        if spreadRoll < spreadChance {
+            let sideRoll       = timeHash(sourceCoord, time);
+            let pressureLeft   = isValidSolidSurfaceSlideTarget(sourceCoord + CELL_LEFT,  res, gravityDirection);
+            let pressureRight  = isValidSolidSurfaceSlideTarget(sourceCoord + CELL_RIGHT, res, gravityDirection);
+            let pressureTarget = chooseRandomValidTarget(
+                sourceCoord + CELL_LEFT,
+                sourceCoord + CELL_RIGHT,
+                sideRoll,
+                pressureLeft,
+                pressureRight
+            );
+            if isValidCoord(pressureTarget) { return pressureTarget; }
+        }
     }
 
     return sourceCoord;

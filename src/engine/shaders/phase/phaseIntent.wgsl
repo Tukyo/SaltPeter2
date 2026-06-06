@@ -18,7 +18,7 @@ fn chooseIntentForState(
         let aboveState   = textureLoad(identityTexture, vec2i(above));
         let abovePhaseId = getMaterialPhaseId(getStateMaterialId(aboveState));
         if isOccupiedState(aboveState) && !isStaticCell(aboveState) && isDisplaceablePhase(abovePhaseId) && canDisplace(aboveState, currentState) {
-            let allowRise = isMaterialPhaseId(phaseId, MATERIAL_PHASE_LIQUID) || isMaterialPhaseId(phaseId, MATERIAL_PHASE_GAS);
+            let allowRise = isLiquidOrGasPhase(phaseId);
 
             // Gas rises directly into the displacing gas above, gated by its own rise chance.
             if isMaterialPhaseId(phaseId, MATERIAL_PHASE_GAS) {

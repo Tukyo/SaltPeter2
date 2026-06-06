@@ -23,6 +23,11 @@ export const Diarrhea: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.12,
+            restitution: 0.02,
+            hardness: 0,
+        },
         density: 0.9,
         durability: 0,
         temperature: {

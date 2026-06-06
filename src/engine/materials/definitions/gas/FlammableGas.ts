@@ -24,8 +24,14 @@ export const FlammableGas: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0,
+            restitution: 0,
+            hardness: 0,
+        },
         density: 0.04,
         durability: 0.01,
+        flammability: 0.95,
         temperature: {
             specificHeat: 0.7,
             restingTemperature: 0.6,

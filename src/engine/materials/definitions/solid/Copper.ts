@@ -21,6 +21,11 @@ export const Copper: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.35,
+            restitution: 0.5,
+            hardness: 0.8,
+        },
         density: 5,
         durability: 5,
         temperature: {

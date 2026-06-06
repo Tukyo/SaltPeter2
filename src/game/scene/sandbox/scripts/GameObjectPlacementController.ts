@@ -5,7 +5,6 @@ export class GameObjectPlacementController extends Nitrate.NitrateProcess {
     private readonly dragPreviewContainer: HTMLDivElement;
     private readonly dragPreviewRenderer: Nitrate.PixelDataRenderer;
 
-    private readonly previewScale = 72;
     private readonly tiltSensitivity = 60;
     private readonly tiltMax = 45;
     private readonly tiltSettleMs = 100;
@@ -133,7 +132,10 @@ export class GameObjectPlacementController extends Nitrate.NitrateProcess {
 
         const size = pixelDataRaw['size'] as Nitrate.Size2D;
         const cells = pixelDataRaw['cells'] as Nitrate.PixelCell[];
-        const scale = Math.max(1, Math.floor(this.previewScale / Math.max(size.width, size.height, 1)));
+        const simLayer = Nitrate.SimulationManager.Instance?.simulationLayer;
+        const rect = this.canvas.getBoundingClientRect();
+        const pixelsPerCell = simLayer ? rect.width / simLayer.width : 1;
+        const scale = Math.max(1, Math.floor(pixelsPerCell));
 
         this.dragPreviewRenderer.Render(cells, size, scale);
         this.dragPreviewReady = true;

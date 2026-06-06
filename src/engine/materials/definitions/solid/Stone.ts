@@ -21,6 +21,11 @@ export const Stone: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.7,
+            restitution: 0.35,
+            hardness: 0.85,
+        },
         density: 5,
         durability: 8,
         temperature: {

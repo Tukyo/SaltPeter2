@@ -21,6 +21,10 @@ export class MaterialPhysicsSchema {
         ['condenseTemp', 'f32'],
         ['condenseToId', 'f32'],
         ['restingStrength', 'f32'],
+        ['friction', 'f32'],
+        ['restitution', 'f32'],
+        ['hardness', 'f32'],
+        ['flammability', 'f32'],
     ] as const satisfies ReadonlyArray<readonly [string, string]>;
 
     /** Returns the ordered `[name, type]` field pairs that define the physics buffer layout. @internal */

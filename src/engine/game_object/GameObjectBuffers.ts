@@ -63,7 +63,7 @@ export class GameObjectBuffers implements SimulationResource {
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
         });
         this.collisionUniformBuffer = device.createBuffer({
-            size: 16 * 4,
+            size: 18 * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
         this.deadCellBuffer = device.createBuffer({

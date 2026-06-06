@@ -23,6 +23,11 @@ export const Honey: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.25,
+            restitution: 0.02,
+            hardness: 0,
+        },
         density: 0.65,
         durability: 0,
         temperature: {

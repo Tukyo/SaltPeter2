@@ -21,6 +21,11 @@ export const Obsidian: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.45,
+            restitution: 0.6,
+            hardness: 0.98,
+        },
         density: 5,
         durability: 14,
         temperature: {

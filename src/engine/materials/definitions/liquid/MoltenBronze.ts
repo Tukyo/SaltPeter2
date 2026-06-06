@@ -23,7 +23,12 @@ export const MoltenBronze: MaterialDefinition = {
         }
     },
     physics: {
-        density: 0.96,
+        contact: {
+            friction: 0.04,
+            restitution: 0.12,
+            hardness: 0,
+        },
+        density: 0.90,
         durability: 0,
         temperature: {
             specificHeat: 4.5,

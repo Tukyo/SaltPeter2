@@ -23,6 +23,11 @@ export const Milk: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.02,
+            restitution: 0.08,
+            hardness: 0,
+        },
         density: 0.55,
         durability: 0,
         temperature: {

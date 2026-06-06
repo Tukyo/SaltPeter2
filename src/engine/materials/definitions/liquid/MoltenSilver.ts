@@ -23,7 +23,12 @@ export const MoltenSilver: MaterialDefinition = {
         }
     },
     physics: {
-        density: 0.98,
+        contact: {
+            friction: 0.02,
+            restitution: 0.15,
+            hardness: 0,
+        },
+        density: 0.95,
         durability: 0,
         temperature: {
             specificHeat: 5,

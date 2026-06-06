@@ -142,15 +142,21 @@ export const Reactions: MaterialReaction[] = [
         reactionRate: 1
     },
     {
-        reagents: [{ materials: ['acid'] }, { tags: ['corrodes'] }],
-        product: ['flammable_gas', 'flammable_gas'],
-        reactionRate: 0.5
-    },
-    {
         reagents: [{ materials: ['lava'] }, { tags: ['burns'] }],
         product: ['self', 'fire'],
         biproduct: 'smoke',
         reactionRate: 2,
+    },
+    {
+        reagents: [{ tags: ['molten'] }, { tags: ['burns'] }],
+        product: ['self', 'fire'],
+        biproduct: 'smoke',
+        reactionRate: 1,
+    },
+    {
+        reagents: [{ materials: ['acid'] }, { tags: ['corrodes'] }],
+        product: ['flammable_gas', 'flammable_gas'],
+        reactionRate: 0.5
     },
     {
         reagents: [{ materials: ['fire'] }, { materials: ['meat'] }],

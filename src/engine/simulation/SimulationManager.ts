@@ -213,7 +213,8 @@ export class SimulationManager extends NitrateProcess {
                 device,
                 simulationLayer: this.simulationLayer,
                 gameObjectLayer: this.gameObjectLayer,
-                physicsBuffer: this.materialPhysicsBuffer
+                physicsBuffer: this.materialPhysicsBuffer,
+                goStateBuffer: this.gameObjectBuffers.stateBuffer,
             }),
             AnalyticsPass.Create(device),
             GameObjectPass.Create({

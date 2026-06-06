@@ -21,6 +21,11 @@ export const Sandstone: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.65,
+            restitution: 0.3,
+            hardness: 0.7,
+        },
         density: 4,
         durability: 5,
         temperature: {

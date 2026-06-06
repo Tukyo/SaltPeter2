@@ -129,7 +129,7 @@ export class EditorScene extends Nitrate.Scene {
 
             this.materialsPanel = new Nitrate.MaterialsPanel({
                 activeMaterial: { defaultMaterial: 'sand' },
-                occupancy: { default: 'static', show: false },
+                occupancy: { default: 'static' },
                 style: { top: '655px' }
             });
 
@@ -318,8 +318,8 @@ export class EditorScene extends Nitrate.Scene {
             const byteIdx = (texY * canvasW + cx) * 4;
             identityData[byteIdx] = cell.materialId;
             identityData[byteIdx + 1] = Math.round((cell.colorVariant / colorsPerMaterial) * 255);
-            identityData[byteIdx + 2] = 0;
-            identityData[byteIdx + 3] = 1;
+            identityData[byteIdx + 2] = cell.variantId;
+            identityData[byteIdx + 3] = cell.occupancy ?? 2;
         }
 
         const layout = { bytesPerRow: canvasW * 4 };

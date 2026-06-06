@@ -1,12 +1,12 @@
 fn sampleNeighborTemp(neighborCoord: vec2i, imax: vec2i) -> f32 {
-    let nc = clamp(neighborCoord, vec2i(0), imax);
-    if isOccupiedState(textureLoad(identityTexture, nc)) {
-        return textureLoad(physicsTexture, nc).r;
-    }
-    if isOccupiedState(textureLoad(crossIdentityTexture, nc)) {
-        return textureLoad(crossPhysicsTexture, nc).r;
-    }
-    return textureLoad(physicsTexture, nc).r;
+    let nc          = clamp(neighborCoord, vec2i(0), imax);
+    let simOccupied = isOccupiedState(textureLoad(identityTexture,      nc));
+    let goOccupied  = isOccupiedState(textureLoad(crossIdentityTexture, nc));
+    let simTemp     = textureLoad(physicsTexture,      nc).r;
+    let goTemp      = textureLoad(crossPhysicsTexture, nc).r;
+    if simOccupied && goOccupied { return (simTemp + goTemp) * 0.5; }
+    if goOccupied  { return goTemp; }
+    return simTemp;
 }
 
 fn propagateTemperature(coord: vec2f, res: vec2f) -> f32 {

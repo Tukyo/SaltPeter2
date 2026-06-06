@@ -23,6 +23,11 @@ export const Fire: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0,
+            restitution: 0,
+            hardness: 0,
+        },
         density: 0.1,
         durability: 0,
         temperature: {
@@ -30,5 +35,5 @@ export const Fire: MaterialDefinition = {
             restingTemperature: 0.9,
             restingStrength: 0.8,
         }
-    },
+    }
 };

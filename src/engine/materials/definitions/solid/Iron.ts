@@ -21,6 +21,11 @@ export const Iron: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.5,
+            restitution: 0.45,
+            hardness: 0.88,
+        },
         density: 5,
         durability: 8,
         temperature: {

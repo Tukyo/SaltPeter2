@@ -5,6 +5,7 @@ import type { SimulationLayer } from './SimulationLayer';
 import type { SimulationResource } from './SimulationManager';
 import type { SimulationTexture } from './SimulationTexture';
 
+import { PhysicsConfig } from '../config/PhysicsConfig';
 import { ShaderAssembler } from '../shaders/ShaderAssembler';
 import { SimulationConfig } from '../config/SimulationConfig';
 import { SimulationSchema } from './SimulationSchema';
@@ -79,7 +80,18 @@ export class IntentPass implements SimulationResource {
 
         const gravityStrength = Math.max(1, Math.abs(gravity));
         const deltaTime = 1 / (SimulationConfig.GetConfig().time.baseTickRate * gravityStrength);
-        device.queue.writeBuffer(this.uniforms, 0, new Float32Array([time, gravity, deltaTime]));
+        const spread = PhysicsConfig.GetConfig().pressure.spread;
+        device.queue.writeBuffer(this.uniforms, 0, new Float32Array([
+            time,
+            gravity,
+            deltaTime,
+            spread.threshold.powder,
+            spread.scale.powder,
+            spread.maxChance.powder,
+            spread.threshold.solid,
+            spread.scale.solid,
+            spread.maxChance.solid,
+        ]));
 
         const bindGroup = device.createBindGroup({
             layout: this.pipeline.getBindGroupLayout(0),

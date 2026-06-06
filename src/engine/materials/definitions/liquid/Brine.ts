@@ -23,6 +23,11 @@ export const Brine: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.02,
+            restitution: 0.1,
+            hardness: 0,
+        },
         density: 0.565,
         durability: 0.5,
         temperature: {

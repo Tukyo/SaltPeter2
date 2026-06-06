@@ -23,7 +23,12 @@ export const MoltenAluminum: MaterialDefinition = {
         }
     },
     physics: {
-        density: 0.9,
+        contact: {
+            friction: 0.03,
+            restitution: 0.15,
+            hardness: 0,
+        },
+        density: 0.8,
         durability: 0,
         temperature: {
             specificHeat: 5,

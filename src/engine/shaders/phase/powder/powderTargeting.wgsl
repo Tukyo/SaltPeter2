@@ -37,8 +37,6 @@ fn choosePowderSettleTarget(
     let settleSeed = getMaterialStepSeed(time, material.settleRandomRate);
     let stayRoll   = hash(sourceCoord + vec2f(settleSeed, settleSeed * RANDOM_DECORRELATION));
 
-    if stayRoll < material.settleStayChance { return sourceCoord; }
-
     let surfaceRoll = hash(sourceCoord + vec2f(settleSeed * 2.17, settleSeed * 3.31));
 
     if surfaceRoll < material.settleSurfaceRequireChance && !hasOpenSurface { return sourceCoord; }
@@ -67,8 +65,6 @@ fn choosePowderSettleTarget(
 
     let spreadRoll = hash(sourceCoord + vec2f(settleSeed * 11.47, settleSeed * 12.79));
 
-    if spreadRoll > material.lateralSpreadChance { return sourceCoord; }
-
     let left      = sourceCoord + CELL_LEFT;
     let right     = sourceCoord + CELL_RIGHT;
     let sideRoll  = hash(sourceCoord + vec2f(settleSeed * 13.17, settleSeed * 14.53));
@@ -94,6 +90,7 @@ fn choosePowderTarget(
     let below      = sourceCoord + down;
     let belowLeft  = sourceCoord + down + CELL_LEFT;
     let belowRight = sourceCoord + down + CELL_RIGHT;
+    let pressure   = textureLoad(physicsTexture, vec2i(sourceCoord)).g;
 
     if isAirCoord(below, res) { return below; }
 
@@ -132,6 +129,29 @@ fn choosePowderTarget(
                 }
                 if canSink { return below; }
             }
+        }
+    }
+
+    if pressure > uniforms.powderPressureSpreadThreshold {
+        let pressureSeed  = getMaterialStepSeed(time, material.fallRandomRate);
+        let spreadRoll    = hash(sourceCoord + vec2f(pressureSeed * 15.13, pressureSeed * 17.31));
+        let spreadChance  = clamp(
+            pressure * uniforms.powderPressureSpreadScale,
+            0.0,
+            uniforms.powderPressureSpreadMaxChance
+        );
+        if spreadRoll < spreadChance {
+            let pressureSide   = hash(sourceCoord + vec2f(pressureSeed * 19.73, pressureSeed * 21.11));
+            let pressureLeft   = isValidPowderSurfaceSlideTarget(sourceCoord + CELL_LEFT,  res, gravityDirection);
+            let pressureRight  = isValidPowderSurfaceSlideTarget(sourceCoord + CELL_RIGHT, res, gravityDirection);
+            let pressureTarget = chooseRandomValidTarget(
+                sourceCoord + CELL_LEFT,
+                sourceCoord + CELL_RIGHT,
+                pressureSide,
+                pressureLeft,
+                pressureRight
+            );
+            if isValidCoord(pressureTarget) { return pressureTarget; }
         }
     }
 

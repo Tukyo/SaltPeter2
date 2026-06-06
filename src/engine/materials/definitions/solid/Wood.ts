@@ -21,8 +21,14 @@ export const Wood: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.7,
+            restitution: 0.3,
+            hardness: 0.55,
+        },
         density: 4,
         durability: 1.75,
+        flammability: 0.65,
         temperature: {
             specificHeat: 2,
             restingTemperature: 0.5,

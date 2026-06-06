@@ -21,6 +21,11 @@ export const Bone: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.55,
+            restitution: 0.3,
+            hardness: 0.7,
+        },
         density: 4,
         durability: 5,
         temperature: {

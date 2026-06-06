@@ -21,6 +21,11 @@ export const Clay: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.6,
+            restitution: 0.1,
+            hardness: 0.25,
+        },
         density: 3.5,
         durability: 3,
         temperature: {

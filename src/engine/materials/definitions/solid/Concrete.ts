@@ -21,6 +21,11 @@ export const Concrete: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.75,
+            restitution: 0.3,
+            hardness: 0.9,
+        },
         density: 5,
         durability: 6,
         temperature: {

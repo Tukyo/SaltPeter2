@@ -23,6 +23,11 @@ export const IronPowder: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.35,
+            restitution: 0.3,
+            hardness: 0.15,
+        },
         density: 1.8,
         durability: 1,
         temperature: {

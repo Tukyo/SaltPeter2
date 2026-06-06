@@ -17,11 +17,6 @@ export class TemperatureOverlay {
     private tmpCanvas: HTMLCanvasElement | null = null;
     private visible: boolean = false;
     private readPending: boolean = false;
-    private layerIndex: number = 0;
-
-    /** Sets the overlay display index. @internal */
-    public SetLayerIndex(index: number): void { this.layerIndex = index; }
-
     private static readonly HeatStops: [number, number, number][] = [
         [0, 0, 255], // blue
         [0, 255, 255], // cyan
@@ -64,12 +59,8 @@ export class TemperatureOverlay {
         const sim = SimulationManager.Instance;
         const renderer = Renderer.Instance?.GetWebGPU();
         if (!sim?.simulationLayer || !renderer) { return; }
-        if (this.layerIndex === 1 && !sim.gameObjectLayer) { return; }
 
-        const { simulationLayer, gameObjectLayer } = sim;
-        const physicsTexture = this.layerIndex === 1
-            ? gameObjectLayer!.currentPhysics
-            : simulationLayer.currentPhysics;
+        const { simulationLayer } = sim;
         const { device } = renderer;
         const { width, height } = simulationLayer;
 
@@ -96,7 +87,7 @@ export class TemperatureOverlay {
 
         const enc = device.createCommandEncoder();
         enc.copyTextureToBuffer(
-            { texture: physicsTexture, origin: [camOriginX, camOriginY] },
+            { texture: simulationLayer.currentPhysics, origin: [camOriginX, camOriginY] },
             { buffer: gpuBuffer, bytesPerRow },
             [contentW, contentH]
         );

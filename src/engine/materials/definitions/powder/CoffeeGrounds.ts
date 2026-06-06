@@ -23,6 +23,11 @@ export const CoffeeGrounds: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.45,
+            restitution: 0.15,
+            hardness: 0.1,
+        },
         density: 1.3,
         durability: 0,
         temperature: {

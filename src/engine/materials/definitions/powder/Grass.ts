@@ -23,8 +23,14 @@ export const Grass: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.7,
+            restitution: 0.15,
+            hardness: 0.1,
+        },
         density: 1.8,
         durability: 1.125,
+        flammability: 0.65,
         temperature: {
             specificHeat: 1,
             restingTemperature: 0.5,

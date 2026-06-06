@@ -23,6 +23,11 @@ export const Blueprint: MaterialDefinition = {
         }
     },
     physics: { // No physics
+        contact: {
+            friction: 0,
+            restitution: 0,
+            hardness: 0,
+        },
         density: 0,
         durability: 0,
         temperature: {

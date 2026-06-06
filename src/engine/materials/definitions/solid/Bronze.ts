@@ -21,6 +21,11 @@ export const Bronze: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.35,
+            restitution: 0.5,
+            hardness: 0.82,
+        },
         density: 4.5,
         durability: 6,
         temperature: {

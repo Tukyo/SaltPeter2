@@ -23,6 +23,11 @@ export const CopperPowder: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.3,
+            restitution: 0.35,
+            hardness: 0.15,
+        },
         density: 2.5,
         durability: 0,
         temperature: {

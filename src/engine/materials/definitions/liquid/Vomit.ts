@@ -23,6 +23,11 @@ export const Vomit: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.12,
+            restitution: 0.03,
+            hardness: 0,
+        },
         density: 0.88,
         durability: 0,
         temperature: {

@@ -2,10 +2,32 @@ fn canFireMove(material: FireSimulation) -> bool {
     return material.fallRandomRate > 0.0;
 }
 
-fn isValidFireGroundedTarget(coord: vec2f, res: vec2f, gravityDirection: f32) -> bool {
+fn isValidFireTarget(coord: vec2f, res: vec2f, gravityDirection: f32) -> bool {
+    if !inBounds(coord, res) { return false; }
+    if isGasPhaseCoord(coord, res) { return true; }
     if !isAirCoord(coord, res) { return false; }
-    let below = coord + vec2f(0.0, -gravityDirection);
-    return inBounds(below, res) && isOccupiedState(textureLoad(identityTexture, vec2i(below)));
+    let neighbors = chebyshevOffsets();
+    for (var i = 0u; i < 8u; i++) {
+        let neighbor = coord + neighbors[i];
+        if inBounds(neighbor, res) && isOccupiedState(textureLoad(identityTexture, vec2i(neighbor))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+fn getAdjacentFuelFlammability(coord: vec2f, res: vec2f) -> f32 {
+    let neighbors = chebyshevOffsets();
+    var maxFlammability = 0.0;
+    for (var i = 0u; i < 8u; i++) {
+        let neighbor = coord + neighbors[i];
+        if !inBounds(neighbor, res) { continue; }
+        let neighborState = textureLoad(identityTexture, vec2i(neighbor));
+        if !isOccupiedState(neighborState) { continue; }
+        let flam = physicsMaterials[u32(getStateMaterialId(neighborState))].flammability;
+        maxFlammability = max(maxFlammability, flam);
+    }
+    return maxFlammability;
 }
 
 fn chooseFireSettleTarget(
@@ -15,8 +37,11 @@ fn chooseFireSettleTarget(
     time:             f32,
     material:         FireSimulation
 ) -> vec2f {
-    let settleSeed = getMaterialStepSeed(time, material.settleRandomRate);
-    let stayRoll   = hash(sourceCoord + vec2f(settleSeed, settleSeed * RANDOM_DECORRELATION));
+    let settleSeed       = getMaterialStepSeed(time, material.settleRandomRate);
+    let fuelFlammability = getAdjacentFuelFlammability(sourceCoord, res);
+    let slideChance      = min(1.0, material.surfaceSlideChance  * (1.0 + fuelFlammability));
+    let spreadChance     = min(1.0, material.lateralSpreadChance * (1.0 + fuelFlammability));
+    let stayRoll         = hash(sourceCoord + vec2f(settleSeed, settleSeed * RANDOM_DECORRELATION));
     if stayRoll < material.settleStayChance { return sourceCoord; }
 
     let up  = vec2f(0.0, gravityDirection);
@@ -25,34 +50,37 @@ fn chooseFireSettleTarget(
 
     // Surface slide: horizontal + up-slope (crawls over terrain)
     let slideRoll = hash(sourceCoord + vec2f(settleSeed * 2.17, settleSeed * 3.31));
-    if slideRoll < material.surfaceSlideChance {
+    if slideRoll < slideChance {
         let hLeft    = sourceCoord + CELL_LEFT;
         let hRight   = sourceCoord + CELL_RIGHT;
         let hRoll    = clamp(hash(sourceCoord + vec2f(settleSeed * 4.13, settleSeed * 5.71)) - vxBias, 0.0, 1.0);
         let hTarget  = chooseRandomValidTarget(hLeft, hRight, hRoll,
-                           isValidFireGroundedTarget(hLeft,  res, gravityDirection),
-                           isValidFireGroundedTarget(hRight, res, gravityDirection));
+                           isValidFireTarget(hLeft,  res, gravityDirection),
+                           isValidFireTarget(hRight, res, gravityDirection));
         if isValidCoord(hTarget) { return hTarget; }
 
         let uLeft    = sourceCoord + up + CELL_LEFT;
         let uRight   = sourceCoord + up + CELL_RIGHT;
         let uRoll    = clamp(hash(sourceCoord + vec2f(settleSeed * 6.91, settleSeed * 8.23)) - vxBias, 0.0, 1.0);
         let uTarget  = chooseRandomValidTarget(uLeft, uRight, uRoll,
-                           isValidFireGroundedTarget(uLeft,  res, gravityDirection),
-                           isValidFireGroundedTarget(uRight, res, gravityDirection));
+                           isValidFireTarget(uLeft,  res, gravityDirection),
+                           isValidFireTarget(uRight, res, gravityDirection));
         if isValidCoord(uTarget) { return uTarget; }
+
+        let uStraight = sourceCoord + up;
+        if isValidFireTarget(uStraight, res, gravityDirection) { return uStraight; }
     }
 
     // Lateral spread: horizontal only, must be grounded
     let spreadRoll = hash(sourceCoord + vec2f(settleSeed * 9.37, settleSeed * 10.91));
-    if spreadRoll > material.lateralSpreadChance { return sourceCoord; }
+    if spreadRoll > spreadChance { return sourceCoord; }
 
     let sLeft   = sourceCoord + CELL_LEFT;
     let sRight  = sourceCoord + CELL_RIGHT;
     let sRoll   = clamp(hash(sourceCoord + vec2f(settleSeed * 11.47, settleSeed * 12.79)) - vxBias, 0.0, 1.0);
     let sTarget = chooseRandomValidTarget(sLeft, sRight, sRoll,
-                      isValidFireGroundedTarget(sLeft,  res, gravityDirection),
-                      isValidFireGroundedTarget(sRight, res, gravityDirection));
+                      isValidFireTarget(sLeft,  res, gravityDirection),
+                      isValidFireTarget(sRight, res, gravityDirection));
     if isValidCoord(sTarget) { return sTarget; }
 
     return sourceCoord;

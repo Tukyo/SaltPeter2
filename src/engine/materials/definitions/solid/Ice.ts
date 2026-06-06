@@ -21,6 +21,11 @@ export const Ice: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.05,
+            restitution: 0.3,
+            hardness: 0.55,
+        },
         density: 0.9,
         durability: 1.5,
         temperature: {

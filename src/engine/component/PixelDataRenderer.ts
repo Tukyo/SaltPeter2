@@ -32,7 +32,9 @@ export class PixelDataRenderer {
             const material = MaterialQuery.GetById(cell.materialId);
             if (!material) { continue; }
 
-            const color = material.colors[cell.colorVariant] ?? material.colors[0];
+            const variantId = cell.variantId ?? 0;
+            const variantColors = variantId > 0 ? material.variants?.find(v => v.id === variantId)?.colors : undefined;
+            const color = (variantColors ?? material.colors)[cell.colorVariant] ?? material.colors[0];
             ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`;
 
             const canvasX = cell.pos.x * scale;

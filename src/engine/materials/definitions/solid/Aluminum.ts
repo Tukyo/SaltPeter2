@@ -21,6 +21,11 @@ export const Aluminum: MaterialDefinition = {
         }
     },
     physics: {
+        contact: {
+            friction: 0.35,
+            restitution: 0.5,
+            hardness: 0.85,
+        },
         density: 4,
         durability: 6,
         temperature: {

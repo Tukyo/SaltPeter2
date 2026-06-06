@@ -23,7 +23,12 @@ export const MoltenTin: MaterialDefinition = {
         }
     },
     physics: {
-        density: 0.96,
+        contact: {
+            friction: 0.03,
+            restitution: 0.15,
+            hardness: 0,
+        },
+        density: 0.86,
         durability: 0,
         temperature: {
             specificHeat: 3,
