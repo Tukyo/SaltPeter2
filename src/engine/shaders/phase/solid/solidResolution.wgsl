@@ -1,13 +1,13 @@
 fn chooseIncomingSolidSourceFromIntent(
-    targetCoord:      vec2f,
-    res:              vec2f,
+    targetCoord: vec2f,
+    res: vec2f,
     gravityDirection: f32,
-    time:             f32
+    time: f32
 ) -> vec2f {
     let up = vec2f(0.0, gravityDirection);
 
     let sourceAbove = targetCoord + up;
-    let sourceLeft  = targetCoord + CELL_LEFT;
+    let sourceLeft = targetCoord + CELL_LEFT;
     let sourceRight = targetCoord + CELL_RIGHT;
 
     if materialIntentClaimsTarget(sourceAbove, targetCoord, res, gravityDirection) &&
@@ -15,31 +15,31 @@ fn chooseIncomingSolidSourceFromIntent(
         return sourceAbove;
     }
 
-    let leftClaims  = materialIntentClaimsTarget(sourceLeft,  targetCoord, res, gravityDirection) &&
-                      isRegisteredMaterialCoord(sourceLeft,  res);
+    let leftClaims = materialIntentClaimsTarget(sourceLeft, targetCoord, res, gravityDirection) &&
+                      isRegisteredMaterialCoord(sourceLeft, res);
     let rightClaims = materialIntentClaimsTarget(sourceRight, targetCoord, res, gravityDirection) &&
                       isRegisteredMaterialCoord(sourceRight, res);
 
     if leftClaims && rightClaims {
-        let leftSim  = getSolidSimulationAtCoord(sourceLeft,  res);
+        let leftSim = getSolidSimulationAtCoord(sourceLeft, res);
         let rightSim = getSolidSimulationAtCoord(sourceRight, res);
         let fallSeed = getMaterialStepSeed(time, max(leftSim.fallRandomRate, rightSim.fallRandomRate));
         let rollSeed = hash(targetCoord + vec2f(fallSeed, fallSeed * RANDOM_DECORRELATION));
         return chooseWinningClaimant(sourceLeft, sourceRight, rollSeed);
     }
 
-    if leftClaims  { return sourceLeft; }
+    if leftClaims { return sourceLeft; }
     if rightClaims { return sourceRight; }
 
     return INVALID_COORD;
 }
 
 fn resolveSolidCell(
-    coord:                vec2f,
-    res:                  vec2f,
+    coord: vec2f,
+    res: vec2f,
     currentIdentityState: vec4f,
-    gravityDirection:     f32,
-    time:                 f32
+    gravityDirection: f32,
+    time: f32
 ) -> ResolvedCell {
     if gravityDirection == 0.0 { return ResolvedCell(currentIdentityState, coord); }
 

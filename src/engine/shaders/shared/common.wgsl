@@ -1,26 +1,26 @@
 struct ResolvedCell {
     identityState: vec4f,
-    source:        vec2f,
+    source: vec2f,
 }
 
 // --- Constants ---
 
-const HASH_SCALE_X:          f32 = 123.34;
-const HASH_SCALE_Y:          f32 = 456.21;
-const HASH_OFFSET:           f32 = 45.32;
-const RANDOM_DECORRELATION:  f32 = 1.61803398875;
-const RANDOM_SPLIT_THRESHOLD:f32 = 0.5;
-const COORD_MATCH_EPSILON:   f32 = 0.1;
-const MATERIAL_ID_SCALE:     f32 = 255.0;
-const OCCUPANCY_THRESHOLD:   f32 = 0.5 / 255.0; // > 0 byte = occupied
-const OCCUPANCY_DYNAMIC:     f32 = 1.0 / 255.0;
-const OCCUPANCY_STATIC:      f32 = 2.0 / 255.0;
+const HASH_SCALE_X: f32 = 123.34;
+const HASH_SCALE_Y: f32 = 456.21;
+const HASH_OFFSET: f32 = 45.32;
+const RANDOM_DECORRELATION: f32 = 1.61803398875;
+const RANDOM_SPLIT_THRESHOLD: f32 = 0.5;
+const COORD_MATCH_EPSILON: f32 = 0.1;
+const MATERIAL_ID_SCALE: f32 = 255.0;
+const OCCUPANCY_THRESHOLD: f32 = 0.5 / 255.0; // > 0 byte = occupied
+const OCCUPANCY_DYNAMIC: f32 = 1.0 / 255.0;
+const OCCUPANCY_STATIC: f32 = 2.0 / 255.0;
 
 const AIR_STATE: vec4f = vec4f(0.0);
-const GRAVITY_DEADZONE:      f32 = 0.01;
+const GRAVITY_DEADZONE: f32 = 0.01;
 
-const CELL_RIGHT:    vec2f = vec2f( 1.0, 0.0);
-const CELL_LEFT:     vec2f = vec2f(-1.0, 0.0);
+const CELL_RIGHT: vec2f = vec2f(1.0, 0.0);
+const CELL_LEFT: vec2f = vec2f(-1.0, 0.0);
 const INVALID_COORD: vec2f = vec2f(-1.0, -1.0);
 
 // --- Hash / Random ---
@@ -72,19 +72,19 @@ fn sameCoord(a: vec2f, b: vec2f) -> bool {
 // --- Targeting helpers ---
 
 fn chooseRandomValidTarget(
-    firstTarget:       vec2f,
-    secondTarget:      vec2f,
-    selectorSeed:      f32,
-    firstTargetValid:  bool,
+    firstTarget: vec2f,
+    secondTarget: vec2f,
+    selectorSeed: f32,
+    firstTargetValid: bool,
     secondTargetValid: bool
 ) -> vec2f {
-    if !firstTargetValid  { return select(INVALID_COORD, secondTarget, secondTargetValid); }
+    if !firstTargetValid { return select(INVALID_COORD, secondTarget, secondTargetValid); }
     if !secondTargetValid { return firstTarget; }
     return select(secondTarget, firstTarget, selectorSeed > RANDOM_SPLIT_THRESHOLD);
 }
 
 fn chooseWinningClaimant(
-    firstSource:  vec2f,
+    firstSource: vec2f,
     secondSource: vec2f,
     selectorSeed: f32
 ) -> vec2f {
@@ -165,22 +165,22 @@ fn getMaterialStepSeed(time: f32, rate: f32) -> f32 {
 
 fn cardinalOffsets() -> array<vec2f, 4> {
     return array<vec2f, 4>(
-        vec2f( 0.0,  1.0),
-        vec2f( 0.0, -1.0),
-        vec2f( 1.0,  0.0),
-        vec2f(-1.0,  0.0),
+        vec2f(0.0, 1.0),
+        vec2f(0.0, -1.0),
+        vec2f(1.0, 0.0),
+        vec2f(-1.0, 0.0),
     );
 }
 
 fn chebyshevOffsets() -> array<vec2f, 8> {
     return array<vec2f, 8>(
-        vec2f( 0.0,  1.0),
-        vec2f( 0.0, -1.0),
-        vec2f( 1.0,  0.0),
-        vec2f(-1.0,  0.0),
-        vec2f( 1.0,  1.0),
-        vec2f(-1.0,  1.0),
-        vec2f( 1.0, -1.0),
+        vec2f(0.0, 1.0),
+        vec2f(0.0, -1.0),
+        vec2f(1.0, 0.0),
+        vec2f(-1.0, 0.0),
+        vec2f(1.0, 1.0),
+        vec2f(-1.0, 1.0),
+        vec2f(1.0, -1.0),
         vec2f(-1.0, -1.0),
     );
 }

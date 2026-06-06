@@ -1,31 +1,31 @@
 // Cell resolution logic. References globals `identityTexture`, `intentTexture`, `simMaterials` from sim.wgsl.
 
 fn chooseIncomingPowderSourceFromIntent(
-    targetCoord:      vec2f,
-    res:              vec2f,
+    targetCoord: vec2f,
+    res: vec2f,
     gravityDirection: f32,
-    time:             f32
+    time: f32
 ) -> vec2f {
-    let up   = vec2f(0.0,  gravityDirection);
+    let up = vec2f(0.0, gravityDirection);
 
-    let sourceAbove      = targetCoord + up;
-    let sourceAboveLeft  = targetCoord + up + CELL_LEFT;
+    let sourceAbove = targetCoord + up;
+    let sourceAboveLeft = targetCoord + up + CELL_LEFT;
     let sourceAboveRight = targetCoord + up + CELL_RIGHT;
-    let sourceLeft       = targetCoord + CELL_LEFT;
-    let sourceRight      = targetCoord + CELL_RIGHT;
+    let sourceLeft = targetCoord + CELL_LEFT;
+    let sourceRight = targetCoord + CELL_RIGHT;
 
     if materialIntentClaimsTarget(sourceAbove, targetCoord, res, gravityDirection) &&
        isRegisteredMaterialCoord(sourceAbove, res) {
         return sourceAbove;
     }
 
-    let aboveLeftClaims  = materialIntentClaimsTarget(sourceAboveLeft,  targetCoord, res, gravityDirection) &&
-                           isRegisteredMaterialCoord(sourceAboveLeft,  res);
+    let aboveLeftClaims = materialIntentClaimsTarget(sourceAboveLeft, targetCoord, res, gravityDirection) &&
+                           isRegisteredMaterialCoord(sourceAboveLeft, res);
     let aboveRightClaims = materialIntentClaimsTarget(sourceAboveRight, targetCoord, res, gravityDirection) &&
                            isRegisteredMaterialCoord(sourceAboveRight, res);
 
     if aboveLeftClaims && aboveRightClaims {
-        let leftMat  = getPowderSimulationAtCoord(sourceAboveLeft,  res);
+        let leftMat = getPowderSimulationAtCoord(sourceAboveLeft, res);
         let rightMat = getPowderSimulationAtCoord(sourceAboveRight, res);
         let fallSeed = getMaterialStepSeed(time, max(leftMat.fallRandomRate, rightMat.fallRandomRate));
         let rollSeed = hash(targetCoord + vec2f(fallSeed, fallSeed * RANDOM_DECORRELATION));
@@ -35,37 +35,37 @@ fn chooseIncomingPowderSourceFromIntent(
         );
     }
 
-    if aboveLeftClaims  { return sourceAboveLeft; }
+    if aboveLeftClaims { return sourceAboveLeft; }
     if aboveRightClaims { return sourceAboveRight; }
 
-    let leftClaims  = materialIntentClaimsTarget(sourceLeft,  targetCoord, res, gravityDirection) &&
-                      isRegisteredMaterialCoord(sourceLeft,  res);
+    let leftClaims = materialIntentClaimsTarget(sourceLeft, targetCoord, res, gravityDirection) &&
+                      isRegisteredMaterialCoord(sourceLeft, res);
     let rightClaims = materialIntentClaimsTarget(sourceRight, targetCoord, res, gravityDirection) &&
                       isRegisteredMaterialCoord(sourceRight, res);
 
     if leftClaims && rightClaims {
-        let leftMat    = getPowderSimulationAtCoord(sourceLeft,  res);
-        let rightMat   = getPowderSimulationAtCoord(sourceRight, res);
+        let leftMat = getPowderSimulationAtCoord(sourceLeft, res);
+        let rightMat = getPowderSimulationAtCoord(sourceRight, res);
         let settleSeed = getMaterialStepSeed(time, max(leftMat.settleRandomRate, rightMat.settleRandomRate));
-        let rollSeed   = hash(targetCoord + vec2f(settleSeed, settleSeed * RANDOM_DECORRELATION));
+        let rollSeed = hash(targetCoord + vec2f(settleSeed, settleSeed * RANDOM_DECORRELATION));
         return chooseWinningClaimant(
             sourceLeft, sourceRight,
             rollSeed
         );
     }
 
-    if leftClaims  { return sourceLeft; }
+    if leftClaims { return sourceLeft; }
     if rightClaims { return sourceRight; }
 
     return INVALID_COORD;
 }
 
 fn resolvePowderCell(
-    coord:                vec2f,
-    res:                  vec2f,
+    coord: vec2f,
+    res: vec2f,
     currentIdentityState: vec4f,
-    gravityDirection:     f32,
-    time:                 f32
+    gravityDirection: f32,
+    time: f32
 ) -> ResolvedCell {
     if gravityDirection == 0.0 { return ResolvedCell(currentIdentityState, coord); }
 

@@ -2,11 +2,11 @@
 // Calls per-phase resolution functions defined in phase/*/[phase]Resolution.wgsl.
 
 fn resolveEmptyCellFromPhaseIntents(
-    coord:            vec2f,
-    res:              vec2f,
-    currentIdentityState:     vec4f,
+    coord: vec2f,
+    res: vec2f,
+    currentIdentityState: vec4f,
     gravityDirection: f32,
-    time:             f32
+    time: f32
 ) -> ResolvedCell {
     let goOwned = isOwnedCell(textureLoad(goOwnershipTexture, vec2i(coord)).r);
 
@@ -33,11 +33,11 @@ fn resolveEmptyCellFromPhaseIntents(
 }
 
 fn resolveCellForState(
-    coord:            vec2f,
-    res:              vec2f,
-    currentIdentityState:     vec4f,
+    coord: vec2f,
+    res: vec2f,
+    currentIdentityState: vec4f,
     gravityDirection: f32,
-    time:             f32
+    time: f32
 ) -> ResolvedCell {
     if gravityDirection == 0.0 { return ResolvedCell(currentIdentityState, coord); }
 
@@ -53,11 +53,11 @@ fn resolveCellForState(
         return ResolvedCell(currentIdentityState, coord);
     }
 
-    if isMaterialPhaseId(phaseId, MATERIAL_PHASE_SOLID)  { return resolveSolidCell(coord, res, currentIdentityState, gravityDirection, time); }
+    if isMaterialPhaseId(phaseId, MATERIAL_PHASE_SOLID) { return resolveSolidCell(coord, res, currentIdentityState, gravityDirection, time); }
     if isMaterialPhaseId(phaseId, MATERIAL_PHASE_POWDER) { return resolvePowderCell(coord, res, currentIdentityState, gravityDirection, time); }
     if isMaterialPhaseId(phaseId, MATERIAL_PHASE_LIQUID) { return resolveLiquidCell(coord, res, currentIdentityState, gravityDirection, time); }
-    if isMaterialPhaseId(phaseId, MATERIAL_PHASE_GAS)    { return resolveGasCell(coord, res, currentIdentityState, gravityDirection, time); }
-    if isMaterialPhaseId(phaseId, MATERIAL_PHASE_FIRE)   { return resolveFireCell(coord, res, currentIdentityState, gravityDirection, time); }
+    if isMaterialPhaseId(phaseId, MATERIAL_PHASE_GAS) { return resolveGasCell(coord, res, currentIdentityState, gravityDirection, time); }
+    if isMaterialPhaseId(phaseId, MATERIAL_PHASE_FIRE) { return resolveFireCell(coord, res, currentIdentityState, gravityDirection, time); }
 
     return ResolvedCell(currentIdentityState, coord);
 }

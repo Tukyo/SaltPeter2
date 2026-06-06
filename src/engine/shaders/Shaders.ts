@@ -59,9 +59,6 @@ export { default as diffusionWgsl } from './diffusion/diffusion.wgsl?raw';
 export { default as brushWgsl } from './brush/brush.wgsl?raw';
 export { default as brushOutputWgsl } from './brush/brushOutput.wgsl?raw';
 
-// State
-export { default as stateWgsl } from './state/state.wgsl?raw';
-
 // Debug
 export { default as analyticsWgsl } from './analytics/analytics.wgsl?raw';
 

@@ -1,6 +1,5 @@
 // Depends on: common.wgsl (isOccupiedState, decodeMaterialId, decodeColorSeed, makeMaterialState, makeMaterialStateSimple)
 
-
 fn isMaterialId(materialId: f32, expected: f32) -> bool {
     return abs(materialId - expected) < 0.5;
 }

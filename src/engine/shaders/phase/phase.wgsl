@@ -21,6 +21,6 @@ fn isLiquidOrGasPhase(phaseId: f32) -> bool {
 fn isDisplaceablePhase(phaseId: f32) -> bool {
     return isMaterialPhaseId(phaseId, MATERIAL_PHASE_LIQUID) ||
            isMaterialPhaseId(phaseId, MATERIAL_PHASE_POWDER) ||
-           isMaterialPhaseId(phaseId, MATERIAL_PHASE_SOLID)  ||
+           isMaterialPhaseId(phaseId, MATERIAL_PHASE_SOLID) ||
            isMaterialPhaseId(phaseId, MATERIAL_PHASE_GAS);
 }

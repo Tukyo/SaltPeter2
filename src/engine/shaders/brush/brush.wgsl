@@ -1,21 +1,21 @@
-@group(0) @binding(0) var identityTexture:                          texture_storage_2d<rgba8unorm, read>;
-@group(0) @binding(1) var nextIdentityTexture:                      texture_storage_2d<rgba8unorm, write>;
-@group(0) @binding(2) var<uniform> brush:                        BrushUniforms;
-@group(0) @binding(3) var physicsTexture:                        texture_storage_2d<rgba32float, read>;
-@group(0) @binding(4) var nextPhysicsTexture:                    texture_storage_2d<rgba32float, write>;
-@group(0) @binding(5) var<storage, read> physicsMaterials:       array<MaterialPhysicsEntry>;
-@group(0) @binding(6) var cellStateTexture:                      texture_storage_2d<rgba32float, read>;
-@group(0) @binding(7) var nextCellStateTexture:                  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var<storage, read> materialStates:         array<MaterialStateEntry>;
+@group(0) @binding(0) var identityTexture: texture_storage_2d<rgba8unorm, read>;
+@group(0) @binding(1) var nextIdentityTexture: texture_storage_2d<rgba8unorm, write>;
+@group(0) @binding(2) var<uniform> brush: BrushUniforms;
+@group(0) @binding(3) var physicsTexture: texture_storage_2d<rgba32float, read>;
+@group(0) @binding(4) var nextPhysicsTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(5) var<storage, read> physicsMaterials: array<MaterialPhysicsEntry>;
+@group(0) @binding(6) var cellStateTexture: texture_storage_2d<rgba32float, read>;
+@group(0) @binding(7) var nextCellStateTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var<storage, read> materialStates: array<MaterialStateEntry>;
 
 @compute @workgroup_size(WG_SIZE, WG_SIZE)
 fn main(@builtin(global_invocation_id) id: vec3u) {
-    let res   = vec2f(textureDimensions(identityTexture));
+    let res = vec2f(textureDimensions(identityTexture));
     let coord = vec2f(f32(id.x), f32(id.y));
 
     if !inBounds(coord, res) { return; }
 
-    let currentState   = textureLoad(identityTexture,   vec2i(id.xy));
+    let currentState = textureLoad(identityTexture, vec2i(id.xy));
     let currentPhysics = textureLoad(physicsTexture, vec2i(id.xy));
 
     let currentCellState = textureLoad(cellStateTexture, vec2i(id.xy));
@@ -24,27 +24,27 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
     if brush.shape < 0.5 {
         inBrush = distance(coord + vec2f(0.5), vec2f(brush.mouseX, brush.mouseY)) < brush.radius;
     } else {
-        let halfR  = floor(brush.radius / 2.0);
+        let halfR = floor(brush.radius / 2.0);
         let offset = brush.radius - 2.0 * halfR;
         let ox = floor(brush.mouseX - 0.5) - halfR;
         let oy = floor(brush.mouseY - 0.5) - halfR + 1.0 - offset;
         inBrush = coord.x >= ox && coord.x < ox + brush.radius && coord.y >= oy && coord.y < oy + brush.radius;
     }
     if !inBrush {
-        textureStore(nextIdentityTexture,  vec2i(id.xy), currentState);
-        textureStore(nextPhysicsTexture,   vec2i(id.xy), currentPhysics);
+        textureStore(nextIdentityTexture, vec2i(id.xy), currentState);
+        textureStore(nextPhysicsTexture, vec2i(id.xy), currentPhysics);
         textureStore(nextCellStateTexture, vec2i(id.xy), currentCellState);
         return;
     }
 
     if !isAirMaterial(brush.materialId) && !isRegisteredMaterialId(brush.materialId) {
-        textureStore(nextIdentityTexture,  vec2i(id.xy), currentState);
-        textureStore(nextPhysicsTexture,   vec2i(id.xy), currentPhysics);
+        textureStore(nextIdentityTexture, vec2i(id.xy), currentState);
+        textureStore(nextPhysicsTexture, vec2i(id.xy), currentPhysics);
         textureStore(nextCellStateTexture, vec2i(id.xy), currentCellState);
         return;
     }
 
-    let brushSeed   = floor(brush.time * BRUSH_RANDOM_RATE);
+    let brushSeed = floor(brush.time * BRUSH_RANDOM_RATE);
     let brushRandom = hash(coord + vec2f(brushSeed, brushSeed * RANDOM_DECORRELATION));
     var shouldPlace = brushRandom < brush.density;
 
@@ -58,15 +58,15 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
     if shouldPlace {
         let colorSeed = select(chooseMaterialColorSeed(brush.materialId, coord), (brush.colorVariant + 0.5) / COLORS_PER_MATERIAL, brush.brushType >= 0.5);
         if isAirMaterial(brush.materialId) {
-            textureStore(nextIdentityTexture,  vec2i(id.xy), AIR_STATE);
-            textureStore(nextPhysicsTexture,   vec2i(id.xy), vec4f(0.0));
+            textureStore(nextIdentityTexture, vec2i(id.xy), AIR_STATE);
+            textureStore(nextPhysicsTexture, vec2i(id.xy), vec4f(0.0));
             textureStore(nextCellStateTexture, vec2i(id.xy), vec4f(0.0));
         } else {
             instantiateCell(vec2i(id.xy), brush.materialId, brush.occupancy, brush.variantId, colorSeed);
         }
     } else {
-        textureStore(nextIdentityTexture,  vec2i(id.xy), currentState);
-        textureStore(nextPhysicsTexture,   vec2i(id.xy), currentPhysics);
+        textureStore(nextIdentityTexture, vec2i(id.xy), currentState);
+        textureStore(nextPhysicsTexture, vec2i(id.xy), currentPhysics);
         textureStore(nextCellStateTexture, vec2i(id.xy), currentCellState);
     }
 }

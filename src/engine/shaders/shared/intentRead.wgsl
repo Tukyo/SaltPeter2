@@ -25,8 +25,8 @@ fn materialIntentClaimsTarget(sourceCoord: vec2f, targetCoord: vec2f, res: vec2f
 // Gate: current cell must have expressed a non-STAY escape intent (set during intent pass).
 // Only valid in the simulation (resolution) pass where intentTexture is readable.
 fn chooseIncomingDisplacementSource(
-    coord:            vec2f,
-    res:              vec2f,
+    coord: vec2f,
+    res: vec2f,
     gravityDirection: f32
 ) -> vec2f {
     let currentIdentityState = textureLoad(identityTexture, vec2i(coord));
@@ -59,11 +59,11 @@ fn chooseIncomingDisplacementSource(
 // When a displacer vacates its cell (moves to intentTarget), fill the vacated cell with the
 // displaced material that expressed RISE back into it — completing the density swap.
 fn resolveDisplacerVacation(
-    coord:                vec2f,
-    intentTarget:         vec2f,
+    coord: vec2f,
+    intentTarget: vec2f,
     currentIdentityState: vec4f,
-    res:                  vec2f,
-    gravityDirection:     f32
+    res: vec2f,
+    gravityDirection: f32
 ) -> ResolvedCell {
     // A heavier cell is already trying to move into us — take it (handles non-displacement fall chains).
     let incoming = chooseIncomingDisplacementSource(coord, res, gravityDirection);

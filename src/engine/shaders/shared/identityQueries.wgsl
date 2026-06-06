@@ -17,9 +17,9 @@ fn isSameMaterialCoord(coord: vec2f, res: vec2f, materialId: f32) -> bool {
 }
 
 fn hasOpenSurfaceAbove(coord: vec2f, res: vec2f, gravityDirection: f32) -> bool {
-    let up         = vec2f(0.0, gravityDirection);
-    let above      = coord + up;
-    let aboveLeft  = above + CELL_LEFT;
+    let up = vec2f(0.0, gravityDirection);
+    let above = coord + up;
+    let aboveLeft = above + CELL_LEFT;
     let aboveRight = above + CELL_RIGHT;
 
     return isAirCoord(above, res) ||

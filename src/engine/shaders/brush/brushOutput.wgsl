@@ -3,7 +3,7 @@ fn getMaterialPatternOffset(materialId: f32) -> vec2f {
 }
 
 fn sampleMaterialPatternNoise(coord: vec2f, offset: vec2f) -> f32 {
-    let cell  = floor(coord);
+    let cell = floor(coord);
     let local = fract(coord);
     let blend = local * local * (3.0 - 2.0 * local);
     let bl = hash(cell + offset);
@@ -15,10 +15,10 @@ fn sampleMaterialPatternNoise(coord: vec2f, offset: vec2f) -> f32 {
 
 fn chooseMaterialColorSeed(materialId: f32, coord: vec2f) -> f32 {
     let offset = getMaterialPatternOffset(materialId);
-    let blob   = sampleMaterialPatternNoise((coord / MATERIAL_PATTERN_BLOB_SCALE)   + offset * 0.31, offset * 1.11);
+    let blob = sampleMaterialPatternNoise((coord / MATERIAL_PATTERN_BLOB_SCALE) + offset * 0.31, offset * 1.11);
     let detail = sampleMaterialPatternNoise((coord / MATERIAL_PATTERN_DETAIL_SCALE) + offset * 0.53, offset * 2.27);
-    let grain  = hash(coord + offset * 3.19);
-    let total  = MATERIAL_PATTERN_BLOB_STRENGTH + MATERIAL_PATTERN_DETAIL_STRENGTH + MATERIAL_PATTERN_GRAIN_STRENGTH;
+    let grain = hash(coord + offset * 3.19);
+    let total = MATERIAL_PATTERN_BLOB_STRENGTH + MATERIAL_PATTERN_DETAIL_STRENGTH + MATERIAL_PATTERN_GRAIN_STRENGTH;
     return clamp(
         (blob * MATERIAL_PATTERN_BLOB_STRENGTH + detail * MATERIAL_PATTERN_DETAIL_STRENGTH + grain * MATERIAL_PATTERN_GRAIN_STRENGTH) / total,
         0.0, 0.999999

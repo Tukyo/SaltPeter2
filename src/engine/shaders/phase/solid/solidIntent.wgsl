@@ -9,17 +9,17 @@ fn getSolidCohesionAnchorCount(coord: vec2f, res: vec2f, materialId: f32) -> i32
 
 fn shouldSolidCohere(
     sourceCoord: vec2f,
-    res:         vec2f,
-    fallSeed:    f32,
-    material:    SolidSimulation
+    res: vec2f,
+    fallSeed: f32,
+    material: SolidSimulation
 ) -> bool {
     let sourceState = textureLoad(identityTexture, vec2i(sourceCoord));
-    let materialId  = getStateMaterialId(sourceState);
+    let materialId = getStateMaterialId(sourceState);
     let anchorCount = getSolidCohesionAnchorCount(sourceCoord, res, materialId);
 
     if anchorCount <= 0 { return false; }
 
-    let cohesionRoll  = hash(sourceCoord + vec2f(fallSeed * 15.37, fallSeed * 16.91));
+    let cohesionRoll = hash(sourceCoord + vec2f(fallSeed * 15.37, fallSeed * 16.91));
     let cohesionChance = clamp(
         material.cohesionChance + (f32(anchorCount) * material.cohesionNeighborBonus),
         0.0,
@@ -30,13 +30,13 @@ fn shouldSolidCohere(
 }
 
 fn isValidSolidSlideTarget(targetCoord: vec2f, res: vec2f, gravityDirection: f32) -> bool {
-    let down        = vec2f(0.0, -gravityDirection);
+    let down = vec2f(0.0, -gravityDirection);
     let belowTarget = targetCoord + down;
     return isAirCoord(targetCoord, res) && isAirCoord(belowTarget, res);
 }
 
 fn isValidSolidSurfaceSlideTarget(targetCoord: vec2f, res: vec2f, gravityDirection: f32) -> bool {
-    let down        = vec2f(0.0, -gravityDirection);
+    let down = vec2f(0.0, -gravityDirection);
     let belowTarget = targetCoord + down;
     return isAirCoord(targetCoord, res) &&
            inBounds(belowTarget, res) &&
@@ -44,30 +44,30 @@ fn isValidSolidSurfaceSlideTarget(targetCoord: vec2f, res: vec2f, gravityDirecti
 }
 
 fn chooseSolidTarget(
-    sourceCoord:      vec2f,
-    res:              vec2f,
+    sourceCoord: vec2f,
+    res: vec2f,
     gravityDirection: f32,
-    time:             f32,
-    material:         SolidSimulation
+    time: f32,
+    material: SolidSimulation
 ) -> vec2f {
     if material.fallRandomRate <= 0.0 { return sourceCoord; }
 
-    let down  = vec2f(0.0, -gravityDirection);
+    let down = vec2f(0.0, -gravityDirection);
     let below = sourceCoord + down;
 
     if isAirCoord(below, res) { return below; }
 
     if inBounds(below, res) {
-        let belowState   = textureLoad(identityTexture, vec2i(below));
-        let myState      = textureLoad(identityTexture, vec2i(sourceCoord));
+        let belowState = textureLoad(identityTexture, vec2i(below));
+        let myState = textureLoad(identityTexture, vec2i(sourceCoord));
         if isOccupiedState(belowState) && canDisplace(myState, belowState) {
             let belowPhaseId = getMaterialPhaseId(getStateMaterialId(belowState));
-            let allowRise    = isMaterialPhaseId(belowPhaseId, MATERIAL_PHASE_LIQUID);
+            let allowRise = isMaterialPhaseId(belowPhaseId, MATERIAL_PHASE_LIQUID);
             if hasDisplacementEscapeRoute(below, res, gravityDirection, allowRise) {
                 var canSink = true;
                 if allowRise {
                     let liquidSim = getLiquidSimulation(getStateMaterialId(belowState));
-                    let roll      = displacementHash(sourceCoord, time);
+                    let roll = displacementHash(sourceCoord, time);
                     canSink = roll >= liquidSim.thickness;
                 }
                 if canSink { return below; }
@@ -82,13 +82,13 @@ fn chooseSolidTarget(
     let slideRoll = hash(sourceCoord + vec2f(fallSeed * 11.47, fallSeed * 12.79));
 
     if slideRoll < material.lateralSpreadChance {
-        let left           = sourceCoord + CELL_LEFT;
-        let right          = sourceCoord + CELL_RIGHT;
-        let sideRoll       = hash(sourceCoord + vec2f(fallSeed * 13.17, fallSeed * 14.53));
-        let vx             = textureLoad(physicsTexture, vec2i(sourceCoord)).b;
+        let left = sourceCoord + CELL_LEFT;
+        let right = sourceCoord + CELL_RIGHT;
+        let sideRoll = hash(sourceCoord + vec2f(fallSeed * 13.17, fallSeed * 14.53));
+        let vx = textureLoad(physicsTexture, vec2i(sourceCoord)).b;
         let biasedSideRoll = clamp(sideRoll - vx / MAX_VELOCITY * 0.5, 0.0, 1.0);
-        let leftValid      = isValidSolidSlideTarget(left,  res, gravityDirection);
-        let rightValid     = isValidSolidSlideTarget(right, res, gravityDirection);
+        let leftValid = isValidSolidSlideTarget(left, res, gravityDirection);
+        let rightValid = isValidSolidSlideTarget(right, res, gravityDirection);
         let slideTarget = chooseRandomValidTarget(left, right, biasedSideRoll, leftValid, rightValid);
 
         if isValidCoord(slideTarget) { return slideTarget; }
@@ -97,16 +97,16 @@ fn chooseSolidTarget(
     let pressure = textureLoad(physicsTexture, vec2i(sourceCoord)).g;
 
     if pressure > uniforms.solidPressureSpreadThreshold {
-        let spreadRoll   = displacementHash(sourceCoord, time);
+        let spreadRoll = displacementHash(sourceCoord, time);
         let spreadChance = clamp(
             pressure * uniforms.solidPressureSpreadScale,
             0.0,
             uniforms.solidPressureSpreadMaxChance
         );
         if spreadRoll < spreadChance {
-            let sideRoll       = timeHash(sourceCoord, time);
-            let pressureLeft   = isValidSolidSurfaceSlideTarget(sourceCoord + CELL_LEFT,  res, gravityDirection);
-            let pressureRight  = isValidSolidSurfaceSlideTarget(sourceCoord + CELL_RIGHT, res, gravityDirection);
+            let sideRoll = timeHash(sourceCoord, time);
+            let pressureLeft = isValidSolidSurfaceSlideTarget(sourceCoord + CELL_LEFT, res, gravityDirection);
+            let pressureRight = isValidSolidSurfaceSlideTarget(sourceCoord + CELL_RIGHT, res, gravityDirection);
             let pressureTarget = chooseRandomValidTarget(
                 sourceCoord + CELL_LEFT,
                 sourceCoord + CELL_RIGHT,
@@ -122,11 +122,11 @@ fn chooseSolidTarget(
 }
 
 fn chooseSolidTargetForState(
-    sourceCoord:      vec2f,
-    res:              vec2f,
+    sourceCoord: vec2f,
+    res: vec2f,
     gravityDirection: f32,
-    time:             f32,
-    sourceState:      vec4f
+    time: f32,
+    sourceState: vec4f
 ) -> vec2f {
     return chooseSolidTarget(
         sourceCoord,
@@ -138,11 +138,11 @@ fn chooseSolidTargetForState(
 }
 
 fn chooseSolidIntentForState(
-    coord:            vec2f,
-    res:              vec2f,
+    coord: vec2f,
+    res: vec2f,
     gravityDirection: f32,
-    time:             f32,
-    currentState:     vec4f
+    time: f32,
+    currentState: vec4f
 ) -> f32 {
     let targetCoord = chooseSolidTargetForState(coord, res, gravityDirection, time, currentState);
     return getMaterialIntentCodeForTarget(coord, targetCoord, gravityDirection);

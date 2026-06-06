@@ -3,38 +3,38 @@
 // Reads currentPhysics, writes nextPhysics.
 // Temperature propagation and pressure propagation logic assembles before this file.
 
-@group(0) @binding(0) var identityTexture:      texture_storage_2d<rgba8unorm,   read>;
-@group(0) @binding(1) var physicsTexture:       texture_storage_2d<rgba32float,  read>;
-@group(0) @binding(2) var nextPhysicsTexture:   texture_storage_2d<rgba32float,  write>;
+@group(0) @binding(0) var identityTexture: texture_storage_2d<rgba8unorm,   read>;
+@group(0) @binding(1) var physicsTexture: texture_storage_2d<rgba32float,  read>;
+@group(0) @binding(2) var nextPhysicsTexture: texture_storage_2d<rgba32float,  write>;
 @group(0) @binding(3) var<storage, read> physicsMaterials: array<MaterialPhysicsEntry>;
 @group(0) @binding(4) var<uniform> physicsUniforms: PhysicsUniforms;
-@group(0) @binding(5) var crossIdentityTexture:  texture_storage_2d<rgba8unorm,  read>;
-@group(0) @binding(6) var crossPhysicsTexture:   texture_storage_2d<rgba32float, read>;
-@group(0) @binding(7) var goOwnershipTexture:    texture_storage_2d<r32uint,     read>;
+@group(0) @binding(5) var crossIdentityTexture: texture_storage_2d<rgba8unorm,  read>;
+@group(0) @binding(6) var crossPhysicsTexture: texture_storage_2d<rgba32float, read>;
+@group(0) @binding(7) var goOwnershipTexture: texture_storage_2d<r32uint,     read>;
 @group(0) @binding(8) var<storage, read> goStateBuffer: array<f32>;
 
 @compute @workgroup_size(WG_SIZE, WG_SIZE)
 fn main(@builtin(global_invocation_id) id: vec3u) {
-    let res   = vec2f(textureDimensions(identityTexture));
+    let res = vec2f(textureDimensions(identityTexture));
     let coord = vec2f(f32(id.x), f32(id.y));
 
     if !inBounds(coord, res) { return; }
 
-    let existing    = textureLoad(physicsTexture, vec2i(id.xy));
+    let existing = textureLoad(physicsTexture, vec2i(id.xy));
     let temperature = propagateTemperature(coord, res);
-    let pressure    = computePressure(coord, res, getGravityDirection(physicsUniforms.gravity));
+    let pressure = computePressure(coord, res, getGravityDirection(physicsUniforms.gravity));
 
     let identityState = textureLoad(identityTexture, vec2i(id.xy));
-    let occupied      = isOccupiedState(identityState);
-    let isStatic      = isStaticCell(identityState);
-    let belowCoord    = vec2i(i32(id.x), i32(id.y) - 1);
-    let belowIsAir    = inBounds(vec2f(belowCoord), res) && !isOccupiedState(textureLoad(identityTexture, belowCoord));
-    let phaseId       = getMaterialPhaseId(getStateMaterialId(identityState));
+    let occupied = isOccupiedState(identityState);
+    let isStatic = isStaticCell(identityState);
+    let belowCoord = vec2i(i32(id.x), i32(id.y) - 1);
+    let belowIsAir = inBounds(vec2f(belowCoord), res) && !isOccupiedState(textureLoad(identityTexture, belowCoord));
+    let phaseId = getMaterialPhaseId(getStateMaterialId(identityState));
     let isGravityAffected = occupied && !isStatic &&
         !isMaterialPhaseId(phaseId, MATERIAL_PHASE_GAS) &&
         !isMaterialPhaseId(phaseId, MATERIAL_PHASE_FIRE);
-    let propVel  = propagateVelocity(coord, res);
-    var accel   = 0.0;
+    let propVel = propagateVelocity(coord, res);
+    var accel = 0.0;
     var damping = 1.0;
     switch i32(phaseId) {
         case 0: { accel = VELOCITY_ACCELERATION_SOLID;  damping = VELOCITY_DAMPING_SOLID; }

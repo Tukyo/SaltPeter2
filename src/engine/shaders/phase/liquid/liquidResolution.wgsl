@@ -6,32 +6,32 @@ fn isPowderAtCoord(coord: vec2f, res: vec2f) -> bool {
 
 fn hasPowderClaimingTarget(targetCoord: vec2f, res: vec2f, gravityDirection: f32) -> bool {
     let up = vec2f(0.0, gravityDirection);
-    let above      = targetCoord + up;
-    let aboveLeft  = targetCoord + up + CELL_LEFT;
+    let above = targetCoord + up;
+    let aboveLeft = targetCoord + up + CELL_LEFT;
     let aboveRight = targetCoord + up + CELL_RIGHT;
-    let left       = targetCoord + CELL_LEFT;
-    let right      = targetCoord + CELL_RIGHT;
-    if materialIntentClaimsTarget(above,      targetCoord, res, gravityDirection) && isPowderAtCoord(above,      res) { return true; }
-    if materialIntentClaimsTarget(aboveLeft,  targetCoord, res, gravityDirection) && isPowderAtCoord(aboveLeft,  res) { return true; }
+    let left = targetCoord + CELL_LEFT;
+    let right = targetCoord + CELL_RIGHT;
+    if materialIntentClaimsTarget(above, targetCoord, res, gravityDirection) && isPowderAtCoord(above, res) { return true; }
+    if materialIntentClaimsTarget(aboveLeft, targetCoord, res, gravityDirection) && isPowderAtCoord(aboveLeft, res) { return true; }
     if materialIntentClaimsTarget(aboveRight, targetCoord, res, gravityDirection) && isPowderAtCoord(aboveRight, res) { return true; }
-    if materialIntentClaimsTarget(left,       targetCoord, res, gravityDirection) && isPowderAtCoord(left,       res) { return true; }
-    if materialIntentClaimsTarget(right,      targetCoord, res, gravityDirection) && isPowderAtCoord(right,      res) { return true; }
+    if materialIntentClaimsTarget(left, targetCoord, res, gravityDirection) && isPowderAtCoord(left, res) { return true; }
+    if materialIntentClaimsTarget(right, targetCoord, res, gravityDirection) && isPowderAtCoord(right, res) { return true; }
     return false;
 }
 
 fn chooseIncomingLiquidSourceFromIntent(
-    targetCoord:      vec2f,
-    res:              vec2f,
+    targetCoord: vec2f,
+    res: vec2f,
     gravityDirection: f32,
-    time:             f32
+    time: f32
 ) -> vec2f {
     let up = vec2f(0.0, gravityDirection);
 
-    let sourceAbove      = targetCoord + up;
-    let sourceAboveLeft  = targetCoord + up + CELL_LEFT;
+    let sourceAbove = targetCoord + up;
+    let sourceAboveLeft = targetCoord + up + CELL_LEFT;
     let sourceAboveRight = targetCoord + up + CELL_RIGHT;
-    let sourceLeft       = targetCoord + CELL_LEFT;
-    let sourceRight      = targetCoord + CELL_RIGHT;
+    let sourceLeft = targetCoord + CELL_LEFT;
+    let sourceRight = targetCoord + CELL_RIGHT;
 
     // Liquid falling straight down
     if materialIntentClaimsTarget(sourceAbove, targetCoord, res, gravityDirection) &&
@@ -40,33 +40,33 @@ fn chooseIncomingLiquidSourceFromIntent(
     }
 
     // Liquid falling diagonally
-    let diagLeftClaims  = materialIntentClaimsTarget(sourceAboveLeft,  targetCoord, res, gravityDirection) &&
-                          isLiquidPhaseCoord(sourceAboveLeft,  res);
+    let diagLeftClaims = materialIntentClaimsTarget(sourceAboveLeft, targetCoord, res, gravityDirection) &&
+                          isLiquidPhaseCoord(sourceAboveLeft, res);
     let diagRightClaims = materialIntentClaimsTarget(sourceAboveRight, targetCoord, res, gravityDirection) &&
                           isLiquidPhaseCoord(sourceAboveRight, res);
 
     if diagLeftClaims && diagRightClaims {
-        let sim    = getLiquidSimulationAtCoord(sourceAboveLeft, res);
-        let seed   = getMaterialStepSeed(time, sim.flowRandomRate);
-        let roll   = hash(targetCoord + vec2f(seed, seed * RANDOM_DECORRELATION));
+        let sim = getLiquidSimulationAtCoord(sourceAboveLeft, res);
+        let seed = getMaterialStepSeed(time, sim.flowRandomRate);
+        let roll = hash(targetCoord + vec2f(seed, seed * RANDOM_DECORRELATION));
         return chooseWinningClaimant(sourceAboveLeft, sourceAboveRight, roll);
     }
-    if diagLeftClaims  { return sourceAboveLeft; }
+    if diagLeftClaims { return sourceAboveLeft; }
     if diagRightClaims { return sourceAboveRight; }
 
     // Liquid spreading laterally
-    let lateralLeftClaims  = materialIntentClaimsTarget(sourceLeft,  targetCoord, res, gravityDirection) &&
-                             isLiquidPhaseCoord(sourceLeft,  res);
+    let lateralLeftClaims = materialIntentClaimsTarget(sourceLeft, targetCoord, res, gravityDirection) &&
+                             isLiquidPhaseCoord(sourceLeft, res);
     let lateralRightClaims = materialIntentClaimsTarget(sourceRight, targetCoord, res, gravityDirection) &&
                              isLiquidPhaseCoord(sourceRight, res);
 
     if lateralLeftClaims && lateralRightClaims {
-        let sim  = getLiquidSimulationAtCoord(sourceLeft, res);
+        let sim = getLiquidSimulationAtCoord(sourceLeft, res);
         let seed = getMaterialStepSeed(time, sim.flowRandomRate);
         let roll = hash(targetCoord + vec2f(seed * 2.0, seed * RANDOM_DECORRELATION));
         return chooseWinningClaimant(sourceLeft, sourceRight, roll);
     }
-    if lateralLeftClaims  { return sourceLeft; }
+    if lateralLeftClaims { return sourceLeft; }
     if lateralRightClaims { return sourceRight; }
 
     // Liquid rising (displacement escape — liquid pushed upward into this empty cell)
@@ -80,11 +80,11 @@ fn chooseIncomingLiquidSourceFromIntent(
 }
 
 fn resolveLiquidCell(
-    coord:                vec2f,
-    res:                  vec2f,
+    coord: vec2f,
+    res: vec2f,
     currentIdentityState: vec4f,
-    gravityDirection:     f32,
-    time:                 f32
+    gravityDirection: f32,
+    time: f32
 ) -> ResolvedCell {
     if gravityDirection == 0.0 { return ResolvedCell(currentIdentityState, coord); }
 

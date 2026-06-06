@@ -1,19 +1,19 @@
 @group(0) @binding(0) var<storage, read_write> gameObjectStates: array<GameObjectState>;
-@group(0) @binding(1) var<uniform>             uniforms: GameObjectPhysicsUniforms;
+@group(0) @binding(1) var<uniform> uniforms: GameObjectPhysicsUniforms;
 
 @compute @workgroup_size(WG_SIZE, 1, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let gameObjectIdx = id.x;
-    if (gameObjectIdx >= uniforms.gameObjectCount) { return; }
+    if gameObjectIdx >= uniforms.gameObjectCount { return; }
 
     var state = gameObjectStates[gameObjectIdx];
-    if (state.isActive == 0u || state.bodyType != GAMEOBJECT_BODY_DYNAMIC) { return; }
-    if (state.isSleeping == 1u) { return; }
+    if state.isActive == 0u || state.bodyType != GAMEOBJECT_BODY_DYNAMIC { return; }
+    if state.isSleeping == 1u { return; }
 
     // Save current position and angle before integration so stamp can carry state
     // forward from the previous cell locations in the texture
-    state.prevPosX  = state.posX;
-    state.prevPosY  = state.posY;
+    state.prevPosX = state.posX;
+    state.prevPosY = state.posY;
     state.prevTheta = state.theta;
 
     // Gravity reduces upward velocity (sim Y-up: positive Y is up)
@@ -32,8 +32,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // pixel layer as the sim, which is strictly 1-cell-per-step. Allowing faster movement means
     // the collision pass cannot sample the skipped cells, causing tunneling.
     let maxVelocity = uniforms.maxSpeed / max(0.001, uniforms.simStepDuration);
-    let speed       = length(vec2<f32>(state.velX, state.velY));
-    if (speed > maxVelocity) {
+    let speed = length(vec2<f32>(state.velX, state.velY));
+    if speed > maxVelocity {
         let scale = maxVelocity / speed;
         state.velX *= scale;
         state.velY *= scale;
@@ -43,8 +43,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     state.omega = clamp(state.omega, -uniforms.maxAngularSpeed, uniforms.maxAngularSpeed);
 
     // Integrate position and angle
-    state.posX  += state.velX  * uniforms.simStepDuration;
-    state.posY  += state.velY  * uniforms.simStepDuration;
+    state.posX += state.velX * uniforms.simStepDuration;
+    state.posY += state.velY * uniforms.simStepDuration;
     state.theta += state.omega * uniforms.simStepDuration;
 
     gameObjectStates[gameObjectIdx] = state;
