@@ -33,16 +33,24 @@ export class ExportGameObject extends Export {
 
     /** Reads the simulation texture within the selection rect and serialises the cell data into the PixelData component before writing to disk. @internal */
     public async Run(): Promise<void> {
-        const norm = this.selectionProvider?.() ?? null;
-        const anchor = this.anchorProvider?.() ?? null;
         const go = this.gameObjectProvider?.() ?? null;
         const sim = SimulationManager.Instance;
-        if (!norm || !anchor || !go || !sim) { return; }
+        if (!go || !sim) { return; }
 
         const { simulationLayer, texturePixelReader } = sim;
         if (!simulationLayer || !texturePixelReader) { return; }
 
         const gridSize = simulationLayer.width;
+        const pixelData = go.GetComponent(PixelData);
+
+        if (!pixelData) {
+            await this.WriteFile(go, 'gameobject', { size: { width: gridSize, height: gridSize } });
+            return;
+        }
+
+        const norm = this.selectionProvider?.() ?? null;
+        const anchor = this.anchorProvider?.() ?? null;
+        if (!norm || !anchor) { return; }
 
         const { x1, y1, x2, y2 } = norm;
         const width = x2 - x1 + 1;
@@ -55,21 +63,18 @@ export class ExportGameObject extends Export {
             fullWidth: gridSize,
         });
 
-        const pixelData = go.GetComponent(PixelData);
-        if (pixelData) {
-            pixelData.size = { width, height };
-            pixelData.pivot = { x: anchor.x - x1, y: anchor.y - y1 };
-            pixelData.cells = [];
+        pixelData.size = { width, height };
+        pixelData.pivot = { x: anchor.x - x1, y: anchor.y - y1 };
+        pixelData.cells = [];
 
-            for (let cy = y1; cy <= y2; cy++) {
-                for (let cx = x1; cx <= x2; cx++) {
-                    const byteOffset = (y2 - cy) * bytesPerRow + cx * 4;
-                    const materialId = data[byteOffset] as MaterialId;
-                    const colorVariant = MaterialQuery.DecodeColorIndex(data[byteOffset + 1]);
-                    const variantId = data[byteOffset + 2];
-                    const occupancy = data[byteOffset + 3];
-                    pixelData.cells.push({ pos: { x: cx - x1, y: cy - y1 }, materialId, colorVariant, variantId, occupancy });
-                }
+        for (let cy = y1; cy <= y2; cy++) {
+            for (let cx = x1; cx <= x2; cx++) {
+                const byteOffset = (y2 - cy) * bytesPerRow + cx * 4;
+                const materialId = data[byteOffset] as MaterialId;
+                const colorVariant = MaterialQuery.DecodeColorIndex(data[byteOffset + 1]);
+                const variantId = data[byteOffset + 2];
+                const occupancy = data[byteOffset + 3];
+                pixelData.cells.push({ pos: { x: cx - x1, y: cy - y1 }, materialId, colorVariant, variantId, occupancy });
             }
         }
 

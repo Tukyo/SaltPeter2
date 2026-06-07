@@ -10,7 +10,7 @@ import { ParticleConfig } from '../config/ParticleConfig';
  * Layout is read and written by the particle emission and simulation compute passes.
  */
 export class ParticleBuffer implements SimulationResource {
-    public static readonly FloatsPerParticle = 8;
+    public static readonly FloatsPerParticle = 14;
 
     public readonly buffer: GPUBuffer;
 

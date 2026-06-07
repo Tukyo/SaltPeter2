@@ -12,7 +12,7 @@ export const Smoke: ParticleDefinition = {
             loop: true,
             start: {
                 lifetime: { min: 3, max: 60 },
-                speed: { min: 0.1, max: 5 },
+                speed: { min: 0.5, max: 4 },
             }
         },
         visual: { material: MaterialIds.smoke },
@@ -31,17 +31,30 @@ export const Smoke: ParticleDefinition = {
                 y: { start: 1.5, end: 0.5 },
             },
         },
+        inheritVelocity: {
+            mode: 'Initial',
+            multiplier: 1000,
+        },
         noise: {
             type: NoiseType.Perlin,
             octaves: 3,
             persistence: 0.5,
             scale: 0.15,
-            amplitude: 6.0,
-            scrollSpeed: { x: 0.05, y: -0.03 }
+            amplitude: { first: 6.0, second: 10.0 },
+            scrollSpeed: {
+                first: { x: 0.05, y: -0.03 },
+                second: { x: -0.02, y: -0.06 },
+            },
         },
         colorOverLifetime: {
-            start: { r: 255, g: 255, b: 255, a: 0.9 },
-            end: { r: 255, g: 255, b: 255, a: 0.0 },
+            start: {
+                first: { r: 255, g: 255, b: 255, a: 0.9 },
+                second: { r: 160, g: 160, b: 160, a: 0.7 },
+            },
+            end: {
+                first: { r: 255, g: 255, b: 255, a: 0.0 },
+                second: { r: 80, g: 80, b: 80, a: 0.1 },
+            },
         },
         collision: {
             bounce: 0.1,

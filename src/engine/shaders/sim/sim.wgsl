@@ -51,6 +51,8 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
             case 0: { accel = VELOCITY_ACCELERATION_SOLID; }
             case 1: { accel = VELOCITY_ACCELERATION_POWDER; }
             case 2: { accel = VELOCITY_ACCELERATION_LIQUID; }
+            case 3: { accel = VELOCITY_ACCELERATION_GAS; }
+            case 4: { accel = VELOCITY_ACCELERATION_FIRE; }
             default: {}
         }
         finalVx = clamp(sourcePhysics.b + moveDir.x * accel, -MAX_VELOCITY, MAX_VELOCITY);

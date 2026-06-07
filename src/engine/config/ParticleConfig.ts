@@ -4,6 +4,7 @@ export class ParticleConfig {
         performance: {
             maxParticles: 65536,
             maxParticlesPerMaterial: 4,
+            maxGameObjectEmitters: 256,
         }
     };
 

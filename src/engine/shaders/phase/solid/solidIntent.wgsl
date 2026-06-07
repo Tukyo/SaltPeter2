@@ -105,8 +105,8 @@ fn chooseSolidTarget(
         );
         if spreadRoll < spreadChance {
             let sideRoll = timeHash(sourceCoord, time);
-            let pressureLeft = isValidSolidSurfaceSlideTarget(sourceCoord + CELL_LEFT, res, gravityDirection);
-            let pressureRight = isValidSolidSurfaceSlideTarget(sourceCoord + CELL_RIGHT, res, gravityDirection);
+            let pressureLeft = isAirCoord(sourceCoord + CELL_LEFT, res);
+            let pressureRight = isAirCoord(sourceCoord + CELL_RIGHT, res);
             let pressureTarget = chooseRandomValidTarget(
                 sourceCoord + CELL_LEFT,
                 sourceCoord + CELL_RIGHT,

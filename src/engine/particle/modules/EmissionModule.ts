@@ -1,4 +1,6 @@
-export interface ParticleEmissionModule {
+import type { ParticleModule } from "../ParticleModel";
+
+export interface ParticleEmissionModule extends ParticleModule {
     bursts?: {
         count: number; // How many particles per burst
         time: number; // When in the cycle the burst fires

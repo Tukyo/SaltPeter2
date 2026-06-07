@@ -142,8 +142,8 @@ fn choosePowderTarget(
         );
         if spreadRoll < spreadChance {
             let pressureSide = hash(sourceCoord + vec2f(pressureSeed * 19.73, pressureSeed * 21.11));
-            let pressureLeft = isValidPowderSurfaceSlideTarget(sourceCoord + CELL_LEFT, res, gravityDirection);
-            let pressureRight = isValidPowderSurfaceSlideTarget(sourceCoord + CELL_RIGHT, res, gravityDirection);
+            let pressureLeft = isAirCoord(sourceCoord + CELL_LEFT, res);
+            let pressureRight = isAirCoord(sourceCoord + CELL_RIGHT, res);
             let pressureTarget = chooseRandomValidTarget(
                 sourceCoord + CELL_LEFT,
                 sourceCoord + CELL_RIGHT,

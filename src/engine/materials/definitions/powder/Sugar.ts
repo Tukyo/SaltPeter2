@@ -36,5 +36,11 @@ export const Sugar: MaterialDefinition = {
             restingStrength: 0.5
         }
     },
-    tags: ['corrodes']
+    transitions: {
+        melts: {
+            to: 'caramel',
+            condition: { temperature: 0.725 }
+        }
+    },
+    tags: ['burns', 'corrodes']
 };

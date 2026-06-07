@@ -73,8 +73,12 @@ export { default as particleRenderWgsl } from './visual/particleRender.wgsl?raw'
 export { default as simRenderWgsl } from './visual/simRender.wgsl?raw';
 
 // Particle
-export { default as particleEmissionWgsl } from './particle/particleEmission.wgsl?raw';
+export { default as particleGameObjectEmitterWgsl } from './particle/particleGameObjectEmitter.wgsl?raw';
+export { default as particleMaterialEmitterWgsl } from './particle/particleMaterialEmitter.wgsl?raw';
+export { default as particleSharedWgsl } from './particle/particleShared.wgsl?raw';
 export { default as particleSimulationWgsl } from './particle/particleSimulation.wgsl?raw';
+export { default as particleSpawnWgsl } from './particle/particleSpawn.wgsl?raw';
+export { default as particleSubEmitterWgsl } from './particle/particleSubEmitter.wgsl?raw';
 
 // Game object
 export { default as gameObjectEraseWgsl } from './game_object/gameObjectErase.wgsl?raw';

@@ -19,7 +19,7 @@ The shader pipeline has two layers: **generated fragments** and **raw WGSL sourc
 | `diffusion/` | [`diffusion`](diffusion/diffusion.wgsl) |
 | `game_object/` | [`gameObjectCollision`](game_object/gameObjectCollision.wgsl), [`gameObjectErase`](game_object/gameObjectErase.wgsl), [`gameObjectPhysics`](game_object/gameObjectPhysics.wgsl), [`gameObjectStamp`](game_object/gameObjectStamp.wgsl) |
 | `instantiation/` | [`instantiateCell`](instantiation/instantiateCell.wgsl) |
-| `particle/` | [`particleEmission`](particle/particleEmission.wgsl), [`particleSimulation`](particle/particleSimulation.wgsl) |
+| `particle/` | [`particleGameObjectEmitter`](particle/particleGameObjectEmitter.wgsl), [`particleMaterialEmitter`](particle/particleMaterialEmitter.wgsl), [`particleShared`](particle/particleShared.wgsl), [`particleSimulation`](particle/particleSimulation.wgsl), [`particleSpawn`](particle/particleSpawn.wgsl), [`particleSubEmitter`](particle/particleSubEmitter.wgsl) |
 | `phase/` | [`phase`](phase/phase.wgsl), [`phaseIntent`](phase/phaseIntent.wgsl), [`phaseResolution`](phase/phaseResolution.wgsl) |
 | `phase/fire/` | [`fireIntent`](phase/fire/fireIntent.wgsl), [`fireResolution`](phase/fire/fireResolution.wgsl), [`fireSimulation`](phase/fire/fireSimulation.wgsl) |
 | `phase/gas/` | [`gasIntent`](phase/gas/gasIntent.wgsl), [`gasResolution`](phase/gas/gasResolution.wgsl), [`gasSimulation`](phase/gas/gasSimulation.wgsl) |
@@ -29,7 +29,6 @@ The shader pipeline has two layers: **generated fragments** and **raw WGSL sourc
 | `physics/` | [`physics`](physics/physics.wgsl), [`pressurePropagation`](physics/pressurePropagation.wgsl), [`temperaturePropagation`](physics/temperaturePropagation.wgsl), [`transitions`](physics/transitions.wgsl), [`velocityPropagation`](physics/velocityPropagation.wgsl) |
 | `shared/` | [`common`](shared/common.wgsl), [`displacement`](shared/displacement.wgsl), [`identity`](shared/identity.wgsl), [`identityQueries`](shared/identityQueries.wgsl), [`intent`](shared/intent.wgsl), [`intentRead`](shared/intentRead.wgsl) |
 | `sim/` | [`intent`](sim/intent.wgsl), [`reactions`](sim/reactions.wgsl), [`sim`](sim/sim.wgsl) |
-| `state/` | [`state`](state/state.wgsl) |
 | `visual/` | [`composite`](visual/composite.wgsl), [`display`](visual/display.wgsl), [`gameObjectRender`](visual/gameObjectRender.wgsl), [`particleRender`](visual/particleRender.wgsl), [`simRender`](visual/simRender.wgsl) |
 
 <!-- SHADERS_END -->

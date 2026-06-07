@@ -15,10 +15,7 @@ Shared interfaces and types.
 | Interfaces & Types |
 |--------------------|
 ```ts
-interface Vec2 {
-    x: number;
-    y: number;
-}
+interface Vec2 { x: number; y: number; }
 ```
 
 ```ts
@@ -31,10 +28,7 @@ interface Color {
 ```
 
 ```ts
-interface Size2D {
-    width: number;
-    height: number;
-}
+interface Size2D { width: number; height: number; }
 ```
 
 ```ts
@@ -47,10 +41,11 @@ interface Rect2D {
 ```
 
 ```ts
-interface NumberRange {
-    min: number;
-    max: number;
-}
+interface NumberRange { min: number; max: number; }
+```
+
+```ts
+interface RandomBetweenTwo<T> { first: T; second: T; }
 ```
 
 ---

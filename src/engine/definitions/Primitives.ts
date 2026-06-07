@@ -1,8 +1,5 @@
 /** Represents two vectors. */
-export interface Vec2 {
-    x: number;
-    y: number;
-}
+export interface Vec2 { x: number; y: number; }
 
 /** Represents a color. */
 export interface Color {
@@ -13,10 +10,7 @@ export interface Color {
 }
 
 /** Represents a 2D size. */
-export interface Size2D {
-    width: number;
-    height: number;
-}
+export interface Size2D { width: number; height: number; }
 
 /** Represents a 2D rectangle. */
 export interface Rect2D {
@@ -27,7 +21,7 @@ export interface Rect2D {
 }
 
 /** Represents a range from min to max. */
-export interface NumberRange {
-    min: number;
-    max: number;
-}
+export interface NumberRange { min: number; max: number; }
+
+/** Represents two values of the same type. */
+export interface RandomBetweenTwo<T> { first: T; second: T; }

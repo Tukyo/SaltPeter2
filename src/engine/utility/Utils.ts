@@ -1,4 +1,4 @@
-import type { Size2D } from '../definitions/Primitives'
+import type { RandomBetweenTwo, Size2D } from '../definitions/Primitives'
 
 /** General-purpose math and formatting utilities. */
 export class Utils {
@@ -41,4 +41,13 @@ export class Utils {
     public static Normalize(value: number): number { return Math.max(0, Math.min(1, value)); }
     /** Returns a random 32-bit unsigned integer seed. */
     public static Seed(): number { return Math.floor(Math.random() * 0xFFFFFFFF) }
+
+    /** Handles processing for anything defined as a {@link RandomBetweenTwo} type. */
+    public static RandomBetweenTwo<T>(value: T | RandomBetweenTwo<T>): [T, T] {
+        if (typeof value === 'object' && value !== null && 'first' in (value as object)) {
+            const range = value as RandomBetweenTwo<T>;
+            return [range.first, range.second];
+        }
+        return [value as T, value as T];
+    }
 }

@@ -54,29 +54,29 @@ The optional `neighborMask` restricts which of the 8 surrounding cells are check
 | Bronze | Bronze Powder | Brass Molten | Steam |  |
 | Clay | Coffee Grounds | Brine |  |  |
 | Coal | Concrete Powder | Bronze Molten |  |  |
-| Concrete | Copper Powder | Cement |  |  |
-| Copper | Dirt | Coffee |  |  |
-| Diamond | Gold Powder | Copper Molten |  |  |
-| Feces | Grass | Diarrhea |  |  |
-| Gold | Gravel | Gold Molten |  |  |
-| Ice | Gunpowder | Honey |  |  |
-| Iron | Iron Powder | Iron Molten |  |  |
-| Lead | Milk Powder | Latte |  |  |
-| Meat | Moss | Lava |  |  |
-| Meat Burned | Salt | Lead Molten |  |  |
-| Meat Cooked | Sand | Milk |  |  |
-| Meat Rotten | Sawdust | Oil |  |  |
-| Milk Frozen | Silver Powder | Peat |  |  |
-| Mud | Snow | Plastic Molten |  |  |
-| Obsidian | Soil | Poison |  |  |
-| Permafrost | Sugar | Saltwater |  |  |
-| Plastic | Tin Powder | Silver Molten |  |  |
-| Poison Frozen |  | Steel Molten |  |  |
-| Red |  | Tin Molten |  |  |
-| Rust |  | Urine |  |  |
-| Sandstone |  | Vomit |  |  |
-| Silver |  | Water |  |  |
-| Steel |  |  |  |  |
+| Concrete | Copper Powder | Caramel |  |  |
+| Copper | Dirt | Cement |  |  |
+| Diamond | Gold Powder | Coffee |  |  |
+| Feces | Grass | Copper Molten |  |  |
+| Gold | Gravel | Diarrhea |  |  |
+| Ice | Gunpowder | Gold Molten |  |  |
+| Iron | Iron Powder | Honey |  |  |
+| Lead | Milk Powder | Iron Molten |  |  |
+| Meat | Moss | Latte |  |  |
+| Meat Burned | Salt | Lava |  |  |
+| Meat Cooked | Sand | Lead Molten |  |  |
+| Meat Rotten | Sawdust | Milk |  |  |
+| Milk Frozen | Silver Powder | Oil |  |  |
+| Mud | Snow | Peat |  |  |
+| Obsidian | Soil | Plastic Molten |  |  |
+| Permafrost | Sugar | Poison |  |  |
+| Plastic | Tin Powder | Saltwater |  |  |
+| Poison Frozen |  | Silver Molten |  |  |
+| Red |  | Steel Molten |  |  |
+| Rust |  | Tin Molten |  |  |
+| Sandstone |  | Urine |  |  |
+| Silver |  | Vomit |  |  |
+| Steel |  | Water |  |  |
 | Stone |  |  |  |  |
 | Terracotta |  |  |  |  |
 | Tin |  |  |  |  |

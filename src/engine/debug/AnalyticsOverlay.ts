@@ -39,10 +39,16 @@ export class AnalyticsOverlay extends NitrateProcess {
         const sim = SimulationManager.Instance;
         const device = Renderer.Instance?.GetWebGPU()?.device;
         const simulationLayer = sim?.simulationLayer;
-        if (!sim || !device || !simulationLayer || sim.state.GetLastTickSimulationSteps() <= 0) { return; }
+        const gameObjectLayer = sim?.gameObjectLayer;
+        if (!sim || !device || !simulationLayer || !gameObjectLayer || sim.state.GetLastTickSimulationSteps() <= 0) { return; }
 
         const enc = device.createCommandEncoder();
-        Analytics.Run(enc, simulationLayer.currentIdentity, { width: simulationLayer.width, height: simulationLayer.height });
+        Analytics.Run(
+            enc,
+            simulationLayer.currentIdentity,
+            gameObjectLayer.currentIdentity,
+            { width: simulationLayer.width, height: simulationLayer.height }
+        );
         device.queue.submit([enc.finish()]);
         this.PollRead();
     }

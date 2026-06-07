@@ -86,6 +86,17 @@ export abstract class Import extends NitrateProcess {
     /** Applies serialized component data to the given game object, adding unknown components from the registry and patching their fields. */
     protected static HydrateGameObject(go: GameObject, data: SerializedGameObject): void {
         go.name = data.name;
+
+        const fileTypes = new Set(
+            data.components.map(c => c['type']).filter((t): t is string => typeof t === 'string')
+        );
+        for (const component of [...go.components]) {
+            if (!fileTypes.has(component.type)) {
+                const ComponentClass = ComponentRegistry.GetByType(component.type);
+                if (ComponentClass) { go.RemoveComponent(ComponentClass as new () => AnyComponent); }
+            }
+        }
+
         for (const raw of data.components) {
             const typeName = raw['type'];
             if (typeof typeName !== 'string') { continue; }

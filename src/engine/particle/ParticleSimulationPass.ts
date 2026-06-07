@@ -72,6 +72,7 @@ export class ParticleSimulationPass implements SimulationResource {
                 { binding: 1, resource: { buffer: this.particleDefinitionBuffer.buffer } },
                 { binding: 2, resource: { buffer: this.uniforms } },
                 { binding: 3, resource: this.simulationLayer.currentIdentity.createView() },
+                { binding: 4, resource: this.simulationLayer.currentPhysics.createView() },
             ],
         });
 

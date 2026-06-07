@@ -3,7 +3,7 @@
 // Color is sourced from visualMaterialId (material color table) or raw RGBA from the definition,
 // then multiplied by the ColorOverLifetime gradient if that module is enabled.
 
-@group(0) @binding(0) var<storage, read> particles: array<f32>;
+@group(0) @binding(0) var<storage, read_write> particles: array<f32>;
 @group(0) @binding(1) var<storage, read> definitions: array<f32>;
 @group(0) @binding(2) var<storage, read> materials: array<VisualEntry>;
 @group(0) @binding(3) var particleTexture: texture_storage_2d<rgba8unorm, write>;
@@ -27,39 +27,44 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
     if texX < 0 || texX >= i32(dims.x) || texY < 0 || texY >= i32(dims.y) { return; }
 
     let defBase = particleId * PARTICLE_DEF_FLOATS;
-    let visualMaterialId = i32(definitions[defBase + 7] + 0.5);
+    let visualEnabled = definitions[defBase + 11];
+    let materialId = i32(definitions[defBase + 12] + 0.5);
+    let useBufferColor = particles[base + 12u] > 0.5;
+    let blendT = particles[base + 13u];
 
     var color: vec4f;
-    if visualMaterialId >= 0 {
-        let safeMaterialId = clamp(visualMaterialId, 0, MATERIAL_COUNT - 1);
+    if useBufferColor {
+        color = vec4f(particles[base + 8u], particles[base + 9u], particles[base + 10u], particles[base + 11u]);
+    } else if visualEnabled < 0.5 {
+        return;
+    } else if materialId >= 0 {
+        let safeMaterialId = clamp(materialId, 0, MATERIAL_COUNT - 1);
         let colorSeed = fract(f32(id.x) * 0.6180339887);
         let colorIdx = clamp(i32(floor(colorSeed * COLORS_PER_MATERIAL)), 0, i32(COLORS_PER_MATERIAL) - 1);
         color = materials[safeMaterialId].colors[colorIdx];
     } else {
-        color = vec4f(
-            definitions[defBase + 8],
-            definitions[defBase + 9],
-            definitions[defBase + 10],
-            definitions[defBase + 11],
-        );
+        let colorFirst = vec4f(definitions[defBase + 13], definitions[defBase + 14], definitions[defBase + 15], definitions[defBase + 16]);
+        let colorSecond = vec4f(definitions[defBase + 17], definitions[defBase + 18], definitions[defBase + 19], definitions[defBase + 20]);
+        color = mix(colorFirst, colorSecond, blendT);
     }
 
-    let colorOverLifetimeEnabled = definitions[defBase + 34];
+    let colorOverLifetimeEnabled = definitions[defBase + 43];
     if colorOverLifetimeEnabled > 0.5 {
         let t = 1.0 - (lifetimeRemaining / maxLifetime);
-        let coltStart = vec4f(
-            definitions[defBase + 35],
-            definitions[defBase + 36],
-            definitions[defBase + 37],
-            definitions[defBase + 38],
-        );
-        let coltEnd = vec4f(
-            definitions[defBase + 39],
-            definitions[defBase + 40],
-            definitions[defBase + 41],
-            definitions[defBase + 42],
-        );
+        let coltStartFirst = vec4f(definitions[defBase + 44], definitions[defBase + 45], definitions[defBase + 46], definitions[defBase + 47]);
+        let coltEndFirst = vec4f(definitions[defBase + 48], definitions[defBase + 49], definitions[defBase + 50], definitions[defBase + 51]);
+        let coltStartSecond = vec4f(definitions[defBase + 52], definitions[defBase + 53], definitions[defBase + 54], definitions[defBase + 55]);
+        let coltEndSecond = vec4f(definitions[defBase + 56], definitions[defBase + 57], definitions[defBase + 58], definitions[defBase + 59]);
+        let coltStart = mix(coltStartFirst, coltStartSecond, blendT);
+        let coltEnd = mix(coltEndFirst, coltEndSecond, blendT);
         color = color * mix(coltStart, coltEnd, t);
+    }
+
+    if !useBufferColor {
+        particles[base + 8u] = color.r;
+        particles[base + 9u] = color.g;
+        particles[base + 10u] = color.b;
+        particles[base + 11u] = color.a;
     }
 
     textureStore(particleTexture, vec2i(texX, texY), color);

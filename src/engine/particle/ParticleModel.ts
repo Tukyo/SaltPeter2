@@ -3,6 +3,7 @@ import type { ParticleId, ParticleName } from './ParticleIdentity'
 import type { ParticleCollisionModule } from './modules/CollisionModule';
 import type { ParticleColorOverLifetimeModule } from './modules/ColorOverLifetimeModule';
 import type { ParticleEmissionModule } from './modules/EmissionModule';
+import type { ParticleInheritVelocityModule } from './modules/InheritVelocityModule';
 import type { ParticleMainModule } from './modules/MainModule';
 import type { ParticleNoiseModule } from './modules/NoiseModule';
 import type { ParticleShapeModule } from './modules/ShapeModule';
@@ -19,13 +20,17 @@ export interface ParticleDefinition {
 
     modules: {
         main: ParticleMainModule;
-        visual: ParticleVisualModule;
-        emission: ParticleEmissionModule;
+        visual?: ParticleVisualModule;
+        emission?: ParticleEmissionModule;
         shape?: ParticleShapeModule;
         subEmitter?: ParticleSubEmitterModule;
         velocityOverLifetime?: ParticleVelocityOverLifetimeModule;
+        inheritVelocity?: ParticleInheritVelocityModule
         colorOverLifetime?: ParticleColorOverLifetimeModule;
         noise?: ParticleNoiseModule;
         collision?: ParticleCollisionModule;
     }
 }
+
+/** Base module class for all ParticleModules. */
+export interface ParticleModule { enabled?: boolean; }

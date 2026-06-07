@@ -103,7 +103,7 @@ export class EditorScene extends Nitrate.Scene {
         if (!renderer) { return; }
 
         if (this.mode === 'gameobject') {
-            this.hierarchy?.AddHierarchyObject({ components: [Nitrate.PixelData] });
+            this.hierarchy?.AddHierarchyObject({});
 
             this.selectionController = new SelectionController(renderer.canvas);
             this.anchorController = new AnchorController(renderer.canvas, this.selectionController);
@@ -113,6 +113,14 @@ export class EditorScene extends Nitrate.Scene {
             this.goExport?.SetAnchorProvider(() => this.anchorController?.GetAnchorCell() ?? null);
             this.goExport?.SetGameObjectProvider(() => this.hierarchy?.GetSelectedGameObject() ?? null);
             this.goImport?.SetGameObjectProvider(() => this.hierarchy?.GetSelectedGameObject() ?? null);
+
+            Nitrate.BrushManager.Instance
+                ? (Nitrate.BrushManager.Instance.onFirstPaint = () => this.EnsurePixelData())
+                : Nitrate.NitrateProcess.OnInit(Nitrate.BrushManager, () => {
+                    if (Nitrate.BrushManager.Instance) {
+                        Nitrate.BrushManager.Instance.onFirstPaint = () => this.EnsurePixelData();
+                    }
+                });
 
             this.renderingPanel = new Nitrate.RenderingPanel({
                 type: 'grid',
@@ -190,7 +198,7 @@ export class EditorScene extends Nitrate.Scene {
                 onClear: () => {
                     this.hierarchy?.Clear();
                     if (this.mode === 'gameobject') {
-                        this.hierarchy?.AddHierarchyObject({ components: [Nitrate.PixelData] });
+                        this.hierarchy?.AddHierarchyObject({});
                     } else {
                         this.hierarchy?.AddHierarchyObject({ components: [Nitrate.Blueprint] });
                     }
@@ -201,7 +209,15 @@ export class EditorScene extends Nitrate.Scene {
         });
     }
 
+    private EnsurePixelData(): void {
+        const go = this.hierarchy?.GetSelectedGameObject();
+        if (!go || go.GetComponent(Nitrate.PixelData)) { return; }
+        go.AddComponent(Nitrate.PixelData);
+        this.hierarchy?.Refresh();
+    }
+
     private TeardownModeSpecific(): void {
+        if (Nitrate.BrushManager.Instance) { Nitrate.BrushManager.Instance.onFirstPaint = null; }
         this.DestroyProcess(this.selectionController);
         this.selectionController = null;
         this.DestroyProcess(this.anchorController);
@@ -241,7 +257,7 @@ export class EditorScene extends Nitrate.Scene {
         if (Nitrate.SceneManager.IsDirty()) {
             const title = modeChanging
                 ? `Switch to ${targetMode === 'blueprint' ? 'Blueprint' : 'Game Object'} mode and import?`
-                : 'Import Object?';
+                : 'Import Object? All unsaved edits will be lost!';
             const confirmed = await Nitrate.Modal.Confirm({
                 title,
                 confirmLabel: modeChanging ? 'Switch & Import' : 'Import',
@@ -276,6 +292,7 @@ export class EditorScene extends Nitrate.Scene {
         else { this.PaintBlueprintCells(); }
 
         this.hierarchy?.Refresh();
+        Nitrate.SceneManager.MarkDirty();
     }
 
     /** Calls InitGPU and resolves once SimulationManager has finished reinitialising. */

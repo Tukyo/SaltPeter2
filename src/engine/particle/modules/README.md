@@ -3,6 +3,11 @@
 <!-- HIERARCHY_START -->
 [Nitrate](../../README.md) / [Particle](../README.md) / Modules
 <!-- HIERARCHY_END -->
+# Particle Modules
+
+Modules are the building blocks of a [`ParticleDefinition`](../ParticleModel.ts). Each module controls one aspect of particle behavior. `main` is the only required module — all others are optional and gated by `enabled?: boolean` *(omitting the module entirely is equivalent to `enabled: false`)*.
+
+Modules are packed into the [`ParticleDefinitionBuffer`](../ParticleDefinitionBuffer.ts) by `PackDefinition` and consumed in WGSL by the emission and simulation shaders. Fields that accept [`RandomBetweenTwo<T>`](../../definitions/Primitives.ts) have both endpoints packed into adjacent buffer slots — the shader picks one at random per particle at spawn time.
 
 <!-- API_START -->
 ---
@@ -14,7 +19,7 @@
 | Interfaces & Types |
 |--------------------|
 ```ts
-interface ParticleCollisionModule {
+interface ParticleCollisionModule extends ParticleModule {
     bounce: number; // Velocity reflection factor (0 = stick, 1 = perfect reflect)
     dampen: number; // Velocity scale applied after bounce
     lifetimeLoss: number; // Fraction of maxLifetime removed per collision
@@ -29,9 +34,9 @@ interface ParticleCollisionModule {
 | Interfaces & Types |
 |--------------------|
 ```ts
-interface ParticleColorOverLifetimeModule {
-    start: Color;
-    end: Color;
+interface ParticleColorOverLifetimeModule extends ParticleModule {
+    start: Color | RandomBetweenTwo<Color>;
+    end: Color | RandomBetweenTwo<Color>;
 }
 ```
 
@@ -42,7 +47,7 @@ interface ParticleColorOverLifetimeModule {
 | Interfaces & Types |
 |--------------------|
 ```ts
-interface ParticleEmissionModule {
+interface ParticleEmissionModule extends ParticleModule {
     bursts?: {
         count: number; // How many particles per burst
         time: number; // When in the cycle the burst fires
@@ -59,6 +64,19 @@ interface ParticleEmissionModule {
 
 ---
 
+### [`InheritVelocityModule`](InheritVelocityModule.ts)
+
+| Interfaces & Types |
+|--------------------|
+```ts
+interface ParticleInheritVelocityModule extends ParticleModule {
+    mode: InheritVelocityMode;
+    multiplier: number;
+}
+```
+
+---
+
 ### [`MainModule`](MainModule.ts)
 
 | Interfaces & Types |
@@ -70,14 +88,8 @@ interface ParticleMainModule {
     loop: boolean; // Restarts after duration
     start: {
         delay?: number; // Delay before first emission
-        lifetime: { // How long each particle lives
-            min: number;
-            max: number;
-        }
-        speed: { // Initial speed
-            min: number;
-            max: number;
-        }
+        lifetime: number | NumberRange; // How long each particle lives
+        speed: number | NumberRange; // Initial speed
     }
 }
 ```
@@ -89,13 +101,13 @@ interface ParticleMainModule {
 | Interfaces & Types |
 |--------------------|
 ```ts
-interface ParticleNoiseModule {
+interface ParticleNoiseModule extends ParticleModule {
     type: NoiseType;
     octaves: number;
     persistence: number;
     scale: number;
-    amplitude: number;
-    scrollSpeed: Vec2;
+    amplitude: number | RandomBetweenTwo<number>
+    scrollSpeed: Vec2 | RandomBetweenTwo<Vec2>
 }
 ```
 
@@ -106,7 +118,7 @@ interface ParticleNoiseModule {
 | Interfaces & Types |
 |--------------------|
 ```ts
-interface ParticleShapeModule {
+interface ParticleShapeModule extends ParticleModule {
     box?: ParticleBoxShape;
     circle?: ParticleCircleShape;
     cone?: ParticleConeShape;
@@ -143,9 +155,10 @@ interface ParticleConeShape {
 | Interfaces & Types |
 |--------------------|
 ```ts
-interface ParticleSubEmitterModule {
+interface ParticleSubEmitterModule extends ParticleModule {
     spawnCondition: ParticleSubEmitterSpawnCondition;
     particle: ParticleId; // The particle to spawn when this triggers
+    inherit?: Array<keyof ParticleDefinition['modules']>; // What modules from the parent to inherit
     probability: number; // (0 - 1) - 1 means it always happens, 0 means it never will
 }
 ```
@@ -164,16 +177,10 @@ type ParticleSubEmitterSpawnCondition =
 | Interfaces & Types |
 |--------------------|
 ```ts
-interface ParticleVelocityOverLifetimeModule {
+interface ParticleVelocityOverLifetimeModule extends ParticleModule {
     linear?: {
-        x?: {
-            start: number;
-            end: number;
-        }
-        y?: {
-            start: number;
-            end: number;
-        }
+        x?: { start: number; end: number; } | RandomBetweenTwo<{ start: number; end: number }>
+        y?: { start: number; end: number; } | RandomBetweenTwo<{ start: number; end: number }>
     }
     speedMultiplier?: number;
 }
@@ -186,9 +193,9 @@ interface ParticleVelocityOverLifetimeModule {
 | Interfaces & Types |
 |--------------------|
 ```ts
-interface ParticleVisualModule {
+interface ParticleVisualModule extends ParticleModule {
     material?: MaterialId,
-    color?: Color;
+    color?: Color | RandomBetweenTwo<Color>
 }
 ```
 

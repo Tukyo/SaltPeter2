@@ -28,6 +28,14 @@ Control handler implementations for the UI registry. Each control handles a spec
 
 ---
 
+### [`ColorPickerControl`](ColorPickerControl.ts)
+
+| Method | Description |
+|--------|-------------|
+| [`SetColor(color: Color): void`](ColorPickerControl.ts) | Sets the color value in the ColorPicker. |
+
+---
+
 ### [`PaletteControl`](PalletteControl.ts)
  Control handler for `PaletteSetting`. Renders a row of color swatches with single selection.
 

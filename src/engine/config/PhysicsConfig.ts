@@ -50,6 +50,16 @@ export class PhysicsConfig {
         },
         velocity: {
             max: 1.0,
+            fire: {
+                acceleration: 0.0005,
+                damping: 0.95,
+                propagation: 0.5
+            },
+            gas: {
+                acceleration: 0.001,
+                damping: 0.98,
+                propagation: 0.6
+            },
             liquid: {
                 acceleration: 0.0025,
                 damping: 0.98,

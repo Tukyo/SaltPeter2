@@ -3,11 +3,13 @@
 <!-- HIERARCHY_END -->
 # Particle
 
-The particle system provides a GPU-driven visual effect layer on top of the cellular simulation. Particles are cosmetic — they float above the sim and are never written back into it.
+The particle system provides a GPU-driven visual effect layer on top of the cellular simulation.
 
-[`ParticleEmissionPass`](ParticleEmissionPass.ts) reads the sim identity texture each frame and probabilistically spawns particles into [`ParticleBuffer`](ParticleBuffer.ts) for any cell whose material has a registered source in [`ParticleSources`](ParticleSources.ts). [`ParticleSimulationPass`](ParticleSimulationPass.ts) applies behaviours based on the definition.
+There are two separate types of ParticleSystems. One of them is material based, another is GameObject based. Any cell whose material has a registered source in [`ParticleSources`](ParticleSources.ts) is added to [`ParticleSimulationPass`](ParticleSimulationPass.ts) which applies behaviours based on the definition. GameObject particles are authored runtime emitters that live as a component on any GameObject.
 
-Particle types are declared as [`ParticleDefinition`](ParticleModel.ts) objects in the `definitions/` directory and auto-discovered by [`ParticleRegistry`](ParticleRegistry.ts) — no manual registration is needed. Particle behaviors are derived from the modules added to the definition.
+[`ParticleEmissionPass`](ParticleEmissionPass.ts) reads the sim identity texture each frame and probabilistically spawns particles into the [`ParticleBuffer`](ParticleBuffer.ts) .
+
+Material based particles are declared as [`ParticleDefinition`](ParticleModel.ts) objects in the `definitions/` directory and auto-discovered by [`ParticleRegistry`](ParticleRegistry.ts) — no manual registration is needed. Particle behaviors are derived from the modules added to the definition.
 
 <!-- API_START -->
 ---
@@ -31,17 +33,32 @@ Built once at startup from [`ParticleRegistry`](ParticleRegistry.ts) — packs e
 lifetime range, speed range, and visual params into a flat `Float32Array` indexed by particle id.
 Layout is defined by [`ParticleSchema`](ParticleSchema.ts).
 
+Additional slots beyond the registry are reserved for runtime-registered definitions from
+[`ParticleSystem`](../component/definitions/particlesystem/ParticleSystem.ts) components. Call `RegisterDefinition` on first GO encounter.
+
 
 ---
 
 ### [`ParticleEmissionPass`](ParticleEmissionPass.ts)
-GPU compute pass that reads the sim identity texture and emits new particles into [`ParticleBuffer`](ParticleBuffer.ts).
+GPU compute pass that emits new particles into [`ParticleBuffer`](ParticleBuffer.ts) each frame.
 
-Each thread covers one sim cell. If that cell's material has a registered source in
-[`ParticleSourceLookupBuffer`](ParticleSourceLookupBuffer.ts), the pass probabilistically spawns particles into the
-particle buffer according to the matching [`ParticleDefinitionBuffer`](ParticleDefinitionBuffer.ts) emission rate.
+Runs two dispatches back-to-back:
+1. Material emission — one thread per sim cell, fires when the cell's material has a registered
+   source in [`ParticleSourceLookupBuffer`](ParticleSourceLookupBuffer.ts).
+2. GameObject emission — one thread per slot in [`ParticleEmitterBuffer`](ParticleEmitterBuffer.ts), fires for active emitters
+   placed at world positions by game objects.
 
 Created and owned by [`SimulationManager`](../simulation/SimulationManager.ts). Called each frame by the manager — not directly.
+
+
+---
+
+### [`ParticleEmitterBuffer`](ParticleEmitterBuffer.ts)
+GPU storage buffer holding the active GameObject based particle emitter list for the current frame.
+
+Each slot stores: posX, posY, particleId, isActive (4 floats).
+Rebuilt CPU-side every frame via `Update` before the GameObject emission pass dispatches.
+Internally tracks per-emitter start times to evaluate delay, duration, and loop behaviour.
 
 
 ---
@@ -71,16 +88,21 @@ interface ParticleDefinition {
 
     modules: {
         main: ParticleMainModule;
-        visual: ParticleVisualModule;
-        emission: ParticleEmissionModule;
+        visual?: ParticleVisualModule;
+        emission?: ParticleEmissionModule;
         shape?: ParticleShapeModule;
         subEmitter?: ParticleSubEmitterModule;
         velocityOverLifetime?: ParticleVelocityOverLifetimeModule;
+        inheritVelocity?: ParticleInheritVelocityModule
         colorOverLifetime?: ParticleColorOverLifetimeModule;
         noise?: ParticleNoiseModule;
         collision?: ParticleCollisionModule;
     }
 }
+```
+
+```ts
+interface ParticleModule { enabled?: boolean; }
 ```
 
 ---

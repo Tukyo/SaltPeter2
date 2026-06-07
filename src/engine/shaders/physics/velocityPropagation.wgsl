@@ -5,15 +5,19 @@ fn propagateVelocity(coord: vec2f, res: vec2f) -> vec2f {
     let isLiquid = isMaterialPhaseId(phaseId, MATERIAL_PHASE_LIQUID);
     let isPowder = isMaterialPhaseId(phaseId, MATERIAL_PHASE_POWDER);
     let isSolid = isMaterialPhaseId(phaseId, MATERIAL_PHASE_SOLID);
+    let isGas = isMaterialPhaseId(phaseId, MATERIAL_PHASE_GAS);
+    let isFire = isMaterialPhaseId(phaseId, MATERIAL_PHASE_FIRE);
 
     let existing = textureLoad(physicsTexture, vec2i(coord));
-    if !isLiquid && !isPowder && !isSolid { return vec2f(existing.b, existing.a); }
+    if !isLiquid && !isPowder && !isSolid && !isGas && !isFire { return vec2f(existing.b, existing.a); }
 
     var propagation = 0.0;
     switch i32(phaseId) {
         case 0: { propagation = VELOCITY_PROPAGATION_SOLID; }
         case 1: { propagation = VELOCITY_PROPAGATION_POWDER; }
         case 2: { propagation = VELOCITY_PROPAGATION_LIQUID; }
+        case 3: { propagation = VELOCITY_PROPAGATION_GAS; }
+        case 4: { propagation = VELOCITY_PROPAGATION_FIRE; }
         default: {}
     }
 
@@ -36,6 +40,8 @@ fn propagateVelocity(coord: vec2f, res: vec2f) -> vec2f {
         if isLiquid && !isMaterialPhaseId(nPhaseId, MATERIAL_PHASE_LIQUID) { continue; }
         if isPowder && !isMaterialPhaseId(nPhaseId, MATERIAL_PHASE_POWDER) { continue; }
         if isSolid && !isMaterialPhaseId(nPhaseId, MATERIAL_PHASE_SOLID) { continue; }
+        if isGas && !isMaterialPhaseId(nPhaseId, MATERIAL_PHASE_GAS) { continue; }
+        if isFire && !isMaterialPhaseId(nPhaseId, MATERIAL_PHASE_FIRE) { continue; }
         let nPhysics = textureLoad(physicsTexture, vec2i(n));
         let nVx = nPhysics.b;
         let nVy = nPhysics.a;

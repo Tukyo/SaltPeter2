@@ -24,13 +24,17 @@ export const Lava: ParticleDefinition = {
             },
         },
         emission: {
-            rate: {
-                time: 0.01
-            }
+            rate: { time: 0.01 }
         },
         colorOverLifetime: {
-            start: { r: 255, g: 200, b: 50, a: 1.0 },
-            end: { r: 80, g: 20, b: 10, a: 0.0 },
+            start: {
+                first: { r: 255, g: 200, b: 50, a: 1.0 },
+                second: { r: 255, g: 255, b: 180, a: 1.0 },
+            },
+            end: {
+                first: { r: 80, g: 20, b: 10, a: 0.0 },
+                second: { r: 180, g: 60, b: 10, a: 0.15 },
+            },
         },
         collision: {
             bounce: 0.6,

@@ -33,6 +33,7 @@ export class BrushManager extends NitrateProcess {
     private brushAccumulator: number = 0;
 
     public onPaletteChange: ((colors: Color[]) => void) | null = null;
+    public onFirstPaint: (() => void) | null = null;
     private readonly onSimInit: () => Promise<void>;
 
     constructor() {
@@ -145,6 +146,7 @@ export class BrushManager extends NitrateProcess {
         const { state } = this;
         const materialId = state.GetMode() === 'erase' ? 0 : state.GetMaterialId();
         if (!SceneManager.IsDirty() && materialId !== 0) { SceneManager.MarkDirty(); }
+        if (this.onFirstPaint && materialId !== 0) { this.onFirstPaint(); }
 
         const enc = this.device.createCommandEncoder();
         this.brushPass.Run({
@@ -171,6 +173,7 @@ export class BrushManager extends NitrateProcess {
     public OnDestroy(): void {
         NitrateProcess.RemoveInitListener(SimulationManager, this.onSimInit);
         this.onPaletteChange = null;
+        this.onFirstPaint = null;
 
         this.brushPass?.Destroy();
         this.brushPass = null;

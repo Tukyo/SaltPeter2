@@ -40,9 +40,13 @@ import { World } from '../world/World';
 
 import { ParticleBuffer } from '../particle/ParticleBuffer';
 import { ParticleDefinitionBuffer } from '../particle/ParticleDefinitionBuffer';
+import { ParticleEmitterBuffer } from '../particle/ParticleEmitterBuffer';
 import { ParticleSourceLookupBuffer } from '../particle/ParticleSourceLookupBuffer';
 import { ParticleEmissionPass } from '../particle/ParticleEmissionPass';
 import { ParticleSimulationPass } from '../particle/ParticleSimulationPass';
+import { GameObjectManager } from '../game_object/GameObjectManager';
+import { ParticleSystem } from '../component/definitions/particlesystem/ParticleSystem';
+import { Transform } from '../component/definitions/transform/Transform';
 
 /** A resource that is managed by the SimulationManager. @internal */
 export interface SimulationResource { Destroy(): void }
@@ -75,7 +79,8 @@ export class SimulationManager extends NitrateProcess {
     public materialVisualBuffer: MaterialVisualBuffer | null = null;
     public reactionBuffer: ReactionLookupBuffer | null = null;
 
-    public analyticsPass: AnalyticsPass | null = null;
+    public simAnalyticsPass: AnalyticsPass | null = null;
+    public goAnalyticsPass: AnalyticsPass | null = null;
     public diffusionPass: DiffusionPass | null = null;
     public gameObjectPass: GameObjectPass | null = null;
     public intentPass: IntentPass | null = null;
@@ -84,6 +89,7 @@ export class SimulationManager extends NitrateProcess {
 
     public particleBuffer: ParticleBuffer | null = null;
     public particleDefinitionBuffer: ParticleDefinitionBuffer | null = null;
+    public particleEmitterBuffer: ParticleEmitterBuffer | null = null;
     public particleSourceLookupBuffer: ParticleSourceLookupBuffer | null = null;
     public particleEmissionPass: ParticleEmissionPass | null = null;
     public particleSimulationPass: ParticleSimulationPass | null = null;
@@ -180,11 +186,12 @@ export class SimulationManager extends NitrateProcess {
         this.reactionBuffer = this.Register(new ReactionLookupBuffer(device));
         this.particleBuffer = this.Register(new ParticleBuffer(device));
         this.particleDefinitionBuffer = this.Register(new ParticleDefinitionBuffer(device));
+        this.particleEmitterBuffer = this.Register(new ParticleEmitterBuffer(device));
         this.particleSourceLookupBuffer = this.Register(new ParticleSourceLookupBuffer(device));
 
         const [
-            intentPass, simPass, diffusionPass, physicsPass, analyticsPass, gameObjectPass,
-            particleEmissionPass, particleSimulationPass
+            intentPass, simPass, diffusionPass, physicsPass, gameObjectPass,
+            particleEmissionPass, particleSimulationPass, simAnalyticsPass, goAnalyticsPass
         ] = await Promise.all([
             IntentPass.Create({
                 device,
@@ -216,7 +223,6 @@ export class SimulationManager extends NitrateProcess {
                 physicsBuffer: this.materialPhysicsBuffer,
                 goStateBuffer: this.gameObjectBuffers.stateBuffer,
             }),
-            AnalyticsPass.Create(device),
             GameObjectPass.Create({
                 device,
                 simulationLayer: this.simulationLayer,
@@ -225,6 +231,7 @@ export class SimulationManager extends NitrateProcess {
                 stateBuffer: this.materialStateBuffer,
                 reactionBuffer: this.reactionBuffer,
                 gameObjectBuffers: this.gameObjectBuffers,
+                particleDefinitionBuffer: this.particleDefinitionBuffer,
             }),
             ParticleEmissionPass.Create({
                 device,
@@ -232,6 +239,7 @@ export class SimulationManager extends NitrateProcess {
                 particleBuffer: this.particleBuffer,
                 particleSourceLookupBuffer: this.particleSourceLookupBuffer,
                 particleDefinitionBuffer: this.particleDefinitionBuffer,
+                particleEmitterBuffer: this.particleEmitterBuffer,
             }),
             ParticleSimulationPass.Create({
                 device,
@@ -239,18 +247,22 @@ export class SimulationManager extends NitrateProcess {
                 particleDefinitionBuffer: this.particleDefinitionBuffer,
                 simulationLayer: this.simulationLayer,
             }),
+            AnalyticsPass.Create(device),
+            AnalyticsPass.Create(device),
         ]);
 
         this.intentPass = this.Register(intentPass);
         this.simPass = this.Register(simPass);
         this.diffusionPass = this.Register(diffusionPass);
         this.physicsPass = this.Register(physicsPass);
-        this.analyticsPass = this.Register(analyticsPass);
+        this.simAnalyticsPass = this.Register(simAnalyticsPass);
+        this.goAnalyticsPass = this.Register(goAnalyticsPass);
         this.gameObjectPass = this.Register(gameObjectPass);
         this.particleEmissionPass = this.Register(particleEmissionPass);
         this.particleSimulationPass = this.Register(particleSimulationPass);
 
-        Analytics.Init(this.analyticsPass);
+        Analytics.Init(simAnalyticsPass, goAnalyticsPass);
+
         SimulationManager.Instance = this;
 
         LogManager.Instance?.Log({
@@ -265,13 +277,14 @@ export class SimulationManager extends NitrateProcess {
         const {
             simulationLayer, gameObjectLayer, intentPass, simPass, diffusionPass,
             physicsPass, gameObjectPass, particleEmissionPass, particleSimulationPass,
+            particleEmitterBuffer,
         } = this;
         const webgpu = Renderer.Instance?.GetWebGPU();
 
         if (
             !simulationLayer || !gameObjectLayer || !intentPass || !simPass ||
             !diffusionPass || !physicsPass || !gameObjectPass ||
-            !particleEmissionPass || !particleSimulationPass || !webgpu
+            !particleEmissionPass || !particleSimulationPass || !particleEmitterBuffer || !webgpu
         ) {
             return { simulationSteps: 0, physicsSteps: 0 };
         }
@@ -323,6 +336,23 @@ export class SimulationManager extends NitrateProcess {
             simulationLayer.SwapIdentity();
             simulationLayer.SwapPhysics();
             state.SetSimStepCount(state.GetSimStepCount() + 1);
+
+            const emitters = [];
+            for (const go of GameObjectManager.Instance?.GetAll() ?? []) {
+                const particleSystem = go.GetComponent(ParticleSystem);
+                const goTransform = go.GetComponent(Transform);
+                if (particleSystem && goTransform && particleSystem.runtimeSlot >= 0) {
+                    const { main } = particleSystem.particle;
+                    emitters.push({
+                        id: particleSystem.runtimeSlot,
+                        pos: goTransform.position,
+                        delay: main.start.delay ?? 0,
+                        duration: main.duration,
+                        loop: main.loop,
+                    });
+                }
+            }
+            particleEmitterBuffer.Update(device, emitters, state.GetSimTime());
 
             const particleEnc = device.createCommandEncoder();
             particleEmissionPass.Run({ encoder: particleEnc, time: state.GetSimTime(), deltaTime: simStepDuration });
@@ -390,9 +420,11 @@ export class SimulationManager extends NitrateProcess {
         this.diffusionPass = null;
         this.gameObjectPass = null;
         this.physicsPass = null;
-        this.analyticsPass = null;
+        this.simAnalyticsPass = null;
+        this.goAnalyticsPass = null;
         this.particleBuffer = null;
         this.particleDefinitionBuffer = null;
+        this.particleEmitterBuffer = null;
         this.particleSourceLookupBuffer = null;
         this.particleEmissionPass = null;
         this.particleSimulationPass = null;

@@ -4,6 +4,7 @@ import type { Size2D, Vec2 } from '../../../definitions/Primitives';
 import { Component } from '../../Component';
 
 import iconUrl from './icon.png';
+
 export interface PixelCell {
     pos: Vec2;
     materialId: MaterialId;

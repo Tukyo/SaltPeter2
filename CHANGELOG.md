@@ -2,6 +2,97 @@
 
 ---
 
+## [0.1.3] - Patch - [06/07/2026]
+### Updates & Changes
+
+#### **Particle System — Overhaul**
+
+- **ParticleSystem Component (New)**
+  - `src/engine/component/definitions/particlesystem/` — new `ParticleSystem` component; authors a full particle emitter definition inline on a GameObject (all modules supported)
+  - Inspector fields added at `src/engine/ui/fields/particlesystem/` — collapsible module sections, enabled toggles, `RandomBetweenTwo` value pairs, color pickers
+  - `GameObjectPass` now detects `ParticleSystem` on GO spawn and registers its definition into `ParticleDefinitionBuffer` via `RegisterDefinition`; `runtimeSlot` records the assigned index
+
+- **Emission Split — Material vs. GameObject Emitters**
+  - `particleEmission.wgsl` deleted; replaced by four focused WGSL files:
+    - `particleShared.wgsl` — shared structs and helpers used by both emitter passes and simulation
+    - `particleSpawn.wgsl` — shared particle spawn logic
+    - `particleSubEmitter.wgsl` — sub-emitter trigger logic (Birth / Collision / Death)
+    - `particleMaterialEmitter.wgsl` — material-based emission (one thread per sim cell, unchanged behavior)
+    - `particleGameObjectEmitter.wgsl` — new; one thread per slot in `ParticleEmitterBuffer`; emits from GO world positions each step
+  - `ParticleEmissionPass` split into two pipelines (`materialPipeline` / `gameObjectPipeline`) compiled in parallel; both run back-to-back each sim step
+  - `ShaderAssembler.ParticleEmission()` replaced by `ParticleMaterialEmission()` and `ParticleGameObjectEmission()`
+
+- **ParticleEmitterBuffer (New)**
+  - `src/engine/particle/ParticleEmitterBuffer.ts` — GPU storage buffer holding per-frame GO emitter state (slot index, world position, delay, duration, loop flag)
+  - `SimulationManager` calls `particleEmitterBuffer.Update()` each step, collecting active `ParticleSystem` components from `GameObjectManager`
+
+- **ParticleDefinitionBuffer — Runtime Registration**
+  - Now pre-allocates `maxGameObjectEmitters` extra slots (config default 256) beyond the static registry
+  - `RegisterDefinition(device, modules)` packs a runtime definition into the next available slot and uploads it via `writeBuffer`
+  - `PackDefinition` extracted as a static helper shared by both startup baking and runtime registration
+
+- **Particle Definition Schema Expansion**
+  - `ParticleBuffer.FloatsPerParticle`: 8 → 14 (expanded per-particle state for sub-emitter and inherit-velocity data)
+  - Definition layout expanded from ~50 to 81 floats per entry; module-by-module field groups with `enabled` flags:
+    - `main` [0–7], `emission` [8–10], `visual` [11–20], `shape` [21–29]
+    - `velocityOverLifetime` [30–39], `inheritVelocity` [40–42]
+    - `colorOverLifetime` [43–59], `noise` [60–70], `collision` [71–75], `subEmitter` [76–80]
+  - All range fields now support `RandomBetweenTwo<T>` — both endpoints packed into adjacent slots; WGSL picks one randomly at spawn time
+
+- **New Particle Module — InheritVelocity**
+  - `src/engine/particle/modules/InheritVelocityModule.ts` — `mode` (`Initial` / `Current`) and `multiplier`; newly spawned particles inherit the emitter's sim-layer velocity
+
+- **Sub-Emitter Module**
+  - Now fully wired: `spawnCondition` (Birth / Collision / Death), `particle` (target definition slot), `probability`, and `inherit` (per-module mask)
+
+- **New Particle Definition — AcidBubble**
+  - `src/engine/particle/definitions/AcidBubble.ts` — rising bubble effect for Acid material
+
+- **Particle Simulation**
+  - `particleSimulation.wgsl` updated to read expanded particle state (14 floats per particle); handles inherit-velocity initial seed and sub-emitter death trigger
+
+- **Particle Render**
+  - `particleRender.wgsl` updated to match expanded particle layout
+
+#### Physics Config — Gas and Fire Velocity Phases
+- `PhysicsConfig.velocity` gains dedicated `gas` and `fire` blocks (`acceleration`, `damping`, `propagation`)
+- `ShaderFactory.GenerateVelocityConstants()` now emits `VELOCITY_ACCELERATION_GAS/FIRE`, `VELOCITY_DAMPING_GAS/FIRE`, `VELOCITY_PROPAGATION_GAS/FIRE`; physics and sim shaders can now tune gas/fire movement independently
+
+#### Analytics — Dual-Layer Counts
+- `Analytics` now runs two separate `AnalyticsPass` instances — one over `simulationLayer.currentIdentity`, one over `gameObjectLayer.currentIdentity`
+- `Analytics.Init` now takes `(simPass, goPass)`; `ReadAsync` returns `AnalyticsCounts { simulation, gameObject }` via `Promise.all`
+- `AnalyticsMenu` renders two labeled sections (Simulation / GameObject) with an empty-state dash
+- `AnalyticsOverlay` passes both identity textures to `Analytics.Run`
+- `SimulationManager` creates and registers two analytics passes (`simAnalyticsPass`, `goAnalyticsPass`)
+
+#### GameObjects — Particle-Only GOs
+- `GameObjectPass.UploadGameObject` no longer requires `PixelData` — GOs with only a `ParticleSystem` component are registered and emit particles without any cell geometry
+- Dynamic cells can now coexist with static cells (previously all-dynamic GOs were immediately assigned slot `-1` and dropped)
+- `ExportGameObject` handles the no-`PixelData` case — exports metadata-only without cell capture
+
+#### Import — Component Pruning on Re-Hydrate
+- `HydrateGameObject` now removes components present on the in-memory GO but absent from the saved file before patching; prevents stale components (e.g. leftover `PixelData`) from persisting after re-import
+
+#### Editor — Deferred PixelData on First Paint
+- New GOs in editor mode now start empty (no `PixelData`) — `PixelData` is added lazily on the first brush stroke via `BrushManager.onFirstPaint` → `EnsurePixelData()`; this allows particle-only GOs to be edited without a mandatory pixel body
+- Import confirmation dialog text updated: "Import Object? All unsaved edits will be lost!"
+- After a paint import, `SceneManager.MarkDirty()` is called so the unsaved-changes guard fires correctly
+
+#### New UI Control — ColorPickerControl
+- `src/engine/ui/controls/ColorPickerControl.ts` — color swatch (`<input type="color">`) with a separate alpha slider and numeric readout; exported from `controls/Index.ts`
+- Used by the `ParticleSystem` inspector fields for all color properties
+
+#### New Material — Caramel
+- `src/engine/materials/definitions/liquid/Caramel.ts` — viscous liquid phase of melted sugar
+- `Sugar` now melts to `caramel` at temperature 0.725 and `burns` tag added
+
+### Bug Fixes
+- Fixed a bug causing imported objects in the editor to not re-hydrate with their correct component structure, leaving behind old components from prior edits
+- Fixed a bug causing gameobjects without a pixeldata component to not be used during the `GameObjectPass`
+- Fixed bugs causing particle definitions to not be fully packed into the GPU
+
+---
+
 ## [0.1.2] - Patch - [06/06/2026]
 ### Updates & Changes
 

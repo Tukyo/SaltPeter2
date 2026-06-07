@@ -1,6 +1,7 @@
+import type { ParticleModule } from '../ParticleModel';
 import type { Size2D } from '../../definitions/Primitives';
 
-export interface ParticleShapeModule {
+export interface ParticleShapeModule extends ParticleModule {
     box?: ParticleBoxShape;
     circle?: ParticleCircleShape;
     cone?: ParticleConeShape;

@@ -66,6 +66,7 @@ interface NoiseOptions {
 | [`static Lerp(a: number, b: number, t: number): number`](Utils.ts) | Linearly interpolates between `a` and `b` by factor `t`. |
 | [`static Normalize(value: number): number`](Utils.ts) | Clamps `value` to [0, 1]. |
 | [`static Seed(): number`](Utils.ts) | Returns a random 32-bit unsigned integer seed. |
+| [`static RandomBetweenTwo(value: T \| RandomBetweenTwo<T>): [T, T]`](Utils.ts) | Handles processing for anything defined as a [`RandomBetweenTwo`](Utils.ts) type. |
 
 ---
 

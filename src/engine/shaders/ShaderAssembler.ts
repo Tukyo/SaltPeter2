@@ -50,7 +50,11 @@ import {
     transitionsWgsl,
     brushOutputWgsl,
     brushWgsl,
-    particleEmissionWgsl,
+    particleGameObjectEmitterWgsl,
+    particleSharedWgsl,
+    particleSubEmitterWgsl,
+    particleSpawnWgsl,
+    particleMaterialEmitterWgsl,
     particleSimulationWgsl,
     particleRenderWgsl,
 } from './Shaders';
@@ -324,13 +328,30 @@ export class ShaderAssembler {
 
     //#region PARTICLE
     // @omitfromdocs
-    public static ParticleEmission(workgroupSize: number): string {
+    public static ParticleMaterialEmission(workgroupSize: number): string {
         return [
             ShaderFactory.GenerateWorkgroupSize(workgroupSize),
             ShaderFactory.GenerateParticleConstants(),
             ShaderFactory.GenerateParticleEmissionUniformStruct(),
             commonWgsl,
-            particleEmissionWgsl,
+            particleSharedWgsl,
+            particleSubEmitterWgsl,
+            particleSpawnWgsl,
+            particleMaterialEmitterWgsl,
+        ].join('\n');
+    }
+
+    // @omitfromdocs
+    public static ParticleGameObjectEmission(workgroupSize: number): string {
+        return [
+            ShaderFactory.GenerateParticleWorkgroupSize(workgroupSize),
+            ShaderFactory.GenerateParticleConstants(),
+            ShaderFactory.GenerateParticleEmissionUniformStruct(),
+            commonWgsl,
+            particleSharedWgsl,
+            particleSubEmitterWgsl,
+            particleSpawnWgsl,
+            particleGameObjectEmitterWgsl,
         ].join('\n');
     }
 
@@ -341,6 +362,8 @@ export class ShaderAssembler {
             ShaderFactory.GenerateParticleConstants(),
             ShaderFactory.GenerateParticleSimulationUniformStruct(),
             commonWgsl,
+            particleSharedWgsl,
+            particleSubEmitterWgsl,
             particleSimulationWgsl,
         ].join('\n');
     }

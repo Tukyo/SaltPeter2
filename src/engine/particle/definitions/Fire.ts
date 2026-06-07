@@ -17,9 +17,7 @@ export const Fire: ParticleDefinition = {
         },
         visual: { material: MaterialIds.fire },
         emission: {
-            rate: {
-                time: 0.5
-            }
+            rate: { time: 0.5 }
         },
         shape: {
             cone: {
@@ -38,12 +36,21 @@ export const Fire: ParticleDefinition = {
             octaves: 2,
             persistence: 0.5,
             scale: 0.4,
-            amplitude: 10.0,
-            scrollSpeed: { x: 0.025, y: -0.1 }
+            amplitude: { first: 10.0, second: 16.0 },
+            scrollSpeed: {
+                first: { x: 0.025, y: -0.1 },
+                second: { x: -0.04, y: -0.07 },
+            },
         },
         colorOverLifetime: {
-            start: { r: 255, g: 255, b: 255, a: 1.0 },
-            end: { r: 255, g: 255, b: 255, a: 0.0 },
+            start: {
+                first: { r: 255, g: 255, b: 255, a: 1.0 },
+                second: { r: 255, g: 160, b: 40, a: 0.8 },
+            },
+            end: {
+                first: { r: 255, g: 255, b: 255, a: 0.0 },
+                second: { r: 180, g: 60, b: 10, a: 0.2 },
+            },
         },
         collision: {
             bounce: 0.1,

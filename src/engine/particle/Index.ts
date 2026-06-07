@@ -1,6 +1,7 @@
 export * from './ParticleBuffer'
 export * from './ParticleDefinitionBuffer'
 export * from './ParticleEmissionPass'
+export * from './ParticleEmitterBuffer'
 export * from './ParticleIdentity'
 export * from './ParticleModel'
 export * from './ParticleRegistry'

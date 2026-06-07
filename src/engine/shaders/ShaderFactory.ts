@@ -175,7 +175,7 @@ export class ShaderFactory {
 
     // @omitfromdocs
     public static GenerateVelocityConstants(): string {
-        const { max, liquid, powder, solid } = PhysicsConfig.GetConfig().velocity;
+        const { max, liquid, powder, solid, gas, fire } = PhysicsConfig.GetConfig().velocity;
         return [
             `const MAX_VELOCITY: f32 = ${max};`,
             `const VELOCITY_ACCELERATION_LIQUID: f32 = ${liquid.acceleration};`,
@@ -187,6 +187,12 @@ export class ShaderFactory {
             `const VELOCITY_ACCELERATION_SOLID: f32 = ${solid.acceleration};`,
             `const VELOCITY_DAMPING_SOLID: f32 = ${solid.damping};`,
             `const VELOCITY_PROPAGATION_SOLID: f32 = ${solid.propagation};`,
+            `const VELOCITY_ACCELERATION_GAS: f32 = ${gas.acceleration};`,
+            `const VELOCITY_DAMPING_GAS: f32 = ${gas.damping};`,
+            `const VELOCITY_PROPAGATION_GAS: f32 = ${gas.propagation};`,
+            `const VELOCITY_ACCELERATION_FIRE: f32 = ${fire.acceleration};`,
+            `const VELOCITY_DAMPING_FIRE: f32 = ${fire.damping};`,
+            `const VELOCITY_PROPAGATION_FIRE: f32 = ${fire.propagation};`,
             `fn encodeVelocity(v: f32) -> f32 { return clamp(v, -MAX_VELOCITY, MAX_VELOCITY); }`,
             `fn decodeVelocity(encoded: f32) -> f32 { return encoded; }`,
         ].join('\n');
@@ -361,13 +367,14 @@ export class ShaderFactory {
 
     // @omitfromdocs
     public static GenerateParticleConstants(): string {
-        const { maxParticles, maxParticlesPerMaterial } = ParticleConfig.GetConfig().performance;
+        const { maxParticles, maxParticlesPerMaterial, maxGameObjectEmitters } = ParticleConfig.GetConfig().performance;
         const defFloats = ParticleSchema.GetParticleDefinitionFields().length;
         return [
             `const PARTICLE_FLOATS_PER_PARTICLE: u32 = ${ParticleBuffer.FloatsPerParticle}u;`,
             `const PARTICLE_MAX_COUNT: u32 = ${maxParticles}u;`,
             `const PARTICLE_MAX_PER_MATERIAL: i32 = ${maxParticlesPerMaterial};`,
             `const PARTICLE_DEF_FLOATS: i32 = ${defFloats};`,
+            `const PARTICLE_GO_EMITTER_CAPACITY: u32 = ${maxGameObjectEmitters}u;`,
         ].join('\n');
     }
 

@@ -1,6 +1,7 @@
 export * from './CollisionModule'
 export * from './ColorOverLifetimeModule'
 export * from './EmissionModule'
+export * from './InheritVelocityModule'
 export * from './MainModule'
 export * from './NoiseModule'
 export * from './ShapeModule'

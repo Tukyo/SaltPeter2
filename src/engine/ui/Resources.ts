@@ -739,6 +739,9 @@ export class Resources extends NitrateProcess {
         this.fileDataCache.delete(userdataKey);
         this.fileDataCache.delete(resourcesKey);
         await this.LoadFileData([path], isUserdata);
+        if (this.selectedPath === path) {
+            this.previewPanel.OnSelect(path, this.selectedIsUserdata);
+        }
     }
 
     private async MakeDirectory(path: string, isUserdata: boolean): Promise<void> {

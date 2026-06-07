@@ -7,56 +7,97 @@
  */
 export class ParticleSchema {
     private static readonly particleDefinitionFields = [
-        ['emissionRate', 'f32'], // Particles spawned per second
-        ['lifetimeMin', 'f32'], // Minimum particle lifetime in seconds
-        ['lifetimeMax', 'f32'], // Maximum particle lifetime in seconds
-        ['speedMin', 'f32'], // Minimum initial speed
-        ['speedMax', 'f32'], // Maximum initial speed
-        ['loop', 'f32'], // 1 = looping, 0 = one-shot
-        ['duration', 'f32'], // How long the system runs in seconds
-        ['visualMaterialId', 'f32'], // Material ID to source color from, -1 if using raw color
-        ['visualColorR', 'f32'], // Raw color R (0-1), used when visualMaterialId is -1
-        ['visualColorG', 'f32'], // Raw color G (0-1)
-        ['visualColorB', 'f32'], // Raw color B (0-1)
-        ['visualColorA', 'f32'], // Raw color A (0-1)
-        ['gravity', 'f32'], // Acceleration applied to velY per second
-        ['coneAngleRadians', 'f32'], // Cone half-angle in radians
-        ['directionX', 'f32'], // Normalized emission direction X
-        ['directionY', 'f32'], // Normalized emission direction Y
-        ['volLinearXStart', 'f32'], // VelocityOverLifetime linear X at birth
-        ['volLinearXEnd', 'f32'], // VelocityOverLifetime linear X at death
-        ['volLinearYStart', 'f32'], // VelocityOverLifetime linear Y at birth
-        ['volLinearYEnd', 'f32'], // VelocityOverLifetime linear Y at death
-        ['volSpeedMultiplier', 'f32'], // VelocityOverLifetime speed scale (1 = no change)
-        ['startDelay', 'f32'], // Delay before first emission in seconds
-        ['emissionRateDistance', 'f32'], // Particles spawned per unit of distance moved
-        ['shapeType', 'f32'], // Active shape: 0=none, 1=cone, 2=box, 3=circle
-        ['coneLength', 'f32'], // Cone length
-        ['boxWidth', 'f32'], // Box emitter width
-        ['boxHeight', 'f32'], // Box emitter height
-        ['circleRadius', 'f32'], // Circle emitter radius
-        ['noiseEnabled', 'f32'], // 1 if noise module is active, 0 otherwise
-        ['noiseType', 'f32'], // Noise algorithm (matches NoiseType enum)
-        ['noiseOctaves', 'f32'], // Noise octave count
-        ['noisePersistence', 'f32'], // Noise persistence
-        ['noiseScale', 'f32'], // Noise scale
-        ['noiseAmplitude', 'f32'], // Noise amplitude
-        ['colorOverLifetimeEnabled', 'f32'], // 1 if colorOverLifetime module is active, 0 otherwise
-        ['colorOverLifetimeStartR', 'f32'], // Start color R (0-1)
-        ['colorOverLifetimeStartG', 'f32'], // Start color G (0-1)
-        ['colorOverLifetimeStartB', 'f32'], // Start color B (0-1)
-        ['colorOverLifetimeStartA', 'f32'], // Start color A (0-1)
-        ['colorOverLifetimeEndR', 'f32'], // End color R (0-1)
-        ['colorOverLifetimeEndG', 'f32'], // End color G (0-1)
-        ['colorOverLifetimeEndB', 'f32'], // End color B (0-1)
-        ['colorOverLifetimeEndA', 'f32'], // End color A (0-1)
-        ['collisionEnabled', 'f32'], // 1 if collision module is active, 0 otherwise
-        ['collisionBounce', 'f32'], // Velocity reflection factor (0 = absorb, 1 = perfect reflect)
-        ['collisionDampen', 'f32'], // Fraction of velocity removed after bounce (0 = full retain, 1 = full absorb)
-        ['collisionLifetimeLoss', 'f32'], // Fraction of maxLifetime removed per collision
-        ['collisionMinKillSpeed', 'f32'], // Kill particle if post-collision speed drops below this
-        ['noiseScrollSpeedX', 'f32'], // Noise field scroll speed along X per second
-        ['noiseScrollSpeedY', 'f32'], // Noise field scroll speed along Y per second
+        // main [0-7]
+        ['duration', 'f32'],
+        ['loop', 'f32'],
+        ['gravity', 'f32'],
+        ['startDelay', 'f32'],
+        ['lifetimeMin', 'f32'],
+        ['lifetimeMax', 'f32'],
+        ['speedMin', 'f32'],
+        ['speedMax', 'f32'],
+        // emission [8-10]
+        ['emissionEnabled', 'f32'],
+        ['emissionRateTime', 'f32'],
+        ['emissionRateDistance', 'f32'],
+        // visual [11-20]
+        ['visualEnabled', 'f32'],
+        ['visualMaterialId', 'f32'],
+        ['visualColorFirstR', 'f32'],
+        ['visualColorFirstG', 'f32'],
+        ['visualColorFirstB', 'f32'],
+        ['visualColorFirstA', 'f32'],
+        ['visualColorSecondR', 'f32'],
+        ['visualColorSecondG', 'f32'],
+        ['visualColorSecondB', 'f32'],
+        ['visualColorSecondA', 'f32'],
+        // shape [21-29]
+        ['shapeEnabled', 'f32'],
+        ['shapeType', 'f32'],
+        ['coneAngleRadians', 'f32'],
+        ['coneDirectionX', 'f32'],
+        ['coneDirectionY', 'f32'],
+        ['coneLength', 'f32'],
+        ['boxWidth', 'f32'],
+        ['boxHeight', 'f32'],
+        ['circleRadius', 'f32'],
+        // velocityOverLifetime [30-39]
+        ['velocityOverLifetimeEnabled', 'f32'],
+        ['volLinearXStartFirst', 'f32'],
+        ['volLinearXEndFirst', 'f32'],
+        ['volLinearYStartFirst', 'f32'],
+        ['volLinearYEndFirst', 'f32'],
+        ['volSpeedMultiplier', 'f32'],
+        ['volLinearXStartSecond', 'f32'],
+        ['volLinearXEndSecond', 'f32'],
+        ['volLinearYStartSecond', 'f32'],
+        ['volLinearYEndSecond', 'f32'],
+        // inheritVelocity [40-42]
+        ['inheritVelocityEnabled', 'f32'],
+        ['inheritVelocityMode', 'f32'],
+        ['inheritVelocityMultiplier', 'f32'],
+        // colorOverLifetime [43-59]
+        ['colorOverLifetimeEnabled', 'f32'],
+        ['colorOverLifetimeStartFirstR', 'f32'],
+        ['colorOverLifetimeStartFirstG', 'f32'],
+        ['colorOverLifetimeStartFirstB', 'f32'],
+        ['colorOverLifetimeStartFirstA', 'f32'],
+        ['colorOverLifetimeEndFirstR', 'f32'],
+        ['colorOverLifetimeEndFirstG', 'f32'],
+        ['colorOverLifetimeEndFirstB', 'f32'],
+        ['colorOverLifetimeEndFirstA', 'f32'],
+        ['colorOverLifetimeStartSecondR', 'f32'],
+        ['colorOverLifetimeStartSecondG', 'f32'],
+        ['colorOverLifetimeStartSecondB', 'f32'],
+        ['colorOverLifetimeStartSecondA', 'f32'],
+        ['colorOverLifetimeEndSecondR', 'f32'],
+        ['colorOverLifetimeEndSecondG', 'f32'],
+        ['colorOverLifetimeEndSecondB', 'f32'],
+        ['colorOverLifetimeEndSecondA', 'f32'],
+        // noise [60-70]
+        ['noiseEnabled', 'f32'],
+        ['noiseType', 'f32'],
+        ['noiseOctaves', 'f32'],
+        ['noisePersistence', 'f32'],
+        ['noiseScale', 'f32'],
+        ['noiseAmplitudeFirst', 'f32'],
+        ['noiseAmplitudeSecond', 'f32'],
+        ['noiseScrollSpeedFirstX', 'f32'],
+        ['noiseScrollSpeedFirstY', 'f32'],
+        ['noiseScrollSpeedSecondX', 'f32'],
+        ['noiseScrollSpeedSecondY', 'f32'],
+        // collision [71-75]
+        ['collisionEnabled', 'f32'],
+        ['collisionBounce', 'f32'],
+        ['collisionDampen', 'f32'],
+        ['collisionLifetimeLoss', 'f32'],
+        ['collisionMinKillSpeed', 'f32'],
+        // subEmitter [76-80]
+        ['subEmitterEnabled', 'f32'],
+        ['subEmitterCondition', 'f32'],
+        ['subEmitterParticleId', 'f32'],
+        ['subEmitterProbability', 'f32'],
+        ['subEmitterInheritMask', 'f32'],
     ] as const satisfies ReadonlyArray<readonly [string, string]>;
 
     /** Returns the ordered `[name, type]` field pairs that define the particle definition buffer layout. @internal */
