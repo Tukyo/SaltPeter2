@@ -182,28 +182,41 @@ export class Input extends NitrateProcess {
     private onKeyDown: (e: KeyboardEvent) => void = () => {};
     private onKeyUp: (e: KeyboardEvent) => void = () => {};
     private readonly keysDown: Set<string> = new Set();
+    private readonly codesDown: Set<string> = new Set();
     private readonly keyDownCallbacks: Map<string, Set<() => void>> = new Map();
     private readonly keyUpCallbacks: Map<string, Set<() => void>> = new Map();
+    private readonly keyCodeDownCallbacks: Map<string, Set<() => void>> = new Map();
+    private readonly keyCodeUpCallbacks: Map<string, Set<() => void>> = new Map();
 
     private InitKeyboard(): void {
         this.onKeyDown = (e: KeyboardEvent) => {
             if ((e.target as HTMLElement).closest('input, textarea')) { return; }
-            if (this.keysDown.has(e.key)) { return; }
-            this.keysDown.add(e.key);
-            this.keyDownCallbacks.get(e.key)?.forEach(cb => cb());
+            if (!this.keysDown.has(e.key)) {
+                this.keysDown.add(e.key);
+                this.keyDownCallbacks.get(e.key)?.forEach(cb => cb());
+            }
+            if (!this.codesDown.has(e.code)) {
+                this.codesDown.add(e.code);
+                this.keyCodeDownCallbacks.get(e.code)?.forEach(cb => cb());
+            }
         };
 
         this.onKeyUp = (e: KeyboardEvent) => {
-            if (!this.keysDown.has(e.key)) { return; }
-            this.keysDown.delete(e.key);
-            this.keyUpCallbacks.get(e.key)?.forEach(cb => cb());
+            if (this.keysDown.has(e.key)) {
+                this.keysDown.delete(e.key);
+                this.keyUpCallbacks.get(e.key)?.forEach(cb => cb());
+            }
+            if (this.codesDown.has(e.code)) {
+                this.codesDown.delete(e.code);
+                this.keyCodeUpCallbacks.get(e.code)?.forEach(cb => cb());
+            }
         };
 
         this.onBlur = () => {
-            for (const key of this.keysDown) {
-                this.keyUpCallbacks.get(key)?.forEach(cb => cb());
-            }
+            for (const key of this.keysDown) { this.keyUpCallbacks.get(key)?.forEach(cb => cb()); }
             this.keysDown.clear();
+            for (const code of this.codesDown) { this.keyCodeUpCallbacks.get(code)?.forEach(cb => cb()); }
+            this.codesDown.clear();
             this.ResetMouseState();
         };
 
@@ -212,10 +225,13 @@ export class Input extends NitrateProcess {
         window.addEventListener('blur', this.onBlur);
     }
 
-    /** Returns true while the given key is held. */
+    /** Returns true while the given key is held (by key value). */
     public IsKeyDown(key: string): boolean { return this.keysDown.has(key); }
 
-    /** Subscribes to the first keydown for a key (repeat events ignored). Returns an unsubscribe function. */
+    /** Returns true while the given key is held (by key code, e.g. 'Numpad0'). */
+    public IsKeyCodeDown(code: string): boolean { return this.codesDown.has(code); }
+
+    /** Subscribes to the first keydown for a key value (repeat events ignored). Returns an unsubscribe function. */
     public OnKeyDown(key: string, callback: () => void): () => void {
         if (!this.keyDownCallbacks.has(key)) { this.keyDownCallbacks.set(key, new Set()); }
         const set = this.keyDownCallbacks.get(key);
@@ -223,12 +239,28 @@ export class Input extends NitrateProcess {
         return () => { this.keyDownCallbacks.get(key)?.delete(callback); };
     }
 
-    /** Subscribes to keyup for a key. Returns an unsubscribe function. */
+    /** Subscribes to keyup for a key value. Returns an unsubscribe function. */
     public OnKeyUp(key: string, callback: () => void): () => void {
         if (!this.keyUpCallbacks.has(key)) { this.keyUpCallbacks.set(key, new Set()); }
         const set = this.keyUpCallbacks.get(key);
         if (set) { set.add(callback); }
         return () => { this.keyUpCallbacks.get(key)?.delete(callback); };
+    }
+
+    /** Subscribes to the first keydown for a key code (e.g. 'Numpad0', repeat ignored). Returns an unsubscribe function. */
+    public OnKeyCode(code: string, callback: () => void): () => void {
+        if (!this.keyCodeDownCallbacks.has(code)) { this.keyCodeDownCallbacks.set(code, new Set()); }
+        const set = this.keyCodeDownCallbacks.get(code);
+        if (set) { set.add(callback); }
+        return () => { this.keyCodeDownCallbacks.get(code)?.delete(callback); };
+    }
+
+    /** Subscribes to keyup for a key code. Returns an unsubscribe function. */
+    public OnKeyCodeUp(code: string, callback: () => void): () => void {
+        if (!this.keyCodeUpCallbacks.has(code)) { this.keyCodeUpCallbacks.set(code, new Set()); }
+        const set = this.keyCodeUpCallbacks.get(code);
+        if (set) { set.add(callback); }
+        return () => { this.keyCodeUpCallbacks.get(code)?.delete(callback); };
     }
     //#endregion
 

@@ -1,4 +1,4 @@
-import type { SelectSetting, RangeSetting } from '../UserInterfaceTypes';
+import type { RangeSetting, SelectSetting } from '../UserInterfaceTypes';
 
 import { CollapsiblePanel } from '../CollapsiblePanel';
 import { Modal } from '../Modal';
@@ -157,8 +157,8 @@ export class RenderingPanel extends NitrateProcess {
         section.appendChild(wrapper);
 
         const onGridSizeChange = () => {
-            const { width } = this.GetGridDimensions();
-            SimulationManager.Instance?.state.SetResolution(width);
+            const { width, height } = this.GetGridDimensions();
+            SimulationManager.Instance?.state.SetResolution(Math.max(width, height));
             SimulationManager.Instance?.OnResize();
             params.onChange?.();
         };
@@ -170,7 +170,7 @@ export class RenderingPanel extends NitrateProcess {
             }, onGridSizeChange);
         });
 
-        SimulationManager.Instance?.state.SetResolution(params.sizes[0].width);
+        SimulationManager.Instance?.state.SetResolution(Math.max(params.sizes[0].width, params.sizes[0].height));
     }
 
     /** Returns the currently selected resolution value, or 0 (native) if no resolution control exists. */
@@ -207,7 +207,8 @@ export class RenderingPanel extends NitrateProcess {
         const currentIdx = parseInt(this.gridSizeElement.value, 10);
         if (currentIdx === idx) { return false; }
         this.gridSizeElement.value = String(idx);
-        SimulationManager.Instance?.state.SetResolution(this.GetGridDimensions().width);
+        const dims = this.GetGridDimensions();
+        SimulationManager.Instance?.state.SetResolution(Math.max(dims.width, dims.height));
         return true;
     }
 

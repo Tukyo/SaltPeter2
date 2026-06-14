@@ -3,10 +3,14 @@ export type BrushShape =
     | 'square';
 
 export type BrushMode =
-    | 'draw'
-    | 'erase';
+    | 'fill'
+    | 'mask'
+    | 'overlay';
 
 export type BrushType =
     | 'noise'
-    | 'palette';
-
+    | 'palette'
+    | 'scatter'
+    | 'boxes'
+    | 'circles'
+    | 'stripes';

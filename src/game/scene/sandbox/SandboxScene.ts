@@ -57,11 +57,13 @@ export class SandboxScene extends Nitrate.Scene {
             size: { min: 1, max: 50, default: 6 },
             density: { min: 0, max: 100, default: 90 },
             shape: { default: 'circle' },
-            mode: { default: 'draw' },
+            mode: { default: 'fill' },
             type: { default: 'noise' }
         });
         new Nitrate.MaterialsPanel({ activeMaterial: { defaultMaterial: 'sand' } });
         new Nitrate.ScenePanel({ clear: {} });
+
+        new Nitrate.ScreenshotManager();
 
         new Nitrate.AnalyticsOverlay();
         new Nitrate.DebugOverlay();

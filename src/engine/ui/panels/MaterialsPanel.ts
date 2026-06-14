@@ -17,6 +17,7 @@ import { UserInterfaceManager } from '../UserInterfaceManager';
 export interface MaterialsPanelParams {
     activeMaterial?: {
         defaultMaterial?: MaterialName;
+        filter?: MaterialName | MaterialName[];
         show?: boolean;
     };
     occupancy?: {
@@ -30,6 +31,10 @@ export interface MaterialsPanelParams {
     };
     tags?: {
         options?: string | string[];
+        show?: boolean;
+    };
+    variants?: {
+        filter?: string[];
         show?: boolean;
     };
     style?: Partial<CSSStyleDeclaration>;
@@ -50,15 +55,21 @@ export class MaterialsPanel extends NitrateProcess {
 
     private materialElement: HTMLSelectElement | null = null;
     private materialSetting: SelectSetting | null = null;
+    private materialFilter: string[] | null = null;
+
     private phaseElement: HTMLDivElement | null = null;
     private phaseSetting: ToggleGroupSetting | null = null;
+
     private tagElement: HTMLDivElement | null = null;
     private tagSetting: ToggleListSetting | null = null;
+
     private occupancyElement: HTMLDivElement | null = null;
     private occupancySetting: ChoiceSetting | null = null;
+    
     private variantSection: HTMLElement | null = null;
     private variantElement: HTMLDivElement | null = null;
     private variantSetting: ChoiceSetting | null = null;
+    private variantOnly: string[] | null = null;
 
     constructor(params?: MaterialsPanelParams) {
         super();
@@ -77,13 +88,17 @@ export class MaterialsPanel extends NitrateProcess {
 
         this.SetupMaterial(params, defaultMaterialId);
         this.SetupOccupancy(params);
-        this.SetupVariantSection();
+        this.SetupVariantSection(params);
         this.SetupFilters(params);
         this.SetupBindings(defaultMaterialId);
     }
 
     /** Builds the active material select control. */
     private SetupMaterial(params: MaterialsPanelParams | undefined, defaultMaterialId: MaterialId | undefined): void {
+        const rawFilter = params?.activeMaterial?.filter;
+        this.materialFilter = rawFilter
+            ? (Array.isArray(rawFilter) ? rawFilter : [rawFilter])
+            : null;
         const section = this.panel.AddSection();
         this.materialSetting = {
             id: 'mat-active',
@@ -115,7 +130,9 @@ export class MaterialsPanel extends NitrateProcess {
     }
 
     /** Creates the variant section container, initially hidden until a material with variants is selected. */
-    private SetupVariantSection(): void {
+    private SetupVariantSection(params: MaterialsPanelParams | undefined): void {
+        this.variantOnly = params?.variants?.filter ?? null;
+        if (params?.variants?.show === false) { return; }
         this.variantSection = this.panel.AddSection('Variant');
         this.variantSection.style.display = 'none';
     }
@@ -242,7 +259,11 @@ export class MaterialsPanel extends NitrateProcess {
         if (!this.variantSection) { return; }
 
         const material = Object.values(MaterialRegistry.Materials).find(m => m.id === materialId) ?? null;
-        const variants = material?.variants;
+        const allVariants = material?.variants;
+        const only = this.variantOnly;
+        const variants = allVariants && only
+            ? allVariants.filter(v => only.includes(v.name))
+            : allVariants;
 
         if (!variants || variants.length === 0) {
             this.variantSection.style.display = 'none';
@@ -280,7 +301,8 @@ export class MaterialsPanel extends NitrateProcess {
 
         const phases = ToggleGroupControl.Instance.GetRawValue(this.phaseElement, this.phaseSetting).split(',').filter(Boolean);
         const tags = ToggleListControl.Instance.GetRawValue(this.tagElement, this.tagSetting).split(',').filter(Boolean);
-        const options = MaterialQuery.GetFilteredOptions({ phases, tags });
+        const materialNames = this.materialFilter;
+        const options = MaterialQuery.GetFilteredOptions({ phases, tags, names: materialNames ?? undefined });
 
         const currentId = this.GetMaterialId();
         this.materialElement.innerHTML = '';

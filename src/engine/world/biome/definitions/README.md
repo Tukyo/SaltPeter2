@@ -33,6 +33,8 @@ interface BiomeDefinition {
     id: BiomeId;
     name: BiomeName;
     layers: readonly BiomeLayer[];
+    stamps?: BiomeStampMaterialMap;
+    detail?: BiomeDetail;
 }
 ```
 
@@ -40,14 +42,53 @@ interface BiomeDefinition {
 interface BiomeMaterial {
     name: MaterialName;
     occupancy: MaterialOccupancy;
-    weight: number;
+    variantId?: number;
 }
 ```
 
 ```ts
 interface BiomeLayer {
-    material: BiomeMaterial;
+    material: BiomeLayerMaterial;
     depth: NumberRange;
+    detail?: BiomeLayerDetail;
+}
+```
+
+```ts
+interface BiomeLayerDetail {
+    color?: {
+        type: NoiseType;
+        scale: number;
+        weights: number[];
+    }
+}
+```
+
+```ts
+interface BiomeLayerMaterial extends BiomeMaterial { weight: number; }
+```
+
+```ts
+interface BiomeFloodFillMaterial extends BiomeMaterial { weight: number; }
+```
+
+```ts
+interface BiomeStampMaterialMap {
+    solid: BiomeMaterial;
+    powder: BiomeFloodFillMaterial[];
+    liquid: BiomeFloodFillMaterial[];
+    detail?: BiomeMaterial;
+}
+```
+
+```ts
+interface BiomeDetail {
+    material: BiomeMaterial;
+    threshold: number;
+    noise: {
+        type: NoiseType;
+        options: NoiseOptions;
+    }
 }
 ```
 

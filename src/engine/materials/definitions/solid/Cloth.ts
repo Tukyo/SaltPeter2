@@ -2,7 +2,7 @@ import type { MaterialDefinition } from '../MaterialModel';
 import type { MaterialVariant } from '../MaterialVariants';
 import { MaterialIds } from '../Materials';
 
-const ClothVariantIds = {
+export const ClothVariantIds = {
     red: 1,
     blue: 2,
     green: 3,

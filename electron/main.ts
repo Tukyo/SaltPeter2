@@ -6,12 +6,13 @@ import fs from 'fs';
 
 import { registerSavesHandlers } from './ipc/saves';
 import { registerResourcesHandlers } from './ipc/resources';
+import { registerScreenshotHandlers } from './ipc/screenshot';
 import { registerUserdataHandlers } from './ipc/userdata';
 
-// TODO: For build this should live wherever save data is stored
 const resourcesDir = join(app.getAppPath(), 'src/game/resources');
 const saltpeterDir = join(app.getPath('documents'), 'SaltPeter');
 const saveRootDir = join(saltpeterDir, 'Saves');
+const screenshotsDir = join(saltpeterDir, 'Screenshots');
 const userdataDir = join(saltpeterDir, 'CustomAssets');
 
 function warmUserDirectories(): void {
@@ -28,6 +29,7 @@ function warmUserDirectories(): void {
 function registerIpcHandlers(): void {
     registerSavesHandlers(saveRootDir);
     registerResourcesHandlers(resourcesDir);
+    registerScreenshotHandlers(screenshotsDir);
     registerUserdataHandlers(userdataDir);
 }
 

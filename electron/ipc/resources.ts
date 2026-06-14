@@ -59,4 +59,11 @@ export function registerResourcesHandlers(resourcesDir: string): void {
         const stat = fs.statSync(target);
         if (stat.isDirectory()) { fs.rmdirSync(target); } else { fs.unlinkSync(target); }
     });
+
+    ipcMain.handle('resources:writeBinary', (_e, filename: string, data: Uint8Array) => {
+        const target = safeResolve(filename);
+        if (!target) { throw new Error('Forbidden'); }
+        fs.mkdirSync(join(target, '..'), { recursive: true });
+        fs.writeFileSync(target, Buffer.from(data));
+    });
 }

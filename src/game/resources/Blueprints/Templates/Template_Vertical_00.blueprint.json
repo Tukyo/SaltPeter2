@@ -1,0 +1,36 @@
+{
+  "name": "Template_Vertical_00",
+  "components": [
+    {
+      "enabled": true,
+      "type": "Transform",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "scale": {
+        "x": 1,
+        "y": 1
+      },
+      "parentId": null
+    },
+    {
+      "enabled": true,
+      "type": "Blueprint",
+      "size": {
+        "width": 136,
+        "height": 264
+      },
+      "edges": {
+        "W_T": "edge_01",
+        "W_B": "edge_01",
+        "E_T": "edge_00",
+        "E_B": "edge_00",
+        "N": "edge_02",
+        "S": "edge_02"
+      },
+      "cells": []
+    }
+  ]
+}

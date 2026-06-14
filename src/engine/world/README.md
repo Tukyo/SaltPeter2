@@ -61,19 +61,26 @@ An originBiome per layer anchors it to cx 0; columns before it extend into negat
 
 Compiles to a flat `WorldChunk` array at startup, indexed by [`BiomeQuery`](biome/BiomeQuery.ts).
 
-| Interfaces & Types |
-|--------------------|
-```ts
-interface WorldChunk {
-    biome: BiomeName;
-    from: ChunkAddress;
-    to: ChunkAddress;
-}
-```
-
 | Method | Description |
 |--------|-------------|
 | [`static GetMap(): WorldChunk[]`](WorldMap.ts) | Returns the flat array of world chunks derived from the layout definition. |
+
+---
+
+### [`WorldStamp`](WorldStamp.ts)
+A precomputed blueprint stamp ready for WorldGen to apply.
+Holds a flat cell lookup keyed by content-relative index so StampPass
+can resolve each chunk cell in O(1) without scanning blueprint.cells.
+
+
+---
+
+### [`WorldStampRegistry`](WorldStampRegistry.ts)
+ Manages placed blueprint records and builds stamps for WorldGen.
+
+| Method | Description |
+|--------|-------------|
+| [`GetRecords(): ReadonlyArray<BlueprintPlacement>`](WorldStampRegistry.ts) | Returns all blueprint placement records in the StampRegistry. |
 
 ---
 

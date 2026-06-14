@@ -45,6 +45,7 @@ from a single source of truth.
 interface MaterialFilter {
     phases?: string[];
     tags?: string[];
+    names?: string[];
 }
 ```
 
@@ -55,6 +56,8 @@ interface MaterialFilter {
 | [`static GetTagOptions(): ReadonlyArray<{ value: string; label: string }>`](MaterialQuery.ts) | Returns all unique non-air material tags, formatted as value/label pairs. |
 | [`static DecodeColorIndex(seedByte: number): number`](MaterialQuery.ts) | Decodes the G-channel seed byte from an rgba8unorm identity texture pixel into a 0-based color index. |
 | [`static GetMaxDensity(): number`](MaterialQuery.ts) | Returns the highest density value across all registered materials. |
+| [`static GetVariantName(materialId: number, variantId: number): string \| undefined`](MaterialQuery.ts) | Returns the variant name for a given material id and variant id, or undefined if not found. |
+| [`static GetVariantId(materialId: number, variantName: string): number \| undefined`](MaterialQuery.ts) | Returns the variant id for a given material id and variant name, or undefined if not found. |
 | [`static GetFilteredOptions(filter: MaterialFilter): ReadonlyArray<{ value: number; label: string }>`](MaterialQuery.ts) | Filters non-air materials by phase and tag requirements, then returns them as sorted value/label pairs. |
 
 ---

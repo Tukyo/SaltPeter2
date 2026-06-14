@@ -28,10 +28,7 @@ Chunk storage, streaming, and buffer layout for the world system.
 | Interfaces & Types |
 |--------------------|
 ```ts
-interface ChunkAddress {
-    cx: number;
-    cy: number;
-}
+interface ChunkAddress { cx: number; cy: number; }
 ```
 
 ```ts
@@ -56,6 +53,7 @@ interface ChunkEntry {
 | Method | Description |
 |--------|-------------|
 | [`Get(address: ChunkAddress): ChunkEntry \| null`](ChunkManager.ts) | Returns the chunk entry for an address if it is currently loaded, or null. |
+| [`IsUploaded(address: ChunkAddress): boolean`](ChunkManager.ts) | Returns true if the chunk at the given address has been successfully written to the GPU texture. |
 | [`Entries(): IterableIterator<ChunkEntry>`](ChunkManager.ts) | Iterates over all currently loaded chunk entries. |
 
 ---

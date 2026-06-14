@@ -13,6 +13,7 @@ interface Window {
             list: () => Promise<string[]>;
             read: (path: string) => Promise<string>;
             write: (filename: string, content: string) => Promise<void>;
+            writeBinary: (filename: string, data: Uint8Array) => Promise<void>;
             move: (from: string, to: string) => Promise<void>;
             mkdir: (path: string) => Promise<void>;
             delete: (path: string) => Promise<void>;
@@ -22,6 +23,7 @@ interface Window {
             list: () => Promise<string[]>;
             read: (path: string) => Promise<string>;
             write: (filename: string, content: string) => Promise<void>;
+            writeBinary: (filename: string, data: Uint8Array) => Promise<void>;
             move: (from: string, to: string) => Promise<void>;
             mkdir: (path: string) => Promise<void>;
             delete: (path: string) => Promise<void>;
@@ -30,9 +32,13 @@ interface Window {
             list: () => Promise<string[]>;
             read: (path: string) => Promise<string>;
             write: (filename: string, content: string) => Promise<void>;
+            writeBinary: (filename: string, data: Uint8Array) => Promise<void>;
             move: (from: string, to: string) => Promise<void>;
             mkdir: (path: string) => Promise<void>;
             delete: (path: string) => Promise<void>;
+        };
+        screenshot: {
+            capture: (rect: { x: number; y: number; width: number; height: number }, filename: string) => Promise<void>;
         };
     };
 }

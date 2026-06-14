@@ -24,6 +24,15 @@ new Nitrate.AnalyticsOverlay();
 
 ---
 
+### [`BlueprintOverlay`](BlueprintOverlay.ts)
+Renders blueprint stamp outlines and name labels as a 2D canvas overlay.
+V tiles draw in red, H tiles draw in blue.
+
+Owned and driven by [`DebugOverlay`](DebugOverlay.ts) — do not instantiate directly.
+
+
+---
+
 ### [`ChunkOverlay`](ChunkOverlay.ts)
 Renders the chunk grid, biome labels, and world origin axes as a 2D canvas overlay.
 

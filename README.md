@@ -29,6 +29,7 @@ One of the main goals in this project is to obtain a better understanding of gam
 | Bresenham's Circle | [Jack Elton Bresenham](https://en.wikipedia.org/wiki/Midpoint_circle_algorithm) | $d(x, y) = x^2 + y^2 - r^2$ |
 | Thermal conduction | [Joseph Fourier](https://en.wikipedia.org/wiki/Joseph_Fourier) | $q = -k\nabla T$ |
 | Euler's Identity | [Leonhard Euler](https://en.wikipedia.org/wiki/Euler%27s_identity) | $Δω += (r × n) * j / I$ |
+| Herringbone Wang Tiles | [Sean Barrett](https://nothings.org/gamedev/herringbone/) | $E_i(d) = E_j(\bar d)$ |
 
 ## Guides
 Guides are available for the proprietary systems such as the Editor.

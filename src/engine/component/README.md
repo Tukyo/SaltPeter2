@@ -16,6 +16,34 @@ Each component definition carries a typed payload (transform, rigidbody, collide
 
 ## API
 
+### [`BlueprintLayout`](BlueprintLayout.ts)
+Computes pixel-space geometry for a blueprint tile's margin strip and the six seam edge zones.
+Orientation (landscape H vs portrait V) is inferred from the tile dimensions passed to [`GetEdgeZones`](BlueprintLayout.ts).
+
+| Interfaces & Types |
+|--------------------|
+```ts
+type EdgeKey = 'N_L' | 'N_R' | 'S_L' | 'S_R' | 'W' | 'E' | 'W_T' | 'W_B' | 'E_T' | 'E_B' | 'N' | 'S';
+```
+
+```ts
+interface EdgeZone { bounds: Rect2D; key: EdgeKey }
+```
+
+| Method | Description |
+|--------|-------------|
+| [`static GetMarginSize(): number`](BlueprintLayout.ts) | Returns the width of the outer margin strip in cells. |
+| [`static GetEdgeSize(): Size2D`](BlueprintLayout.ts) | Returns the pixel dimensions of a single edge zone rectangle. |
+| [`static GetEdgeZones(width: number, height: number): EdgeZone[]`](BlueprintLayout.ts) | Returns the six edge zones for a tile of the given pixel dimensions. Each zone carries its `EdgeKey` and tile-local pixel bounds. |
+
+---
+
+### [`BlueprintQuery`](BlueprintQuery.ts)
+ Helpers for reading and comparing blueprint edge seams.
+
+
+---
+
 ### [`ColliderGenerator`](ColliderGenerator.ts)
  Generates colliders for GameObjects.
 

@@ -1,3 +1,4 @@
+export * from './DataConfig'
 export * from './GameObjectConfig'
 export * from './ParticleConfig'
 export * from './PhysicsConfig'

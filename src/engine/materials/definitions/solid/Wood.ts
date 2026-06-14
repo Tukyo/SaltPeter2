@@ -5,10 +5,10 @@ export const Wood: MaterialDefinition = {
     id: MaterialIds.wood,
     name: 'wood',
     colors: [
-        { r: 55, g: 33, b: 14, a: 1 },
-        { r: 128, g: 86, b: 42, a: 1 },
-        { r: 82, g: 52, b: 22, a: 1 },
-        { r: 105, g: 70, b: 33, a: 1 },
+        { r: 108, g: 72, b: 34, a: 1 },
+        { r: 118, g: 78, b: 38, a: 1 },
+        { r: 94, g: 64, b: 34, a: 1 },
+        { r: 68, g: 44, b: 20, a: 1 },
     ],
     state: {
         health: 200,

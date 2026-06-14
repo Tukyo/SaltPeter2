@@ -26,4 +26,10 @@ Provides a slot-aware file I/O layer used by world streaming and any other syste
 
 ---
 
+### [`ScreenshotManager`](ScreenshotManager.ts)
+ Captures a screenshot of the app as a PNG and writes it to the Screenshots directory.
+
+
+---
+
 <!-- API_END -->

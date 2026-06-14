@@ -1,4 +1,4 @@
-import type { BrushShape } from './BrushTypes';
+import type { BrushMode, BrushShape, BrushType } from './BrushTypes';
 import type { Color } from '../definitions/Primitives';
 import type { MaterialId, MaterialOccupancy } from '../materials/definitions/MaterialIdentity';
 import type { SimulationLayer } from '../simulation/SimulationLayer';
@@ -17,7 +17,13 @@ import { SimulationManager } from '../simulation/SimulationManager';
 import { World } from '../world/World';
 import { WorldConfig } from '../config/WorldConfig';
 
-/** Manages the brush and all brush-related processes. */
+/** 
+ * Manages the brush and all brush-related processes.
+ *
+ * ```
+ * new Nitrate.BrushManager();
+ * ``` 
+ */
 export class BrushManager extends NitrateProcess {
     public static Instance: BrushManager | null = null;
 
@@ -28,6 +34,7 @@ export class BrushManager extends NitrateProcess {
     private simulationLayer: SimulationLayer | null = null;
 
     private blocked: boolean = false;
+    private marginSize: number = 0;
     private simTime: number = 0;
     private lastUpdateTime: number | null = null;
     private brushAccumulator: number = 0;
@@ -48,7 +55,30 @@ export class BrushManager extends NitrateProcess {
     }
 
     /** Returns the current shape of the brush as a number. */
-    public static ShapeIndex(shape: BrushShape): number { return shape === 'square' ? 1 : 0; }
+    private static ShapeIndex(shape: BrushShape): number { return shape === 'square' ? 1 : 0; }
+
+    /** Returns the current type of the brush as a number. */
+    private static TypeIndex(type: BrushType): number {
+        const map: Record<BrushType, number> = {
+            noise: 0,
+            palette: 1,
+            scatter: 2,
+            boxes: 3,
+            stripes: 4,
+            circles: 5
+        };
+        return map[type];
+    }
+
+    /** Returns the current mode of the brush as a number. */
+    private static ModeIndex(mode: BrushMode): number {
+        const map: Record<BrushMode, number> = {
+            fill: 0,
+            mask: 1,
+            overlay: 2
+        };
+        return map[mode];
+    }
 
     /**
      * Prevents brush strokes from being applied.
@@ -56,9 +86,12 @@ export class BrushManager extends NitrateProcess {
      * Useful for scenarios like when you need to capture mouse input for other purposes (e.g. drawing a bounding box or placing an anchor).
      */
     public Block(): void { this.blocked = true; }
-    
+
     /** Restores normal brush painting after a {@link Block} call. */
     public Unblock(): void { this.blocked = false; }
+
+    /** Sets the number of margin cells the brush shader will refuse to write. Pass 0 to disable. */
+    public SetMarginSize(size: number): void { this.marginSize = size; }
 
     public Update(now: number): void {
         const mouse = Input.Instance?.GetMouseState();
@@ -72,7 +105,7 @@ export class BrushManager extends NitrateProcess {
         const dt = Math.min(Math.max(0, time - this.lastUpdateTime), config.time.maxDeltaTime);
         this.lastUpdateTime = time;
 
-        const mouseActive = mouse.leftDown && mouse.isInside && !this.blocked;
+        const mouseActive = (mouse.leftDown || mouse.rightDown) && mouse.isInside && !this.blocked;
         if (!mouseActive) { this.brushAccumulator = 0; return; }
 
         this.brushAccumulator = Math.min(
@@ -92,9 +125,10 @@ export class BrushManager extends NitrateProcess {
         const camY = Camera.Instance?.GetCameraPos().y ?? 0;
         const simX = margin + (mouse.pos.x + camX) * contentW / canvas.width;
         const simY = margin + (mouse.pos.y - camY) * contentH / canvas.height;
+        const isErase = mouse.rightDown;
         for (let i = 0; i < steps; i++) {
             this.simTime += 1 / config.time.baseTickRate;
-            this.Apply(simX, simY, this.simTime);
+            this.Apply(simX, simY, this.simTime, isErase);
         }
     }
 
@@ -125,9 +159,7 @@ export class BrushManager extends NitrateProcess {
     }
 
     /** Sets whether cells placed by the brush are dynamic (simulated) or static (bypasses sim). */
-    public SetOccupancy(value: MaterialOccupancy): void {
-        this.state.SetOccupancy(value);
-    }
+    public SetOccupancy(value: MaterialOccupancy): void { this.state.SetOccupancy(value); }
 
     /** Sets the current variant for the brush when the active material has any variants. */
     public SetVariant(variantId: number): void {
@@ -141,12 +173,17 @@ export class BrushManager extends NitrateProcess {
         this.onPaletteChange?.(colors);
     }
 
-    private Apply(simX: number, simY: number, simTime: number): void {
+    /** Dispatches a single brush GPU pass at the given simulation-space coordinates. */
+    private Apply(simX: number, simY: number, simTime: number, isErase: boolean): void {
         if (!this.device || !this.brushPass || !this.simulationLayer) { return; }
         const { state } = this;
-        const materialId = state.GetMode() === 'erase' ? 0 : state.GetMaterialId();
+        const materialId = isErase ? 0 : state.GetMaterialId();
         if (!SceneManager.IsDirty() && materialId !== 0) { SceneManager.MarkDirty(); }
         if (this.onFirstPaint && materialId !== 0) { this.onFirstPaint(); }
+
+        const raw = state.GetColorWeights();
+        const weightTotal = raw[0] + raw[1] + raw[2] + raw[3];
+        const weightScale = weightTotal > 0 ? 1 / weightTotal : 0.25;
 
         const enc = this.device.createCommandEncoder();
         this.brushPass.Run({
@@ -160,9 +197,18 @@ export class BrushManager extends NitrateProcess {
             snap: state.GetSnap(),
             shape: BrushManager.ShapeIndex(state.GetShape()),
             colorVariant: state.GetColor(),
-            brushType: state.GetType() === 'palette' ? 1 : 0,
+            brushType: BrushManager.TypeIndex(state.GetType()),
             variantId: state.GetVariantId(),
             occupancy: state.GetOccupancy() === 'static' ? 2 : 1,
+            paintMode: BrushManager.ModeIndex(state.GetMode()),
+            marginSize: this.marginSize,
+            colorWeight0: raw[0] * weightScale,
+            colorWeight1: raw[1] * weightScale,
+            colorWeight2: raw[2] * weightScale,
+            colorWeight3: raw[3] * weightScale,
+            stripeAngle: state.GetStripeAngle() * (Math.PI / 180),
+            stripeWidth: state.GetStripeWidth(),
+            overlayFilter: state.GetOverlayFilter() ? 1 : 0,
         });
         this.device.queue.submit([enc.finish()]);
         this.simulationLayer.SwapIdentity();
@@ -177,7 +223,7 @@ export class BrushManager extends NitrateProcess {
 
         this.brushPass?.Destroy();
         this.brushPass = null;
-        
+
         this.simulationLayer = null;
         this.device = null;
 

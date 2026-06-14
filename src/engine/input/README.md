@@ -41,9 +41,12 @@ type MouseButton = 0 | 1 | 2;
 | [`OnMouseUp(button: MouseButton, callback: (e: MouseEvent) => void): () => void`](Input.ts) | Subscribes to mouseup (window-level, catches drag-releases). Returns an unsubscribe function. |
 | [`OnMouseMove(callback: (e: MouseEvent) => void): () => void`](Input.ts) | Subscribes to mousemove on the canvas. Returns an unsubscribe function. |
 | [`ResetMouseState(): void`](Input.ts) | Resets all mouse state to defaults. Call on scene transitions to prevent stale input. |
-| [`IsKeyDown(key: string): boolean`](Input.ts) | Returns true while the given key is held. |
-| [`OnKeyDown(key: string, callback: () => void): () => void`](Input.ts) | Subscribes to the first keydown for a key (repeat events ignored). Returns an unsubscribe function. |
-| [`OnKeyUp(key: string, callback: () => void): () => void`](Input.ts) | Subscribes to keyup for a key. Returns an unsubscribe function. |
+| [`IsKeyDown(key: string): boolean`](Input.ts) | Returns true while the given key is held (by key value). |
+| [`IsKeyCodeDown(code: string): boolean`](Input.ts) | Returns true while the given key is held (by key code, e.g. 'Numpad0'). |
+| [`OnKeyDown(key: string, callback: () => void): () => void`](Input.ts) | Subscribes to the first keydown for a key value (repeat events ignored). Returns an unsubscribe function. |
+| [`OnKeyUp(key: string, callback: () => void): () => void`](Input.ts) | Subscribes to keyup for a key value. Returns an unsubscribe function. |
+| [`OnKeyCode(code: string, callback: () => void): () => void`](Input.ts) | Subscribes to the first keydown for a key code (e.g. 'Numpad0', repeat ignored). Returns an unsubscribe function. |
+| [`OnKeyCodeUp(code: string, callback: () => void): () => void`](Input.ts) | Subscribes to keyup for a key code. Returns an unsubscribe function. |
 
 ---
 

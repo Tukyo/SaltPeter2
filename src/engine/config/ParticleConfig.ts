@@ -9,7 +9,5 @@ export class ParticleConfig {
     };
 
     /** Returns the particle configuration. */
-    public static GetConfig() {
-        return ParticleConfig.config;
-    }
+    public static GetConfig() { return ParticleConfig.config; }
 }

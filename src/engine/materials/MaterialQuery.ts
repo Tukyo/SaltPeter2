@@ -6,6 +6,7 @@ import { MaterialVisualSchema } from './MaterialVisualSchema';
 export interface MaterialFilter {
     phases?: string[];
     tags?: string[];
+    names?: string[];
 }
 
 /** Helpers for reading and filtering materials. */
@@ -45,12 +46,23 @@ export class MaterialQuery {
         return Math.max(...Object.values(MaterialRegistry.Materials).map(m => m.physics.density));
     }
 
+    /** Returns the variant name for a given material id and variant id, or undefined if not found. */
+    public static GetVariantName(materialId: number, variantId: number): string | undefined {
+        return MaterialQuery.byId[materialId]?.variants?.find(v => v.id === variantId)?.name;
+    }
+
+    /** Returns the variant id for a given material id and variant name, or undefined if not found. */
+    public static GetVariantId(materialId: number, variantName: string): number | undefined {
+        return MaterialQuery.byId[materialId]?.variants?.find(v => v.name === variantName)?.id;
+    }
+
     /** Filters non-air materials by phase and tag requirements, then returns them as sorted value/label pairs. */
     public static GetFilteredOptions(filter: MaterialFilter): ReadonlyArray<{ value: number; label: string }> {
         return (Object.keys(MaterialRegistry.Materials) as MaterialName[])
             .filter(name => name !== 'air')
             .filter(name => {
                 const mat = MaterialRegistry.Materials[name];
+                if (filter.names && !filter.names.includes(name)) { return false; }
                 if (filter.phases !== undefined && !filter.phases.includes(mat.phase)) { return false; }
                 if (filter.tags && filter.tags.length > 0 && (!mat.tags || !filter.tags.every(t => (mat.tags as string[]).includes(t)))) { return false; }
                 return true;

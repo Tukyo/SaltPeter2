@@ -94,5 +94,6 @@ export const MaterialIds = {
     obsidian: 91,
     plastic: 92,
     plastic_molten: 93,
-    caramel: 94
+    caramel: 94,
+    saltpeter: 95
 } as const;

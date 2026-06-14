@@ -1,10 +1,10 @@
 import type { BrushMode, BrushShape, BrushType } from './BrushTypes';
+import type { Color } from '../definitions/Primitives';
 import type { MaterialId, MaterialOccupancy } from '../materials/definitions/MaterialIdentity';
 
-import type { Color } from '../definitions/Primitives';
 import { LogManager } from '../debug/LogManager';
 
-/** Provides the state of the brush. */
+/** Provides the state of the brush. Initialized by the BrushManager.*/
 export class BrushState {
     private materialId: MaterialId = 0;
     /** Returns the active material ID. */
@@ -33,28 +33,28 @@ export class BrushState {
         LogManager.Instance?.Log({ text: `density → ${value}`, options: { tags: ['Brush'] } });
     }
 
-    private mode: BrushMode = 'draw';
-    /** Returns the current brush mode (draw or erase). */
+    private mode: BrushMode = 'fill';
+    /** Returns the current brush mode. */
     public GetMode(): BrushMode { return this.mode; }
-    /** Sets the brush mode (draw or erase). */
+    /** Sets the brush mode. */
     public SetMode(value: BrushMode): void {
         this.mode = value;
         LogManager.Instance?.Log({ text: `mode → ${value}`, options: { tags: ['Brush'] } });
     }
 
     private shape: BrushShape = 'circle';
-    /** Returns the current brush shape (circle or square). */
+    /** Returns the current brush shape. */
     public GetShape(): BrushShape { return this.shape; }
-    /** Sets the brush shape (circle or square). */
+    /** Sets the brush shape. */
     public SetShape(value: BrushShape): void {
         this.shape = value;
         LogManager.Instance?.Log({ text: `shape → ${value}`, options: { tags: ['Brush'] } });
     }
 
     private type: BrushType = 'noise';
-    /** Returns the brush stroke type (noise or palette). */
+    /** Returns the brush type. */
     public GetType(): BrushType { return this.type; }
-    /** Sets the brush stroke type (noise or palette). */
+    /** Sets the brush type. */
     public SetType(value: BrushType): void {
         this.type = value;
         LogManager.Instance?.Log({ text: `type → ${value}`, options: { tags: ['Brush'] } });
@@ -67,6 +67,15 @@ export class BrushState {
     public SetColor(value: number): void {
         this.color = value;
         LogManager.Instance?.Log({ text: `color → ${value}`, options: { tags: ['Brush'] } });
+    }
+
+    private colorWeights: [number, number, number, number] = [82, 6, 6, 6];
+    /** Returns the per-color weights used by certain brush types (raw, not normalized). */
+    public GetColorWeights(): [number, number, number, number] { return this.colorWeights; }
+    /** Sets the per-color weights used by certain brush types. */
+    public SetColorWeights(value: [number, number, number, number]): void {
+        this.colorWeights = value;
+        LogManager.Instance?.Log({ text: `colorWeights → ${value.join(',')}`, options: { tags: ['Brush'] } });
     }
 
     private variantId: number = 0;
@@ -85,6 +94,33 @@ export class BrushState {
     public SetOccupancy(value: MaterialOccupancy): void {
         this.occupancy = value;
         LogManager.Instance?.Log({ text: `occupancy → ${value}`, options: { tags: ['Brush'] } });
+    }
+
+    private stripeWidth: number = 4;
+    /** Returns the stripe width in cells. */
+    public GetStripeWidth(): number { return this.stripeWidth; }
+    /** Sets the stripe width in cells. */
+    public SetStripeWidth(value: number): void {
+        this.stripeWidth = value;
+        LogManager.Instance?.Log({ text: `stripeWidth → ${value}`, options: { tags: ['Brush'] } });
+    }
+
+    private stripeAngle: number = 45;
+    /** Returns the stripe angle in degrees (0–360). */
+    public GetStripeAngle(): number { return this.stripeAngle; }
+    /** Sets the stripe angle in degrees (0–360). */
+    public SetStripeAngle(value: number): void {
+        this.stripeAngle = value;
+        LogManager.Instance?.Log({ text: `stripeAngle → ${value}`, options: { tags: ['Brush'] } });
+    }
+
+    private overlayFilter: boolean = false;
+    /** Returns whether overlay mode is restricted to the active material and variant. */
+    public GetOverlayFilter(): boolean { return this.overlayFilter; }
+    /** Sets whether overlay mode is restricted to the active material and variant. */
+    public SetOverlayFilter(value: boolean): void {
+        this.overlayFilter = value;
+        LogManager.Instance?.Log({ text: `overlayFilter → ${value}`, options: { tags: ['Brush'] } });
     }
 
     private snap: boolean = false;

@@ -1,5 +1,9 @@
+import type { BlueprintEdges } from '../../component/definitions/blueprint/Blueprint';
+
 import { Blueprint } from '../../component/definitions/blueprint/Blueprint';
+import { BlueprintLayout } from '../../component/BlueprintLayout';
 import { Export } from './Export';
+import { MaterialIds } from '../../materials/definitions/Materials';
 import { MaterialQuery } from '../../materials/MaterialQuery';
 import { SimulationManager } from '../../simulation/SimulationManager';
 
@@ -20,7 +24,7 @@ export class ExportBlueprint extends Export {
         return 'Blueprints/' + go.name + '.blueprint.json';
     }
 
-    /** Reads the full simulation texture and serialises all non-empty cells into the blueprint component before writing to disk. @internal */
+    /** Serialises all non-empty cells into the blueprint component before writing to disk. @internal */
     public async Run(): Promise<void> {
         const go = this.gameObjectProvider?.() ?? null;
         const sim = SimulationManager.Instance;
@@ -41,14 +45,18 @@ export class ExportBlueprint extends Export {
         const blueprint = go.GetComponent(Blueprint);
         if (blueprint) {
             blueprint.size = { width, height };
+            blueprint.edges = this.ReadEdges(data, bytesPerRow, width, height);
             blueprint.cells = [];
 
-            for (let cy = 0; cy < height; cy++) {
-                for (let cx = 0; cx < width; cx++) {
-                    const byteOffset = (height - 1 - cy) * bytesPerRow + cx * 4;
+            const border = BlueprintLayout.GetMarginSize();
+            for (let cy = border; cy < height - border; cy++) {
+                for (let cx = border; cx < width - border; cx++) {
+                    const byteOffset = cy * bytesPerRow + cx * 4;
                     if (data[byteOffset] === 0) { continue; }
-                    const colorVariant = MaterialQuery.DecodeColorIndex(data[byteOffset + 1]);
-                    blueprint.cells.push({ pos: { x: cx, y: cy }, colorVariant });
+                    const type = this.DecodeVariantType(data[byteOffset + 2]);
+                    if (!type) { continue; }
+                    const colorIndex = MaterialQuery.DecodeColorIndex(data[byteOffset + 1]);
+                    blueprint.cells.push({ pos: { x: cx, y: cy }, type, colorIndex });
                 }
             }
         }
@@ -56,8 +64,29 @@ export class ExportBlueprint extends Export {
         await this.WriteFile(go, 'blueprint', { size: { width, height } });
     }
 
+    /** Reads edge zone pixels from raw texture data and returns the populated edge map. */
+    private ReadEdges(data: Uint8Array, bytesPerRow: number, width: number, height: number): BlueprintEdges {
+        const edges: BlueprintEdges = {};
+        for (const { bounds, key } of BlueprintLayout.GetEdgeZones(width, height)) {
+            const byteOffset = bounds.y1 * bytesPerRow + bounds.x1 * 4;
+            const variantId = data[byteOffset + 2];
+            if (variantId === 0) { continue; }
+            const variantName = MaterialQuery.GetVariantName(MaterialIds.blueprint, variantId);
+            if (variantName) { edges[key] = variantName; }
+        }
+        return edges;
+    }
+
+    /** Returns the variant type name for the given variant ID, or null if unregistered. */
+    private DecodeVariantType(variantId: number): string | null {
+        if (variantId === 0) { return 'solid'; }
+        return MaterialQuery.GetVariantName(MaterialIds.blueprint, variantId) ?? null;
+    }
+
     public OnDestroy(): void {
         super.OnDestroy();
-        if (ExportBlueprint.Instance === this) { ExportBlueprint.Instance = null; }
+        if (ExportBlueprint.Instance === this) {
+            ExportBlueprint.Instance = null;
+        }
     }
 }

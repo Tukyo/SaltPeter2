@@ -1,0 +1,36 @@
+{
+  "name": "Template_Horizontal_05",
+  "components": [
+    {
+      "enabled": true,
+      "type": "Transform",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "scale": {
+        "x": 1,
+        "y": 1
+      },
+      "parentId": null
+    },
+    {
+      "enabled": true,
+      "type": "Blueprint",
+      "size": {
+        "width": 264,
+        "height": 136
+      },
+      "edges": {
+        "N_L": "edge_02",
+        "S_L": "edge_03",
+        "N_R": "edge_02",
+        "S_R": "edge_03",
+        "W": "edge_00",
+        "E": "edge_01"
+      },
+      "cells": []
+    }
+  ]
+}

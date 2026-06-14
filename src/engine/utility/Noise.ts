@@ -6,15 +6,18 @@ export enum NoiseType {
     Ridged = 'ridged',
     Worley = 'worley',
     Voronoi = 'voronoi',
-    Hash2D = 'hash2d'
+    Hash2D = 'hash2d',
+    Boxes = 'boxes',
+    Circles = 'circles',
 }
 
-export interface GetNoiseParams {
+interface NoiseParams {
     noiseType: NoiseType;
     coords: Vec2;
     seed: number;
-    options: NoiseOptions;
 }
+
+export interface GetNoiseParams extends NoiseParams { options: NoiseOptions; }
 
 export interface NoiseOptions {
     octaves?: number;
@@ -22,6 +25,8 @@ export interface NoiseOptions {
     scale?: number;
     amplitude?: number;
 }
+
+export interface ColorNoiseParams extends NoiseParams { weights: number[]; scale?: number; }
 
 /** Utility class that provides general noise-based math. */
 export class Noise {
@@ -52,6 +57,18 @@ export class Noise {
                 raw = Noise.PerlinNoise(sx, sy, seed);
         }
         return (raw * 2 - 1) * amp;
+    }
+
+    /** Returns noise functions used for color variation. */
+    public static GetColorNoise(params: ColorNoiseParams): number {
+        const { noiseType, coords, seed, weights, scale } = params;
+        const sx = coords.x / (scale ?? 1);
+        const sy = coords.y / (scale ?? 1);
+        switch (noiseType) {
+            case NoiseType.Boxes: return Noise.BoxesColorSeed(sx, sy, seed, weights);
+            case NoiseType.Circles: return Noise.CirclesColorSeed(sx, sy, seed, weights);
+            default: return 0;
+        }
     }
 
     /**
@@ -112,6 +129,65 @@ export class Noise {
 
     private static VoronoiNoise(x: number, y: number, seed: number): number {
         return Noise.WorleyNoise(x, y, seed, 1);
+    }
+
+    private static WGSLFract(x: number): number {
+        return x - Math.floor(x);
+    }
+
+    // 123.34 → fract 17/50, period 50. 123.4321 → fract 4321/10000, period 10000.
+    // Same structure as brush.wgsl hash() but with long-period constants for world-scale use.
+    private static WGSLHash(px: number, py: number): number {
+        const qx = Noise.WGSLFract(px * 123.4321);
+        const qy = Noise.WGSLFract(py * 456.7891);
+        const d = qx * (qx + 45.3219) + qy * (qy + 45.3219);
+        return Noise.WGSLFract((qx + d) * (qy + d));
+    }
+
+    // Weights must be pre-normalized (sum to 1.0). Returns bucket index 0–(weights.length-1).
+    private static CdfBucket(hash: number, weights: number[]): number {
+        let cumulative = 0;
+        for (let i = 0; i < weights.length - 1; i++) {
+            cumulative += weights[i];
+            if (hash < cumulative) { return i; }
+        }
+        return weights.length - 1;
+    }
+
+    private static BoxesColorSeed(x: number, y: number, seed: number, weights: number[]): number {
+        const bx = Math.floor(x / 2);
+        const by = Math.floor(y / 2);
+        const sizeHash = Noise.WGSLHash(bx + 7.31 + seed, by + 43.17 + seed);
+        const cellX = sizeHash < 0.6 ? bx : Math.floor(x);
+        const cellY = sizeHash < 0.6 ? by : Math.floor(y);
+        return Noise.CdfBucket(Noise.WGSLHash(cellX + 91.37 + seed, cellY + 17.73 + seed), weights);
+    }
+
+    private static CirclesColorSeed(x: number, y: number, seed: number, weights: number[]): number {
+        const bx4 = Math.floor(x / 4);
+        const by4 = Math.floor(y / 4);
+        const sizeHash = Noise.WGSLHash(bx4 + 23.17 + seed, by4 + 71.31 + seed);
+        let cellHash: number;
+        if (sizeHash < 0.6) {
+            const centerX = bx4 * 4 + 2;
+            const centerY = by4 * 4 + 2;
+            const inSplotch = Math.sqrt((Math.floor(x) + 0.5 - centerX) ** 2 + (Math.floor(y) + 0.5 - centerY) ** 2) < 1.65;
+            cellHash = inSplotch
+                ? Noise.WGSLHash(bx4 + 91.37 + seed, by4 + 17.73 + seed)
+                : Noise.WGSLHash(Math.floor(x) + 37.13 + seed, Math.floor(y) + 61.91 + seed);
+        } else {
+            const bx3 = Math.floor(x / 3);
+            const by3 = Math.floor(y / 3);
+            const centerX = bx3 * 3 + 1.5;
+            const centerY = by3 * 3 + 1.5;
+            const dx = Math.abs(Math.floor(x) + 0.5 - centerX);
+            const dy = Math.abs(Math.floor(y) + 0.5 - centerY);
+            const inSplotch = (dx + dy) < 1.5;
+            cellHash = inSplotch
+                ? Noise.WGSLHash(bx3 + 91.37 + seed, by3 + 17.73 + seed)
+                : Noise.WGSLHash(Math.floor(x) + 37.13 + seed, Math.floor(y) + 61.91 + seed);
+        }
+        return Noise.CdfBucket(cellHash, weights);
     }
 
     private static InterpolateNoise(x: number, y: number, seed: number): number {

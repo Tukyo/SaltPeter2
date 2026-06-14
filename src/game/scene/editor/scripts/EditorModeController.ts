@@ -22,6 +22,7 @@ export class EditorModeController extends Nitrate.NitrateProcess {
         this.panel = new Nitrate.CollapsiblePanel({
             label: 'Editor',
             parent: Nitrate.UserInterfaceManager.Instance?.panelContent,
+            collapsed: true,
             style: { top: '14px', right: '14px', width: '240px' }
         });
 

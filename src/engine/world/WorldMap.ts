@@ -1,15 +1,29 @@
 import type { BiomeName } from './biome/definitions/BiomeIdentity';
 import type { ChunkAddress } from './chunk/ChunkData';
+import type { Size2D, Vec2 } from '../definitions/Primitives';
+import type { StampErosionConfig } from './WorldGen';
 
+import { NoiseType } from '../utility/Noise';
+
+//@omitfromdocs
 export interface WorldChunk {
     biome: BiomeName;
     from: ChunkAddress;
     to: ChunkAddress;
+    stampRegion?: { from: ChunkAddress; to: ChunkAddress; erosion?: StampErosionConfig };
 }
 
 interface BiomeEntry {
     name: BiomeName;
     width: number;
+    stamps?: BiomeStampRegion;
+}
+
+interface BiomeStampRegion {
+    offset?: Vec2; // Offset applied to stamp region - defaults to {x:0, y:0}
+    size?: Size2D; // Size of the stamp region - defaults to full biome extent
+    padding?: number; // Padding around the stamp, shrinks all four sides equally (applied after offset/size)
+    erosion?: StampErosionConfig;
 }
 
 interface WorldZone {
@@ -47,7 +61,21 @@ export class WorldMap {
             originBiome: 'antra',
             biomes: [
                 { name: 'glacialis', width: 80 },
-                { name: 'antra', width: 50 },
+                {
+                    name: 'antra',
+                    width: 50,
+                    stamps: {
+                        padding: 1,
+                        erosion: {
+                            depth: 12,
+                            noise: {
+                                type: NoiseType.Perlin,
+                                options: { octaves: 3, scale: 20, amplitude: 2, persistence: 0.5 },
+                                threshold: 1
+                            }
+                        }
+                    }
+                },
                 { name: 'arenosus', width: 100 }
             ]
         },
@@ -71,10 +99,25 @@ export class WorldMap {
         for (let i = 0; i < originIndex; i++) cx -= zone.biomes[i].width;
 
         for (const entry of zone.biomes) {
+            let stampRegion: WorldChunk['stampRegion'];
+            if (entry.stamps) {
+                const s = entry.stamps;
+                const ox = s.offset?.x ?? 0;
+                const oy = s.offset?.y ?? 0;
+                const w = s.size?.width ?? entry.width;
+                const h = s.size?.height ?? (cyTo - cyFrom);
+                const p = s.padding ?? 0;
+                stampRegion = {
+                    from: { cx: cx + ox + p, cy: cyFrom + oy + p },
+                    to: { cx: cx + ox + w - p, cy: cyFrom + oy + h - p },
+                    erosion: s.erosion,
+                };
+            }
             chunks.push({
                 biome: entry.name,
                 from: { cx, cy: cyFrom },
-                to: { cx: cx + entry.width, cy: cyTo }
+                to: { cx: cx + entry.width, cy: cyTo },
+                stampRegion
             });
             cx += entry.width;
         }
@@ -91,7 +134,5 @@ export class WorldMap {
     }
 
     /** Returns the flat array of world chunks derived from the layout definition. */
-    public static GetMap(): WorldChunk[] {
-        return WorldMap.map;
-    }
+    public static GetMap(): WorldChunk[] { return WorldMap.map; }
 }

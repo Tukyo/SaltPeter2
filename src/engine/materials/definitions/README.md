@@ -64,14 +64,14 @@ The optional `neighborMask` restricts which of the 8 surrounding cells are check
 | Lead | Milk Powder | Iron Molten |  |  |
 | Meat | Moss | Latte |  |  |
 | Meat Burned | Salt | Lava |  |  |
-| Meat Cooked | Sand | Lead Molten |  |  |
-| Meat Rotten | Sawdust | Milk |  |  |
-| Milk Frozen | Silver Powder | Oil |  |  |
-| Mud | Snow | Peat |  |  |
-| Obsidian | Soil | Plastic Molten |  |  |
-| Permafrost | Sugar | Poison |  |  |
-| Plastic | Tin Powder | Saltwater |  |  |
-| Poison Frozen |  | Silver Molten |  |  |
+| Meat Cooked | Saltpeter | Lead Molten |  |  |
+| Meat Rotten | Sand | Milk |  |  |
+| Milk Frozen | Sawdust | Oil |  |  |
+| Mud | Silver Powder | Peat |  |  |
+| Obsidian | Snow | Plastic Molten |  |  |
+| Permafrost | Soil | Poison |  |  |
+| Plastic | Sugar | Saltwater |  |  |
+| Poison Frozen | Tin Powder | Silver Molten |  |  |
 | Red |  | Steel Molten |  |  |
 | Rust |  | Tin Molten |  |  |
 | Sandstone |  | Urine |  |  |

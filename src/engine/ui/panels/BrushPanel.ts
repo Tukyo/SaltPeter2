@@ -1,7 +1,7 @@
 import type { BrushShape, BrushMode, BrushType } from '../../brush/BrushTypes';
 import type { BrushState } from '../../brush/BrushState';
+import type { ChoiceSetting, PaletteSetting, RangeSetting } from '../UserInterfaceTypes';
 import type { Color } from '../../definitions/Primitives'
-import type { RangeSetting, ChoiceSetting, PaletteSetting } from '../UserInterfaceTypes';
 
 import { BrushManager } from '../../brush/BrushManager';
 import { ChoiceControl } from '../controls/ChoiceControl';
@@ -50,6 +50,10 @@ export class BrushPanel extends NitrateProcess {
 
     private modeElement: HTMLDivElement | null = null;
     private modeSetting: ChoiceSetting | null = null;
+    private modeOptionsSection: HTMLElement | null = null;
+    
+    private overlayFilterElement: HTMLDivElement | null = null;
+    private overlayFilterSetting: ChoiceSetting | null = null;
 
     private typeElement: HTMLDivElement | null = null;
     private typeSetting: ChoiceSetting | null = null;
@@ -60,6 +64,17 @@ export class BrushPanel extends NitrateProcess {
 
     private paletteElement: HTMLDivElement | null = null;
     private paletteSection: HTMLElement | null = null;
+
+    private colorWeightSection: HTMLElement | null = null;
+    private readonly colorWeightElements: HTMLInputElement[] = [];
+    private readonly colorWeightSwatches: HTMLElement[] = [];
+
+    private stripeAngleElement: HTMLInputElement | null = null;
+    private stripeAngleSetting: RangeSetting | null = null;
+    private stripeAngleSection: HTMLElement | null = null;
+
+    private stripeWidthElement: HTMLInputElement | null = null;
+    private stripeWidthSetting: RangeSetting | null = null;
 
     private wheelTarget: HTMLElement | null = null;
     private readonly handleWheel: (e: WheelEvent) => void;
@@ -90,9 +105,13 @@ export class BrushPanel extends NitrateProcess {
         if (options.type !== undefined) { this.SetupType(options, brushManager); }
         if (options.snap !== undefined) { this.SetupSnap(options, brushManager); }
         this.SetupPalette(brushManager);
+        this.SetupColorWeights(brushManager);
+        this.SetupStripeAngle(brushManager);
+        this.SetupStripeWidth(brushManager);
 
         this.sizeSync?.();
-        this.SyncPaletteVisibility();
+        this.SyncBrushTypeControls();
+        this.SyncBrushModeControls();
         this.ApplySettings();
 
         this.handleWheel = (e: WheelEvent) => {
@@ -185,27 +204,51 @@ export class BrushPanel extends NitrateProcess {
         return ChoiceControl.Instance.GetRawValue(this.shapeElement, this.shapeSetting) === 'square' ? 'square' : 'circle';
     }
 
-    /** Builds the brush draw/erase mode choice control and binds it to BrushState. */
+    /** Builds the brush fill/mask mode choice control and binds it to BrushState. */
     private SetupMode(options: BrushOptions, brushManager: () => BrushState | undefined): void {
         const o = options.mode;
         if (!o) { return; }
         this.modeSetting = {
             id: 'brush-mode', type: 'choice',
-            options: [{ value: 'draw', label: 'Draw' }, { value: 'erase', label: 'Erase' }],
-            default: o.default ?? 'draw',
+            options: [
+                { value: 'fill', label: 'Fill' },
+                { value: 'mask', label: 'Mask' },
+                { value: 'overlay', label: 'Overlay' },
+            ],
+            default: o.default ?? 'fill',
         };
         const { wrapper, element } = ChoiceControl.Instance.Build('brush-mode', this.modeSetting);
         this.modeElement = element as HTMLDivElement;
         if (o.show !== false) { this.panel.AddSection('Mode').appendChild(wrapper); }
         ChoiceControl.Instance.Bind('brush-mode', this.modeElement, {}, () => {
+            this.SyncBrushModeControls();
             brushManager()?.SetMode(this.GetMode());
+        }, null);
+        this.SetupOverlayFilter(brushManager);
+    }
+
+    /** Builds the overlay filter choice control shown in the mode options section when overlay mode is active. */
+    private SetupOverlayFilter(brushManager: () => BrushState | undefined): void {
+        this.overlayFilterSetting = {
+            id: 'brush-overlay-filter', type: 'choice',
+            options: [{ value: 'disabled', label: 'Disabled' }, { value: 'enabled', label: 'Enabled' }],
+            default: 'disabled',
+        };
+        const { wrapper, element } = ChoiceControl.Instance.Build('brush-overlay-filter', this.overlayFilterSetting);
+        this.overlayFilterElement = element as HTMLDivElement;
+        this.modeOptionsSection = this.panel.AddSection('Filter');
+        this.modeOptionsSection.appendChild(wrapper);
+        ChoiceControl.Instance.Bind('brush-overlay-filter', this.overlayFilterElement, {}, () => {
+            brushManager()?.SetOverlayFilter(this.GetOverlayFilter());
         }, null);
     }
 
-    /** Returns the current brush mode, or 'draw' if no mode control exists. */
+    /** Returns the current brush mode, or 'fill' if no mode control exists. */
     public GetMode(): BrushMode {
-        if (!this.modeElement || !this.modeSetting) { return 'draw'; }
-        return ChoiceControl.Instance.GetRawValue(this.modeElement, this.modeSetting) === 'erase' ? 'erase' : 'draw';
+        if (!this.modeElement || !this.modeSetting) { return 'fill'; }
+        const value = ChoiceControl.Instance.GetRawValue(this.modeElement, this.modeSetting);
+        if (value === 'mask' || value === 'overlay') { return value; }
+        return 'fill';
     }
 
     /** Builds the brush type (noise/palette) choice control and binds it to BrushState. */
@@ -214,7 +257,14 @@ export class BrushPanel extends NitrateProcess {
         if (!o) { return; }
         this.typeSetting = {
             id: 'brush-type', type: 'choice',
-            options: [{ value: 'noise', label: 'Noise' }, { value: 'palette', label: 'Palette' }],
+            options: [
+                { value: 'noise', label: 'Noise' },
+                { value: 'palette', label: 'Palette' },
+                { value: 'scatter', label: 'Scatter' },
+                { value: 'boxes', label: 'Boxes' },
+                { value: 'stripes', label: 'Stripes' },
+                { value: 'circles', label: 'Circles' },
+            ],
             default: o.default ?? 'noise',
         };
         const { wrapper, element, sync } = ChoiceControl.Instance.Build('brush-type', this.typeSetting);
@@ -222,14 +272,16 @@ export class BrushPanel extends NitrateProcess {
         this.typeSync = sync;
         if (o.show !== false) { this.panel.AddSection('Type').appendChild(wrapper); }
         ChoiceControl.Instance.Bind('brush-type', this.typeElement, {}, () => {
-            this.SyncPaletteVisibility(); brushManager()?.SetType(this.GetBrushType());
+            this.SyncBrushTypeControls(); brushManager()?.SetType(this.GetBrushType());
         }, null);
     }
 
     /** Returns the current brush type, or 'noise' if no type control exists. */
     public GetBrushType(): BrushType {
         if (!this.typeElement || !this.typeSetting) { return 'noise'; }
-        return ChoiceControl.Instance.GetRawValue(this.typeElement, this.typeSetting) === 'palette' ? 'palette' : 'noise';
+        const value = ChoiceControl.Instance.GetRawValue(this.typeElement, this.typeSetting);
+        if (value === 'palette' || value === 'scatter' || value === 'boxes' || value === 'stripes' || value === 'circles') { return value; }
+        return 'noise';
     }
 
     /** Builds the brush snap choice control and binds it to BrushState. */
@@ -270,11 +322,92 @@ export class BrushPanel extends NitrateProcess {
                     this.typeElement.dataset.value = 'palette';
                     this.typeSync?.();
                 }
-                this.SyncPaletteVisibility();
+                this.SyncBrushTypeControls();
                 brushManager()?.SetType('palette');
                 brushManager()?.SetColor(i);
             });
         });
+    }
+
+    /** Builds the per-color weight sliders for the boxes brush type. */
+    private SetupColorWeights(brushManager: () => BrushState | undefined): void {
+        this.colorWeightSection = this.panel.AddSection('Color Weights');
+        const defaults: [number, number, number, number] = [82, 6, 6, 6];
+
+        for (let i = 0; i < 4; i++) {
+            const id = `brush-box-weight-${i}`;
+            const setting: RangeSetting = {
+                id,
+                label: '',
+                type: 'range',
+                min: 0, max: 100, step: 1,
+                default: defaults[i],
+                suffix: '%', decimals: 0, readout: true,
+            };
+            const { wrapper, element, sync } = RangeControl.Instance.Build(id, setting);
+            const input = element as HTMLInputElement;
+            this.colorWeightElements.push(input);
+
+            const swatch = document.createElement('span');
+            swatch.style.cssText = 'display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle;background:#999;';
+            this.colorWeightSwatches.push(swatch);
+            wrapper.prepend(swatch);
+
+            this.colorWeightSection.appendChild(wrapper);
+            RangeControl.Instance.Bind(id, input, { sync }, () => {
+                sync?.();
+                this.PushColorWeights(brushManager);
+            }, null);
+        }
+    }
+
+    /** Builds the stripe angle range control and binds it to BrushState. */
+    private SetupStripeAngle(brushManager: () => BrushState | undefined): void {
+        this.stripeAngleSetting = {
+            id: 'brush-stripe-angle', label: 'Angle', type: 'range',
+            min: 0, max: 360, step: 1,
+            default: 45,
+            suffix: '°', decimals: 0, readout: true,
+        };
+        const { wrapper, element, sync } = RangeControl.Instance.Build('brush-stripe-angle', this.stripeAngleSetting);
+        this.stripeAngleElement = element as HTMLInputElement;
+        this.stripeAngleSection = this.panel.AddSection('Stripe Settings');
+        this.stripeAngleSection.appendChild(wrapper);
+        RangeControl.Instance.Bind('brush-stripe-angle', this.stripeAngleElement, { sync }, () => {
+            sync?.();
+            if (!this.stripeAngleElement || !this.stripeAngleSetting) { return; }
+            brushManager()?.SetStripeAngle(
+                RangeControl.Instance.GetRawValue(this.stripeAngleElement, this.stripeAngleSetting)
+            );
+        }, null);
+    }
+
+    /** Builds the stripe width range control and appends it to the stripe angle section. */
+    private SetupStripeWidth(brushManager: () => BrushState | undefined): void {
+        if (!this.stripeAngleSection) { return; }
+        this.stripeWidthSetting = {
+            id: 'brush-stripe-width', label: 'Width', type: 'range',
+            min: 1, max: 32, step: 1,
+            default: 4,
+            suffix: '', decimals: 0, readout: true,
+        };
+        const { wrapper, element, sync } = RangeControl.Instance.Build('brush-stripe-width', this.stripeWidthSetting);
+        this.stripeWidthElement = element as HTMLInputElement;
+        this.stripeAngleSection.appendChild(wrapper);
+        RangeControl.Instance.Bind('brush-stripe-width', this.stripeWidthElement, { sync }, () => {
+            sync?.();
+            if (!this.stripeWidthElement || !this.stripeWidthSetting) { return; }
+            brushManager()?.SetStripeWidth(
+                RangeControl.Instance.GetRawValue(this.stripeWidthElement, this.stripeWidthSetting)
+            );
+        }, null);
+    }
+
+    /** Normalizes and pushes the box weight slider values to BrushState. */
+    private PushColorWeights(brushManager: () => BrushState | undefined): void {
+        if (this.colorWeightElements.length !== 4) { return; }
+        const weights = this.colorWeightElements.map(el => parseFloat(el.value) || 0);
+        brushManager()?.SetColorWeights(weights as [number, number, number, number]);
     }
 
     /** Sets the brush type, updating the control UI and BrushManager. */
@@ -287,7 +420,7 @@ export class BrushPanel extends NitrateProcess {
             btn.classList.toggle('is-selected', selected);
             btn.setAttribute('aria-checked', String(selected));
         });
-        this.SyncPaletteVisibility();
+        this.SyncBrushTypeControls();
         BrushManager.Instance?.state.SetType(type);
     }
 
@@ -319,12 +452,29 @@ export class BrushPanel extends NitrateProcess {
         if (this.modeElement && this.modeSetting) { brushManager.SetMode(this.GetMode()); }
         if (this.typeElement && this.typeSetting) { brushManager.SetType(this.GetBrushType()); }
         if (this.snapElement && this.snapSetting) { brushManager.SetSnap(this.GetSnap()); }
+        if (this.overlayFilterElement) { brushManager.SetOverlayFilter(this.GetOverlayFilter()); }
+        this.PushColorWeights(() => brushManager);
+        if (this.stripeAngleElement && this.stripeAngleSetting) {
+            brushManager.SetStripeAngle(
+                RangeControl.Instance.GetRawValue(this.stripeAngleElement, this.stripeAngleSetting)
+            );
+        }
+        if (this.stripeWidthElement && this.stripeWidthSetting) {
+            brushManager.SetStripeWidth(
+                RangeControl.Instance.GetRawValue(this.stripeWidthElement, this.stripeWidthSetting)
+            );
+        }
     }
 
-    /** Updates the palette swatch colors from an array of Color values. */
+    /** Updates the palette swatch colors from an array of Color values. Also updates box weight swatches. */
     public SetPaletteColors(colors: Color[]): void {
-        if (!this.paletteElement) { return; }
-        this.paletteElement.querySelectorAll<HTMLElement>('.palette-swatch').forEach((swatch, i) => {
+        if (this.paletteElement) {
+            this.paletteElement.querySelectorAll<HTMLElement>('.palette-swatch').forEach((swatch, i) => {
+                const c = colors[i];
+                if (c) { swatch.style.backgroundColor = `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a})`; }
+            });
+        }
+        this.colorWeightSwatches.forEach((swatch, i) => {
             const c = colors[i];
             if (c) { swatch.style.backgroundColor = `rgba(${c.r}, ${c.g}, ${c.b}, ${c.a})`; }
         });
@@ -337,10 +487,31 @@ export class BrushPanel extends NitrateProcess {
         element.addEventListener('wheel', this.handleWheel, { passive: false });
     }
 
-    /** Shows or hides the palette section based on the current brush type. */
-    private SyncPaletteVisibility(): void {
-        if (!this.paletteSection) { return; }
-        this.paletteSection.style.display = this.GetBrushType() === 'palette' ? '' : 'none';
+    /** Returns whether the overlay filter is enabled, or false if no filter control exists. */
+    public GetOverlayFilter(): boolean {
+        if (!this.overlayFilterElement || !this.overlayFilterSetting) { return false; }
+        return ChoiceControl.Instance.GetRawValue(this.overlayFilterElement, this.overlayFilterSetting) === 'enabled';
+    }
+
+    /** Shows or hides the mode options section based on the current brush mode. */
+    private SyncBrushModeControls(): void {
+        if (this.modeOptionsSection) {
+            this.modeOptionsSection.style.display = this.GetMode() === 'overlay' ? '' : 'none';
+        }
+    }
+
+    /** Shows or hides the palette and box weight sections based on the current brush type. */
+    private SyncBrushTypeControls(): void {
+        if (this.paletteSection) {
+            this.paletteSection.style.display = this.GetBrushType() === 'palette' ? '' : 'none';
+        }
+        if (this.colorWeightSection) {
+            const type = this.GetBrushType();
+            this.colorWeightSection.style.display = (type === 'boxes' || type === 'circles') ? '' : 'none';
+        }
+        if (this.stripeAngleSection) {
+            this.stripeAngleSection.style.display = this.GetBrushType() === 'stripes' ? '' : 'none';
+        }
     }
 
     public OnDestroy(): void {

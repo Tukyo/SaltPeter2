@@ -9,7 +9,8 @@
     "package": "electron-vite build && electron-builder",
     "release": "electron-vite build && electron-builder --publish always",
     "changelog": "node changelog.mjs",
-    "docs": "node docs.mjs"
+    "docs": "node docs.mjs",
+    "blueprint": "node blueprint-template-generator.js && node blueprint-validator.js"
   },
   "keywords": [],
   "author": "Tukyo Games",

@@ -2,6 +2,51 @@
 
 ---
 
+## [0.1.4] - [06/14/2026]
+### Updates & Changes
+- **Brush**
+  - Added 2 new brush modes and 4 new types
+    - **Modes:** Mask | Overlay
+    - **Types:** Scatter | Boxes | Circles | Stripes
+  - Support for all brush additions added to `brush.wgsl`
+- **Component**
+  - Updated Blueprint infastructure to allow for Herringbone tile placement and worldgen
+    - Blueprints consist of 6 edge zones, color keyed to allow for adjacent placement with matching blueprints
+  - `BlueprintQuery.ts` & `BlueprintLayout.ts` created to manage and assist with blueprint placement, authoring and formatting
+- **Config**
+  - Hotkeys updated, 2 new hotkeys added
+    - Stamps in world scene shown with `F6`
+    - Screenshots can be taken with `~` *(press Shift+`)*
+  - Chunk hotkey changed from `F1` to `F5`
+- **Debug**
+  - Added new `BlueprintOverlay` debugger to show blueprints stamped in specific chunk regions
+- **Input**
+  - Added key code subscription support — `OnKeyCode` and `OnKeyCodeUp` bind to physical key location *(e.code)* independent of keyboard layout
+  - Added `IsKeyCodeDown` for polling physical key state
+  - Blur handler now clears both key value and key code state
+- **Materials**
+  - New material `Saltpeter` added. Functionally similar to gunpowder - will explode once explosion logic is added
+  - `MaterialQuery` now returns material names when calling `GetFilteredOptions` - support added for fetching variants by name or id via `GetVariantName` & `GetVariantId`
+  - Wood colors updated and cloth variant IDs now exported
+- **Utility**
+  - Added new noise functions for color based variation during worldgen
+    - `Boxes` | `Circles` - These match the WGSL noise functions and use hashes + seed
+- **World**
+  - Worldgen overhaul with new biome stamps and adjustments to many systems
+  - Multiple worldgen passes added
+    - **Stamp Pass:** Procedurally places blueprints into specific biome regions
+    - **Erosion Pass:** Erodes terrain around stamps
+    - **Detail Pass:** Adds material details to the world using noise patterns
+  - `WorldMap` biome entries now support configurable stamp regions with offset, size, padding, and erosion config
+  - `ChunkManager` now deduplicates in-flight loads — concurrent requests for the same chunk share one promise instead of generating it twice
+  - Added 52 blueprints for worldgen to pick from in the *Antra* region
+
+### Bug Fixes
+- Fixed a bug causing the brush to paint at a larger radius than the shown preview
+- `ChunkManager` tracks uploaded chunks — exposes IsUploaded so systems can distinguish loaded vs GPU-committed chunks, fixed a bug causing missing chunks or overwritten chunks
+
+---
+
 ## [0.1.3] - Patch - [06/07/2026]
 ### Updates & Changes
 

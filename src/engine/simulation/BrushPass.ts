@@ -27,6 +27,15 @@ interface BrushParams {
     brushType: number,
     variantId?: number,
     occupancy?: number,
+    paintMode?: number,
+    marginSize?: number,
+    colorWeight0?: number,
+    colorWeight1?: number,
+    colorWeight2?: number,
+    colorWeight3?: number,
+    stripeAngle?: number,
+    stripeWidth?: number,
+    overlayFilter?: number,
 }
 
 /**
@@ -93,6 +102,15 @@ export class BrushPass {
             brushType,
             variantId = 0,
             occupancy = 1,
+            paintMode = 0,
+            marginSize = 0,
+            colorWeight0 = 0.82,
+            colorWeight1 = 0.06,
+            colorWeight2 = 0.06,
+            colorWeight3 = 0.06,
+            stripeAngle = Math.PI / 4,
+            stripeWidth = 4,
+            overlayFilter = 0,
         } = params;
 
         const x = snap ? Math.floor(mouseX) + 0.5 : mouseX;
@@ -110,6 +128,15 @@ export class BrushPass {
             brushType,
             variantId,
             occupancy,
+            paintMode,
+            marginSize,
+            colorWeight0,
+            colorWeight1,
+            colorWeight2,
+            colorWeight3,
+            stripeAngle,
+            stripeWidth,
+            overlayFilter,
         ]));
 
         const bindGroup = device.createBindGroup({

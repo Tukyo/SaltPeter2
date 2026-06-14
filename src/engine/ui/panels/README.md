@@ -40,15 +40,16 @@ interface BrushOptions {
 | [`GetSize(): number`](BrushPanel.ts) | Returns the current brush size, or 0 if no size control exists. |
 | [`GetDensity(): number`](BrushPanel.ts) | Returns the current brush density as a 0–1 value, or 1.0 if no density control exists. |
 | [`GetShape(): BrushShape`](BrushPanel.ts) | Returns the current brush shape, or 'circle' if no shape control exists. |
-| [`GetMode(): BrushMode`](BrushPanel.ts) | Returns the current brush mode, or 'draw' if no mode control exists. |
+| [`GetMode(): BrushMode`](BrushPanel.ts) | Returns the current brush mode, or 'fill' if no mode control exists. |
 | [`GetBrushType(): BrushType`](BrushPanel.ts) | Returns the current brush type, or 'noise' if no type control exists. |
 | [`GetSnap(): boolean`](BrushPanel.ts) | Returns whether snap is enabled, or false if no snap control exists. |
 | [`SetBrushType(type: BrushType): void`](BrushPanel.ts) | Sets the brush type, updating the control UI and BrushManager. |
 | [`SetColorVariant(index: number): void`](BrushPanel.ts) | Sets the active palette color variant, updating the control UI and BrushManager. |
 | [`GetColorVariant(): number`](BrushPanel.ts) | Returns the currently selected palette color variant index, or 0 if no palette exists. |
 | [`ApplySettings(): void`](BrushPanel.ts) | Pushes all current panel values to BrushState. Call after BrushManager reinitializes. |
-| [`SetPaletteColors(colors: Color[]): void`](BrushPanel.ts) | Updates the palette swatch colors from an array of Color values. |
+| [`SetPaletteColors(colors: Color[]): void`](BrushPanel.ts) | Updates the palette swatch colors from an array of Color values. Also updates box weight swatches. |
 | [`SetWheelTarget(element: HTMLElement): void`](BrushPanel.ts) | Sets the element that receives wheel events for brush size adjustment, removing the listener from the previous target. |
+| [`GetOverlayFilter(): boolean`](BrushPanel.ts) | Returns whether the overlay filter is enabled, or false if no filter control exists. |
 
 ---
 
@@ -80,6 +81,7 @@ new Nitrate.MaterialsPanel({options: MaterialsPanelParams})
 interface MaterialsPanelParams {
     activeMaterial?: {
         defaultMaterial?: MaterialName;
+        filter?: MaterialName | MaterialName[];
         show?: boolean;
     };
     occupancy?: {
@@ -93,6 +95,10 @@ interface MaterialsPanelParams {
     };
     tags?: {
         options?: string | string[];
+        show?: boolean;
+    };
+    variants?: {
+        filter?: string[];
         show?: boolean;
     };
     style?: Partial<CSSStyleDeclaration>;

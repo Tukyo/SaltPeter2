@@ -3,9 +3,11 @@ import { Nitrate } from '@Nitrate';
 import type { EditorMode } from './scripts/EditorModeController';
 
 import { AnchorController } from './scripts/AnchorController';
+import { BlueprintController } from './scripts/BlueprintController';
 import { EditorModeController } from './scripts/EditorModeController';
 import { EyedropperController } from './scripts/EyedropperController';
 import { OverlayController } from './scripts/OverlayController';
+import { PlayerScaleController } from './scripts/PlayerScaleController';
 import { SelectionController } from './scripts/SelectionController';
 
 export class EditorScene extends Nitrate.Scene {
@@ -23,7 +25,9 @@ export class EditorScene extends Nitrate.Scene {
     private selectionController: SelectionController | null = null;
     private anchorController: AnchorController | null = null;
     private overlayController: OverlayController | null = null;
+    private blueprintController: BlueprintController | null = null;
     private eyedropperController: EyedropperController | null = null;
+    private playerScaleController: PlayerScaleController | null = null;
     private gridOverlay: Nitrate.Renderer2D | null = null;
 
     private hierarchy: Nitrate.Hierarchy | null = null;
@@ -62,6 +66,8 @@ export class EditorScene extends Nitrate.Scene {
         this.bpExport = new Nitrate.ExportBlueprint();
         this.goImport = new Nitrate.ImportGameObject();
         this.bpImport = new Nitrate.ImportBlueprint();
+
+        new Nitrate.ScreenshotManager();
 
         new Nitrate.LogManager({
             quiet: true,
@@ -130,7 +136,7 @@ export class EditorScene extends Nitrate.Scene {
                     { width: 128, height: 128 },
                     { width: 256, height: 256 },
                 ],
-                style: { top: '120px', right: '14px' },
+                style: { top: '57px', right: '14px' },
                 collapsed: false,
                 onChange: () => { this.ScheduleRestart(); },
             });
@@ -138,16 +144,16 @@ export class EditorScene extends Nitrate.Scene {
             this.materialsPanel = new Nitrate.MaterialsPanel({
                 activeMaterial: { defaultMaterial: 'sand' },
                 occupancy: { default: 'static' },
-                style: { top: '655px' }
+                style: { top: '698px', height: '445px' }
             });
 
             this.brushPanel = new Nitrate.BrushPanel({
                 size: { min: 1, max: 10, default: 1 },
                 shape: { default: 'square' },
-                mode: { default: 'draw' },
+                mode: { default: 'fill' },
                 type: { default: 'palette' },
                 snap: { default: true, show: false },
-                style: { top: '250px' }
+                style: { top: '187px', height: '502px' }
             });
 
             if (renderer) {
@@ -160,38 +166,44 @@ export class EditorScene extends Nitrate.Scene {
         } else {
             this.hierarchy?.AddHierarchyObject({ components: [Nitrate.Blueprint] });
 
+            this.overlayController = new OverlayController(null, null);
+            this.blueprintController = new BlueprintController();
+            this.playerScaleController = new PlayerScaleController();
+
             this.bpExport?.SetGameObjectProvider(() => this.hierarchy?.GetSelectedGameObject() ?? null);
             this.bpImport?.SetGameObjectProvider(() => this.hierarchy?.GetSelectedGameObject() ?? null);
 
             this.renderingPanel = new Nitrate.RenderingPanel({
                 type: 'grid',
-                sizes: [
-                    { width: 128, height: 64 },
-                    { width: 64, height: 128 },
+                sizes: [ // Padding of 4px on each side for overlay margins and connection authoring
+                    { width: 264, height: 136 },
+                    { width: 136, height: 264 }
                 ],
-                style: { top: '120px', right: '14px' },
+                style: { top: '57px' },
                 collapsed: false,
                 onChange: () => { this.ScheduleRestart(); },
             });
 
             this.materialsPanel = new Nitrate.MaterialsPanel({
-                activeMaterial: { defaultMaterial: 'blueprint' },
+                activeMaterial: { defaultMaterial: 'blueprint', filter: 'blueprint' },
                 occupancy: { default: 'static', show: false },
                 phases: { show: false },
                 tags: { show: false },
-                style: { top: '655px' }
+                variants: { filter: ['default', 'powder', 'liquid', 'gas', 'detail'] },
+                style: { top: '636px', height: '270px' }
             });
 
             this.brushPanel = new Nitrate.BrushPanel({
-                size: { min: 1, max: 10, default: 1 },
+                size: { min: 1, max: 64, default: 1 },
                 shape: { default: 'square', show: false },
-                mode: { default: 'draw' },
-                type: { default: 'palette', show: false },
+                mode: { default: 'mask' },
+                type: { default: 'palette' },
                 snap: { default: true, show: false },
-                style: { top: '250px' }
+                style: { top: '188px', height: '439px' }
             });
         }
 
+        const scenePanelTop = this.mode === 'gameobject' ? '1153px' : '916px';
         this.scenePanel = new Nitrate.ScenePanel({
             export: { onExport: () => { this.RunExport(); } },
             clear: {
@@ -205,7 +217,7 @@ export class EditorScene extends Nitrate.Scene {
                     this.InitGPU();
                 },
             },
-            style: { top: '1130px' }
+            style: { top: scenePanelTop }
         });
     }
 
@@ -224,6 +236,10 @@ export class EditorScene extends Nitrate.Scene {
         this.anchorController = null;
         this.DestroyProcess(this.overlayController);
         this.overlayController = null;
+        this.DestroyProcess(this.blueprintController);
+        this.blueprintController = null;
+        this.DestroyProcess(this.playerScaleController);
+        this.playerScaleController = null;
         this.DestroyProcess(this.eyedropperController);
         this.eyedropperController = null;
         if (this.gridOverlay) { Nitrate.Renderer.Destroy2D(this.gridOverlay); }
@@ -377,18 +393,38 @@ export class EditorScene extends Nitrate.Scene {
             const cx = cell.pos.x;
             const cy = cell.pos.y;
             if (cx < 0 || cx >= canvasW || cy < 0 || cy >= canvasH) { continue; }
-            const texY = canvasH - 1 - cy;
-            const byteIdx = (texY * canvasW + cx) * 4;
+            const byteIdx = (cy * canvasW + cx) * 4;
+            const variantId = Nitrate.MaterialQuery.GetVariantId(blueprintId, cell.type) ?? 0;
             identityData[byteIdx] = blueprintId;
-            identityData[byteIdx + 1] = Math.round((cell.colorVariant / colorsPerMaterial) * 255);
-            identityData[byteIdx + 2] = 0;
+            identityData[byteIdx + 1] = Math.round((cell.colorIndex + 0.5) / colorsPerMaterial * 255);
+            identityData[byteIdx + 2] = variantId;
             identityData[byteIdx + 3] = 2;
         }
 
-        const layout = { bytesPerRow: canvasW * 4 };
+        const paintZone = (bounds: Nitrate.Rect2D, variantId: number): void => {
+            for (let cy = bounds.y1; cy < bounds.y2; cy++) {
+                for (let cx = bounds.x1; cx < bounds.x2; cx++) {
+                    const byteIdx = (cy * canvasW + cx) * 4;
+                    identityData[byteIdx] = blueprintId;
+                    identityData[byteIdx + 1] = 0;
+                    identityData[byteIdx + 2] = variantId;
+                    identityData[byteIdx + 3] = 2;
+                }
+            }
+        };
+
+        for (const { bounds, key } of Nitrate.BlueprintLayout.GetEdgeZones(canvasW, canvasH)) {
+            const variantName = blueprint.edges[key];
+            if (!variantName) { continue; }
+            const variantId = Nitrate.MaterialQuery.GetVariantId(blueprintId, variantName) ?? 0;
+            if (variantId === 0) { continue; }
+            paintZone(bounds, variantId);
+        }
+
+        const gpuLayout = { bytesPerRow: canvasW * 4 };
         const textureSize: [number, number] = [canvasW, canvasH];
-        webgpu.device.queue.writeTexture({ texture: simulationLayer.currentIdentity }, identityData, layout, textureSize);
-        webgpu.device.queue.writeTexture({ texture: simulationLayer.nextIdentity }, identityData, layout, textureSize);
+        webgpu.device.queue.writeTexture({ texture: simulationLayer.currentIdentity }, identityData, gpuLayout, textureSize);
+        webgpu.device.queue.writeTexture({ texture: simulationLayer.nextIdentity }, identityData, gpuLayout, textureSize);
     }
 
     private InitGPU(): void {
@@ -415,10 +451,13 @@ export class EditorScene extends Nitrate.Scene {
         if (this.mode === 'gameobject') {
             this.selectionController?.Reset();
             this.anchorController?.Reset();
-            this.overlayController?.Init(grid.width, pixel.width);
+            this.overlayController?.Init(grid, pixel);
         } else {
             if (this.gridOverlay) { Nitrate.Renderer.Destroy2D(this.gridOverlay); }
             this.gridOverlay = this.CreateGridOverlay(grid, pixel);
+            this.overlayController?.Init(grid, pixel);
+            this.overlayController?.SetBlueprintGuide(grid);
+            this.playerScaleController?.Init(grid, pixel);
         }
     }
 
@@ -480,6 +519,7 @@ export class EditorScene extends Nitrate.Scene {
         this.anchorController = null;
         this.overlayController = null;
         this.eyedropperController = null;
+        this.playerScaleController = null;
         this.gridOverlay = null;
         this.hierarchy = null;
         this.brushPanel = null;

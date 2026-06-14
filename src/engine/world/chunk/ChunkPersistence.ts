@@ -1,7 +1,7 @@
 import type { ChunkAddress, ChunkEntry } from './ChunkData';
 
 import { ChunkData } from './ChunkData';
-import { WorldConfig } from '../../config/WorldConfig';
+import { DataConfig } from '../../config/DataConfig';
 import { DataPersistenceManager } from '../../data_persistence/DataPersistenceManager';
 
 /** Handles reading and writing chunk binary data to disk via DataPersistenceManager. */
@@ -17,8 +17,8 @@ export class ChunkPersistence {
 
     /** Returns the relative file path for a chunk's binary file. @internal */
     private ChunkPath(address: ChunkAddress): string {
-        const { save } = WorldConfig.GetConfig();
-        return `${save.worldPath}/${save.chunkPath(address.cx, address.cy)}`;
+        const { world } = DataConfig.GetConfig();
+        return `${world.worldPath}/${world.chunkPath(address.cx, address.cy)}`;
     }
 
     /** Returns true if a save file exists for the given chunk address. @internal */

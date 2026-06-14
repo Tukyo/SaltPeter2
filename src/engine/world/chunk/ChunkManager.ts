@@ -14,6 +14,8 @@ export class ChunkManager extends NitrateProcess {
     public static Instance: ChunkManager | null = null;
 
     private readonly chunks = new Map<string, ChunkEntry>();
+    private readonly uploadedChunks = new Set<string>();
+    private readonly pendingLoads = new Map<string, Promise<ChunkEntry>>();
     private readonly persistence = new ChunkPersistence();
 
     constructor() {
@@ -31,6 +33,11 @@ export class ChunkManager extends NitrateProcess {
     /** Returns the chunk entry for an address if it is currently loaded, or null. */
     public Get(address: ChunkAddress): ChunkEntry | null {
         return this.chunks.get(ChunkData.GetKey(address)) ?? null;
+    }
+
+    /** Returns true if the chunk at the given address has been successfully written to the GPU texture. */
+    public IsUploaded(address: ChunkAddress): boolean {
+        return this.uploadedChunks.has(ChunkData.GetKey(address));
     }
 
     /** Iterates over all currently loaded chunk entries. */
@@ -74,6 +81,7 @@ export class ChunkManager extends NitrateProcess {
                 device.queue.writeTexture(
                     { texture: simulationLayer.currentState, origin }, chunk.state, { bytesPerRow: stateBPR }, extent
                 );
+                this.uploadedChunks.add(ChunkData.GetKey({ cx, cy }));
                 uploaded++;
             }
         }
@@ -84,10 +92,34 @@ export class ChunkManager extends NitrateProcess {
         });
     }
 
-    /** Returns the chunk at the given address — from memory, disk, or fresh generation — in that priority order. @internal */
+    /**
+     * Returns the chunk at the given address — from memory, disk, or fresh generation — in that priority order.
+     * Concurrent calls for the same address share one in-flight load so the chunk is only generated once. @internal
+     */
     public async GetOrLoad(address: ChunkAddress): Promise<ChunkEntry> {
         const existing = this.Get(address);
         if (existing) { return existing; }
+
+        const key = ChunkData.GetKey(address);
+        const pending = this.pendingLoads.get(key);
+        if (pending) { return pending; }
+
+        const load = this.LoadOrGenerate(address, key);
+        this.pendingLoads.set(key, load);
+        try {
+            return await load;
+        } finally {
+            this.pendingLoads.delete(key);
+        }
+    }
+
+    /** 
+     * Loads the chunk from disk if saved, otherwise generates it fresh.
+     * Awaits world readiness before proceeding.
+     * @internal 
+     */
+    private async LoadOrGenerate(address: ChunkAddress, key: string): Promise<ChunkEntry> {
+        await World.Instance?.IsWorldReady();
 
         const saved = await this.persistence.LoadChunk(address);
         if (saved) {
@@ -97,17 +129,15 @@ export class ChunkManager extends NitrateProcess {
                 physics: saved.physics,
                 state: saved.state,
             };
-            this.chunks.set(ChunkData.GetKey(address), entry);
+            this.chunks.set(key, entry);
             LogManager.Instance?.Log({
                 text: `Chunk (${address.cx},${address.cy}) loaded from disk.`,
                 options: { tags: ['Chunk'], noisy: true }
             });
             return entry;
         }
-
-        await World.Instance?.IsWorldReady();
         const entry = WorldGen.Generate(address, World.Instance?.GetSeed() ?? 0);
-        this.chunks.set(ChunkData.GetKey(address), entry);
+        this.chunks.set(key, entry);
         LogManager.Instance?.Log({
             text: `Chunk (${address.cx},${address.cy}) generated.`,
             options: { tags: ['Chunk'], noisy: true }
@@ -176,14 +206,16 @@ export class ChunkManager extends NitrateProcess {
                     { bytesPerRow: chunkSize * ChunkData.GetStateBytesPerCell() },
                     extent
                 );
+                this.uploadedChunks.add(ChunkData.GetKey({ cx, cy }));
             }
         }
-
     }
 
     /** Removes a chunk from the in-memory map without saving it. @internal */
     public Unload(address: ChunkAddress): void {
-        this.chunks.delete(ChunkData.GetKey(address));
+        const key = ChunkData.GetKey(address);
+        this.chunks.delete(key);
+        this.uploadedChunks.delete(key);
         LogManager.Instance?.Log({
             text: `Chunk (${address.cx},${address.cy}) unloaded.`,
             options: { tags: ['Chunk'], noisy: true }
@@ -199,6 +231,8 @@ export class ChunkManager extends NitrateProcess {
 
     public OnDestroy(): void {
         this.chunks.clear();
+        this.uploadedChunks.clear();
+        this.pendingLoads.clear();
         if (ChunkManager.Instance === this) {
             ChunkManager.Instance = null;
             LogManager.Instance?.Log({

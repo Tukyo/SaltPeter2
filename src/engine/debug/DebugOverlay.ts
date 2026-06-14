@@ -1,3 +1,4 @@
+import { BlueprintOverlay } from './BlueprintOverlay';
 import { ChunkOverlay } from './ChunkOverlay';
 import { DebugOverlayBadge } from './DebugOverlayBadge';
 import { KeybindConfig } from '../config/KeybindConfig';
@@ -8,10 +9,11 @@ import { GameObjectOverlay } from './GameObjectOverlay';
 import { PressureOverlay } from './PressureOverlay';
 import { TemperatureOverlay } from './TemperatureOverlay';
 
-type DebugLayer = 'chunk' | 'pressure' | 'temperature' | 'gameObject';
+type DebugLayer = 'chunk' | 'stamp' | 'pressure' | 'temperature' | 'gameObject';
 
 const DEBUG_LAYER_LABELS: Record<DebugLayer, string> = {
     chunk: 'Chunks',
+    stamp: 'Stamps',
     pressure: 'Pressure',
     temperature: 'Temperature',
     gameObject: 'GameObjects',
@@ -30,6 +32,7 @@ export class DebugOverlay extends NitrateProcess {
     public static Instance: DebugOverlay | null = null;
 
     private readonly chunk = new ChunkOverlay();
+    private readonly stamp = new BlueprintOverlay();
     private readonly gameObject = new GameObjectOverlay();
     private readonly pressure = new PressureOverlay();
     private readonly temperature = new TemperatureOverlay();
@@ -46,7 +49,8 @@ export class DebugOverlay extends NitrateProcess {
         if (input) {
             const keys = KeybindConfig.GetConfig().debug.overlay;
             this.unsubKeys.push(
-                input.OnKeyDown(keys.chunk, () => { this.SetLayer('chunk'); }),
+                input.OnKeyDown(keys.world.chunk, () => { this.SetLayer('chunk'); }),
+                input.OnKeyDown(keys.world.stamp, () => { this.SetLayer('stamp'); }),
                 input.OnKeyDown(keys.pressure, () => { this.SetLayer('pressure'); }),
                 input.OnKeyDown(keys.temperature, () => { this.SetLayer('temperature'); }),
                 input.OnKeyDown(keys.gameObject, () => { this.SetLayer('gameObject'); }),
@@ -73,8 +77,9 @@ export class DebugOverlay extends NitrateProcess {
         this.badge.Show();
     }
 
-    private GetOverlay(layer: DebugLayer): ChunkOverlay | GameObjectOverlay | PressureOverlay | TemperatureOverlay {
+    private GetOverlay(layer: DebugLayer): ChunkOverlay | BlueprintOverlay | GameObjectOverlay | PressureOverlay | TemperatureOverlay {
         if (layer === 'chunk') { return this.chunk; }
+        if (layer === 'stamp') { return this.stamp; }
         if (layer === 'gameObject') { return this.gameObject; }
         if (layer === 'pressure') { return this.pressure; }
         return this.temperature;
@@ -87,6 +92,7 @@ export class DebugOverlay extends NitrateProcess {
 
     public OnResize(): void {
         this.chunk.OnResize();
+        this.stamp.OnResize();
         this.gameObject.OnResize();
         this.pressure.OnResize();
         this.temperature.OnResize();
@@ -100,6 +106,7 @@ export class DebugOverlay extends NitrateProcess {
         for (const unsub of this.unsubKeys) { unsub(); }
 
         this.chunk.Destroy();
+        this.stamp.Destroy();
         this.gameObject.Destroy();
         this.pressure.Destroy();
         this.temperature.Destroy();

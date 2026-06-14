@@ -8,6 +8,7 @@ export class UserInterfaceConfig {
                     top: '248px',
                     right: '14px',
                     width: '240px',
+                    height: '475px'
                 },
             },
             debug: {
@@ -39,7 +40,7 @@ export class UserInterfaceConfig {
             materials: {
                 collapsed: false,
                 style: {
-                    top: '630px',
+                    top: '732px',
                     right: '14px',
                     width: '240px',
                     height: '465px',
@@ -74,7 +75,7 @@ export class UserInterfaceConfig {
             scene: {
                 collapsed: false,
                 style: {
-                    top: '1105px',
+                    top: '1206px',
                     right: '14px',
                     width: '240px',
                 },
@@ -91,7 +92,5 @@ export class UserInterfaceConfig {
     };
 
     /** Returns the ui configuration. */
-    public static GetConfig() {
-        return UserInterfaceConfig.config;
-    }
+    public static GetConfig() { return UserInterfaceConfig.config; }
 }

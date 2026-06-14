@@ -12,7 +12,5 @@ export class SimulationConfig {
     };
 
     /** Returns the simulation configuration. */
-    public static GetConfig() {
-        return SimulationConfig.config;
-    }
+    public static GetConfig() { return SimulationConfig.config; }
 }

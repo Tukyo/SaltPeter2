@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld('api', {
             ipcRenderer.invoke('resources:read', path),
         write: (filename: string, content: string): Promise<void> =>
             ipcRenderer.invoke('resources:write', filename, content),
+        writeBinary: (filename: string, data: Uint8Array): Promise<void> =>
+            ipcRenderer.invoke('resources:writeBinary', filename, data),
         move: (from: string, to: string): Promise<void> =>
             ipcRenderer.invoke('resources:move', from, to),
         mkdir: (path: string): Promise<void> =>
@@ -39,6 +41,8 @@ contextBridge.exposeInMainWorld('api', {
             ipcRenderer.invoke('userdata:read', path),
         write: (filename: string, content: string): Promise<void> =>
             ipcRenderer.invoke('userdata:write', filename, content),
+        writeBinary: (filename: string, data: Uint8Array): Promise<void> =>
+            ipcRenderer.invoke('userdata:writeBinary', filename, data),
         move: (from: string, to: string): Promise<void> =>
             ipcRenderer.invoke('userdata:move', from, to),
         mkdir: (path: string): Promise<void> =>
@@ -53,11 +57,17 @@ contextBridge.exposeInMainWorld('api', {
             ipcRenderer.invoke(`${assetsChannel}:read`, path),
         write: (filename: string, content: string): Promise<void> =>
             ipcRenderer.invoke(`${assetsChannel}:write`, filename, content),
+        writeBinary: (filename: string, data: Uint8Array): Promise<void> =>
+            ipcRenderer.invoke(`${assetsChannel}:writeBinary`, filename, data),
         move: (from: string, to: string): Promise<void> =>
             ipcRenderer.invoke(`${assetsChannel}:move`, from, to),
         mkdir: (path: string): Promise<void> =>
             ipcRenderer.invoke(`${assetsChannel}:mkdir`, path),
         delete: (path: string): Promise<void> =>
             ipcRenderer.invoke(`${assetsChannel}:delete`, path),
+    },
+    screenshot: {
+        capture: (rect: { x: number; y: number; width: number; height: number }, filename: string): Promise<void> =>
+            ipcRenderer.invoke('screenshot:capture', rect, filename),
     },
 });

@@ -83,7 +83,7 @@ export class BrushPreview extends NitrateProcess {
             screenY = rect.top + rect.height - mouse.pos.y * csY - elH / 2;
         }
 
-        const isErase = brushState.GetMode() === 'erase';
+        const isErase = mouse.rightDown;
         const shape = brushState.GetShape();
         const sizeChanged = size !== this.lastSize || cellW !== this.lastCellW;
 
@@ -114,9 +114,7 @@ export class BrushPreview extends NitrateProcess {
     }
 
     /** Hides the brush preview. */
-    private Hide(): void {
-        this.element.classList.remove('is-visible');
-    }
+    private Hide(): void { this.element.classList.remove('is-visible'); }
 
     public OnDestroy(): void {
         this.element.remove();

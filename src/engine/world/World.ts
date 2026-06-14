@@ -5,6 +5,7 @@ import type { Size2D, Vec2 } from '../definitions/Primitives';
 import { Camera } from '../camera/Camera';
 import { ChunkData } from './chunk/ChunkData';
 import { ChunkManager } from './chunk/ChunkManager';
+import { DataConfig } from '../config/DataConfig';
 import { DataPersistenceManager } from '../data_persistence/DataPersistenceManager';
 import { LogManager } from '../debug/LogManager';
 import { NitrateProcess } from '../NitrateProcess';
@@ -12,6 +13,9 @@ import { Renderer } from '../rendering/Renderer';
 import { SimulationManager } from '../simulation/SimulationManager';
 import { WorldBlit } from './WorldBlit';
 import { WorldConfig } from '../config/WorldConfig';
+import { WorldGen } from './WorldGen';
+import { WorldMap } from './WorldMap';
+import { WorldStampRegistry } from './WorldStampRegistry';
 import { Utils } from '../utility/Utils';
 
 export interface WorldMetadata {
@@ -67,6 +71,8 @@ interface StripBufferParams {
 export class World extends NitrateProcess {
     public static Instance: World | null = null;
 
+    public stampRegistry: WorldStampRegistry | null = null;
+
     private simOrigin: Vec2 = { x: 0, y: 0 };
     /** Returns the world-space cell coordinate of the simulation texture's top-left corner. */
     public GetSimOrigin(): Vec2 { return this.simOrigin; }
@@ -96,7 +102,8 @@ export class World extends NitrateProcess {
         const { chunk, generation } = WorldConfig.GetConfig();
         this.simOrigin.x = -(chunk.margin * chunk.size) + generation.spawnOffset.cx * chunk.size;
         this.simOrigin.y = -(chunk.margin * chunk.size) + generation.spawnOffset.cy * chunk.size;
-        this.worldReady = this.CreateOrFetchMeta();
+        WorldStampRegistry.LoadTemplates();
+        this.worldReady = this.CreateOrFetchMeta().then(() => { this.SetupStamps(); });
 
         SimulationManager.Instance?.state.SetResolutionScale(0.25);
     }
@@ -332,6 +339,7 @@ export class World extends NitrateProcess {
             for (let cx = startCX; cx <= endCX; cx++) {
                 const entry: ChunkEntry | null = ChunkManager.Instance?.Get({ cx, cy }) ?? null;
                 if (!entry) { continue; }
+                if (!ChunkManager.Instance?.IsUploaded({ cx, cy })) { continue; }
 
                 const localX = cx * chunkSize - capturedOrigin.x - readOrigin.x;
                 const localY = cy * chunkSize - capturedOrigin.y - readOrigin.y;
@@ -355,10 +363,19 @@ export class World extends NitrateProcess {
         stateBuffer.unmap();
     }
 
+    private SetupStamps(): void {
+        this.stampRegistry = new WorldStampRegistry();
+        this.stampRegistry.Fill(this.seed);
+        WorldGen.SetStamps(this.stampRegistry.GetStamps());
+        const erosion = WorldMap.GetMap().find(chunk => chunk.stampRegion?.erosion)?.stampRegion?.erosion ?? null;
+        WorldGen.SetStampErosionConfig(erosion);
+    }
+
     /** Creates the world metadata file if it doesn't exist, or fetches any that already exist for the current save. */
     private async CreateOrFetchMeta(): Promise<void> {
-        const { dev, save } = WorldConfig.GetConfig();
-        const path = `${save.worldPath}/meta.json`;
+        const { dev } = WorldConfig.GetConfig();
+        const { world } = DataConfig.GetConfig();
+        const path = `${world.worldPath}/meta.json`;
         const dm = DataPersistenceManager.Instance;
         if (!dm) { this.seed = Utils.Seed(); return; }
         if (dev.wipeSaveOnLoad) { await dm.DeleteSave(); }

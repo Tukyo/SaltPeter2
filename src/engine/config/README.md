@@ -10,6 +10,15 @@ Static configuration for all engine subsystems.
 
 ## API
 
+### [`DataConfig`](DataConfig.ts)
+ Paths and locations for all persistent data written to or read from disk.
+
+| Method | Description |
+|--------|-------------|
+| [`static GetConfig()`](DataConfig.ts) | Returns the data configuration. |
+
+---
+
 ### [`GameObjectConfig`](GameObjectConfig.ts)
  Parameters and defaults for GameObjects.
 

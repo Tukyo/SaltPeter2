@@ -1,9 +1,6 @@
 import { WorldConfig } from '../../config/WorldConfig';
 
-export interface ChunkAddress {
-    cx: number;
-    cy: number;
-}
+export interface ChunkAddress { cx: number; cy: number; }
 
 /**
  * CPU-side representation of a single chunk's GPU texture data.

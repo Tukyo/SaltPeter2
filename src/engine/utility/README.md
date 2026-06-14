@@ -23,17 +23,14 @@ enum NoiseType {
     Ridged = 'ridged',
     Worley = 'worley',
     Voronoi = 'voronoi',
-    Hash2D = 'hash2d'
+    Hash2D = 'hash2d',
+    Boxes = 'boxes',
+    Circles = 'circles',
 }
 ```
 
 ```ts
-interface GetNoiseParams {
-    noiseType: NoiseType;
-    coords: Vec2;
-    seed: number;
-    options: NoiseOptions;
-}
+interface GetNoiseParams extends NoiseParams { options: NoiseOptions; }
 ```
 
 ```ts
@@ -45,9 +42,14 @@ interface NoiseOptions {
 }
 ```
 
+```ts
+interface ColorNoiseParams extends NoiseParams { weights: number[]; scale?: number; }
+```
+
 | Method | Description |
 |--------|-------------|
 | [`static GetNoise(params: GetNoiseParams): number`](Noise.ts) | Helper function to switch between noise types |
+| [`static GetColorNoise(params: ColorNoiseParams): number`](Noise.ts) | Returns noise functions used for color variation. |
 | [`static Hash2D(x: number, y: number, seed: number): number`](Noise.ts) | Generates a deterministic pseudo-random value from integer coordinates and a seed. Uses a fast 2D hash function to produce a normalized float in [0, 1]. |
 
 ---

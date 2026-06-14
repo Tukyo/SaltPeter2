@@ -15,12 +15,19 @@ export class BrushSchema {
         ['brushType', 'f32'],
         ['variantId', 'f32'],
         ['occupancy', 'f32'],
+        ['paintMode', 'f32'],
+        ['marginSize', 'f32'],
+        ['colorWeight0', 'f32'],
+        ['colorWeight1', 'f32'],
+        ['colorWeight2', 'f32'],
+        ['colorWeight3', 'f32'],
+        ['stripeAngle', 'f32'],
+        ['stripeWidth', 'f32'],
+        ['overlayFilter', 'f32'],
     ] as const satisfies ReadonlyArray<readonly [string, string]>;
 
     /** Returns the list of uniform field name/type pairs used to build the brush compute shader. */
-    public static GetBrushUniformFields() {
-        return BrushSchema.brushUniformFields;
-    }
+    public static GetBrushUniformFields() { return BrushSchema.brushUniformFields; }
 
     private static readonly brushPattern = {
         randomRate: 8.0,
@@ -32,7 +39,5 @@ export class BrushSchema {
     } as const;
 
     /** Returns the noise pattern parameters that control brush stroke shape and texture. */
-    public static GetBrushPattern() {
-        return BrushSchema.brushPattern;
-    }
+    public static GetBrushPattern() { return BrushSchema.brushPattern; }
 }
