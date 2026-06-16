@@ -40,5 +40,5 @@ export const Tin: MaterialDefinition = {
             condition: { temperature: 0.65 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'metal', 'ore']
 };

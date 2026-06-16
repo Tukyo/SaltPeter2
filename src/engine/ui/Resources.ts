@@ -5,6 +5,7 @@ import { ComponentRegistry } from '../component/ComponentRegistry';
 import { LogManager } from '../debug/LogManager';
 import { Metadata } from '../game_object/Metadata';
 import { NitrateProcess } from '../NitrateProcess';
+import { NotificationManager } from './NotificationManager';
 import { ResourcesPreviewPanel } from './panels/ResourcesPreviewPanel';
 import { UserInterfaceConfig } from '../config/UserInterfaceConfig';
 import { UserInterfaceManager } from './UserInterfaceManager';
@@ -705,7 +706,15 @@ export class Resources extends NitrateProcess {
     }
 
     private async Move(from: string, to: string, isUserdata: boolean): Promise<void> {
-        await this.ApiFor(isUserdata).move(from, to).catch(() => null);
+        const result = await this.ApiFor(isUserdata).move(from, to).catch(() => null);
+        if (result === null) {
+            NotificationManager.Instance?.Notify({
+                message: `Failed to rename '${from.split('/').pop() ?? from}'.`,
+                level: 'error',
+                duration: 6000,
+            });
+            return;
+        }
         await this.ApiFor(isUserdata).move(Metadata.GetMetaPath(from), Metadata.GetMetaPath(to)).catch(() => null);
 
         const fromKey = this.CacheKey(from, isUserdata);
@@ -722,7 +731,15 @@ export class Resources extends NitrateProcess {
     }
 
     private async Delete(path: string, isUserdata: boolean): Promise<void> {
-        await this.ApiFor(isUserdata).delete(path).catch(() => null);
+        const result = await this.ApiFor(isUserdata).delete(path).catch(() => null);
+        if (result === null) {
+            NotificationManager.Instance?.Notify({
+                message: `Failed to delete '${path.split('/').pop() ?? path}'.`,
+                level: 'error',
+                duration: 6000,
+            });
+            return;
+        }
         await this.ApiFor(isUserdata).delete(Metadata.GetMetaPath(path)).catch(() => null);
         this.fileDataCache.delete(this.CacheKey(path, isUserdata));
         LogManager.Instance?.Log({

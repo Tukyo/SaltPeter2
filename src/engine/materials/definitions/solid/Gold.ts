@@ -40,5 +40,5 @@ export const Gold: MaterialDefinition = {
             condition: { temperature: 0.8 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'metal', 'ore']
 };

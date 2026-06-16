@@ -28,7 +28,7 @@ export abstract class Import extends NitrateProcess {
     public SetFilenameProvider(fn: () => string | null): void { this.filenameProvider = fn; }
 
     /** Executes the import. Implemented by subclasses. @internal */
-    public abstract Run(filename?: string): Promise<void>;
+    public abstract Run(filename?: string): Promise<boolean>;
 
     /** Reads and parses a serialized game object from the given path, falling back to the filename provider. Returns null if the file cannot be read or parsed. */
     protected async ReadFileEditor(filename?: string): Promise<SerializedGameObject | null> {

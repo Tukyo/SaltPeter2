@@ -34,5 +34,5 @@ export const CookedMeat: MaterialDefinition = {
             restingStrength: 0.3
         }
     },
-    tags: ['corrodes', 'meat']
+    tags: ['corrodes', 'meat', 'organic']
 };

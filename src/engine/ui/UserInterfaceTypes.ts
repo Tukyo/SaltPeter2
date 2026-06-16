@@ -46,13 +46,13 @@ export interface RangeSetting extends BaseSetting {
 export interface ChoiceSetting extends BaseSetting {
     type: 'choice';
     default: string;
-    options: ReadonlyArray<{ value: string; label: string }>;
+    options: ReadonlyArray<{ value: string; label: string; tooltip?: string }>;
     hideLabel?: boolean;
 }
 
 export interface ActionGroupSetting extends BaseSetting {
     type: 'actionGroup';
-    options: ReadonlyArray<{ value: string; label: string; icon: string }>;
+    options: ReadonlyArray<{ value: string; label: string; icon: string; tooltip?: string }>;
 }
 
 export interface ButtonSetting extends BaseSetting {
@@ -82,12 +82,12 @@ export interface TextSetting extends BaseSetting {
 
 export interface ToggleGroupSetting extends BaseSetting {
     type: 'toggleGroup';
-    options: ReadonlyArray<{ value: string; label: string }>;
+    options: ReadonlyArray<{ value: string; label: string; tooltip?: string }>;
     default: readonly string[];
 }
 
 export interface ToggleListSetting extends BaseSetting {
     type: 'toggleList';
-    options: ReadonlyArray<{ value: string; label: string }>;
+    options: ReadonlyArray<{ value: string; label: string; tooltip?: string }>;
     default: readonly string[];
 }

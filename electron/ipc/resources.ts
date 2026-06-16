@@ -29,7 +29,7 @@ export function registerResourcesHandlers(resourcesDir: string): void {
     ipcMain.handle('resources:read', (_e, path: string) => {
         const target = safeResolve(path);
         if (!target) { throw new Error('Forbidden'); }
-        return fs.readFileSync(target, 'utf-8');
+        try { return fs.readFileSync(target, 'utf-8'); } catch { return null; }
     });
 
     ipcMain.handle('resources:write', (_e, filename: string, content: string) => {

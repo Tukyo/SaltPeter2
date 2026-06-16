@@ -90,7 +90,7 @@ export class ResourcesPreviewPanel extends NitrateProcess {
 
         this.nameLabel.textContent = path.split('/').pop()?.replace(/\.\w+\.json$/, '') ?? path;
         this.placeholder.style.display = 'none';
-        this.pixelDataRenderer.canvas.style.display = 'block';
+        this.pixelDataRenderer.GetCanvas().style.display = 'block';
 
         this.pixelDataRenderer.Render(cells, size, scale);
     }
@@ -98,7 +98,7 @@ export class ResourcesPreviewPanel extends NitrateProcess {
     private ShowPlaceholder(): void {
         this.nameLabel.textContent = '';
         this.placeholder.style.display = '';
-        this.pixelDataRenderer.canvas.style.display = 'none';
+        this.pixelDataRenderer.GetCanvas().style.display = 'none';
     }
 
     public OnDestroy(): void {

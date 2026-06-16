@@ -5,11 +5,11 @@ import { NitrateProcess } from '../NitrateProcess';
 import { Utils } from '../utility/Utils';
 
 export interface MouseState {
-    pos: Vec2;
+    canvas: { pos: Vec2; isInside: boolean; }
+    screen: { pos: Vec2; }
     leftDown: boolean;
     middleDown: boolean;
     rightDown: boolean;
-    isInside: boolean;
 }
 
 export type MouseButton = 0 | 1 | 2;
@@ -26,7 +26,7 @@ export class Input extends NitrateProcess {
     public static Instance: Input | null = null;
 
     private readonly canvas: HTMLCanvasElement;
-    private onBlur: () => void = () => {};
+    private onBlur: () => void = () => { };
 
     constructor(canvas: HTMLCanvasElement) {
         super();
@@ -46,141 +46,175 @@ export class Input extends NitrateProcess {
     }
 
     //#region MOUSE
-    private mouse: MouseState = { pos: { x: 0, y: 0 }, leftDown: false, middleDown: false, rightDown: false, isInside: false };
-    private onMouseMove: (e: MouseEvent) => void = () => {};
-    private onMouseDown: (e: MouseEvent) => void = () => {};
-    private onMouseUp: (e: MouseEvent) => void = () => {};
-    private onMouseLeave: () => void = () => {};
-    private readonly mouseDownCallbacks: Map<MouseButton, Set<(e: MouseEvent) => void>> = new Map();
-    private readonly mouseUpCallbacks: Map<MouseButton, Set<(e: MouseEvent) => void>> = new Map();
-    private readonly mouseMoveCallbacks: Set<(e: MouseEvent) => void> = new Set();
+    private mouse: MouseState = {
+        canvas: { pos: { x: 0, y: 0 }, isInside: false },
+        screen: { pos: { x: 0, y: 0 } },
+        leftDown: false,
+        middleDown: false,
+        rightDown: false,
+    };
+
+    private onScreenMouseMove: (e: MouseEvent) => void = () => { };
+    private onScreenMouseDown: (e: MouseEvent) => void = () => { };
+    private onScreenMouseUp: (e: MouseEvent) => void = () => { };
+
+    private readonly screenMouseDownCallbacks: Map<MouseButton, Set<(e: MouseEvent) => void>> = new Map();
+    private readonly screenMouseUpCallbacks: Map<MouseButton, Set<(e: MouseEvent) => void>> = new Map();
+    private readonly screenMouseMoveCallbacks: Set<(e: MouseEvent) => void> = new Set();
+
+    private onCanvasMouseMove: (e: MouseEvent) => void = () => { };
+    private onCanvasMouseDown: (e: MouseEvent) => void = () => { };
+    private onCanvasMouseUp: (e: MouseEvent) => void = () => { };
+    private onCanvasMouseLeave: () => void = () => { };
+
+    private readonly canvasMouseDownCallbacks: Map<MouseButton, Set<(e: MouseEvent) => void>> = new Map();
+    private readonly canvasMouseUpCallbacks: Map<MouseButton, Set<(e: MouseEvent) => void>> = new Map();
+    private readonly canvasMouseMoveCallbacks: Set<(e: MouseEvent) => void> = new Set();
 
     private InitMouse(canvas: HTMLCanvasElement): void {
-        this.onMouseMove = (e: MouseEvent) => {
-            this.UpdateMousePosition(e);
-            this.mouse.isInside = true;
-            this.mouseMoveCallbacks.forEach(cb => cb(e));
+        this.onScreenMouseMove = (e: MouseEvent) => {
+            this.mouse.screen.pos.x = e.clientX;
+            this.mouse.screen.pos.y = e.clientY;
+            this.screenMouseMoveCallbacks.forEach(cb => cb(e));
+        };
+
+        this.onScreenMouseDown = (e: MouseEvent) => {
+            if (e.button === 0) { this.mouse.leftDown = true; }
+            if (e.button === 1) { e.preventDefault(); this.mouse.middleDown = true; }
+            if (e.button === 2) { this.mouse.rightDown = true; }
+            this.screenMouseDownCallbacks.get(e.button as MouseButton)?.forEach(cb => cb(e));
             LogManager.Instance?.Log({
-                text: 'Mouse moved over canvas.',
-                options: { noisy: true, tags: ['Input', 'Mouse'], data: this.mouse.pos }
-            });
-        };
-
-        this.onMouseDown = (e: MouseEvent) => {
-            this.UpdateMousePosition(e);
-            this.mouse.isInside = true;
-            if (e.button === 0) {
-                this.mouse.leftDown = true;
-                LogManager.Instance?.Log({
-                    text: 'Left mouse button pressed.',
-                    options: { noisy: true, tags: ['Input', 'Mouse'], data: this.mouse }
-                });
-            }
-            if (e.button === 1) {
-                e.preventDefault();
-                this.mouse.middleDown = true;
-                LogManager.Instance?.Log({
-                    text: 'Middle mouse button pressed.',
-                    options: { noisy: true, tags: ['Input', 'Mouse'], data: this.mouse }
-                });
-            }
-            if (e.button === 2) {
-                this.mouse.rightDown = true;
-                LogManager.Instance?.Log({
-                    text: 'Right mouse button pressed.',
-                    options: { noisy: true, tags: ['Input', 'Mouse'], data: this.mouse }
-                });
-            }
-            this.mouseDownCallbacks.get(e.button as MouseButton)?.forEach(cb => cb(e));
-        };
-
-        this.onMouseUp = (e: MouseEvent) => {
-            if (e.button === 0) {
-                this.mouse.leftDown = false;
-                LogManager.Instance?.Log({
-                    text: 'Left mouse button released.',
-                    options: { noisy: true, tags: ['Input', 'Mouse'], data: this.mouse }
-                });
-            }
-            if (e.button === 1) {
-                this.mouse.middleDown = false;
-                LogManager.Instance?.Log({
-                    text: 'Middle mouse button released.',
-                    options: { noisy: true, tags: ['Input', 'Mouse'], data: this.mouse }
-                });
-            }
-            if (e.button === 2) {
-                this.mouse.rightDown = false;
-                LogManager.Instance?.Log({
-                    text: 'Right mouse button released.',
-                    options: { noisy: true, tags: ['Input', 'Mouse'], data: this.mouse }
-                });
-            }
-            this.mouseUpCallbacks.get(e.button as MouseButton)?.forEach(cb => cb(e));
-        };
-
-        this.onMouseLeave = () => {
-            this.mouse.leftDown = false;
-            this.mouse.isInside = false;
-            LogManager.Instance?.Log({
-                text: 'Mouse left canvas bounds.',
+                text: 'Mouse button pressed.',
                 options: { noisy: true, tags: ['Input', 'Mouse'], data: this.mouse }
             });
         };
 
-        canvas.addEventListener('mousemove', this.onMouseMove);
-        canvas.addEventListener('mousedown', this.onMouseDown);
-        canvas.addEventListener('mouseleave', this.onMouseLeave);
-        window.addEventListener('mouseup', this.onMouseUp);
+        this.onScreenMouseUp = (e: MouseEvent) => {
+            if (e.button === 0) { this.mouse.leftDown = false; }
+            if (e.button === 1) { this.mouse.middleDown = false; }
+            if (e.button === 2) { this.mouse.rightDown = false; }
+            this.screenMouseUpCallbacks.get(e.button as MouseButton)?.forEach(cb => cb(e));
+            LogManager.Instance?.Log({
+                text: 'Mouse button released.',
+                options: { noisy: true, tags: ['Input', 'Mouse'], data: this.mouse }
+            });
+        };
+
+        this.onCanvasMouseMove = (e: MouseEvent) => {
+            this.UpdateCanvasPosition(e);
+            this.mouse.canvas.isInside = true;
+            this.canvasMouseMoveCallbacks.forEach(cb => cb(e));
+            LogManager.Instance?.Log({
+                text: 'Mouse moved over canvas.',
+                options: { noisy: true, tags: ['Input', 'Mouse'], data: this.mouse.canvas.pos }
+            });
+        };
+
+        this.onCanvasMouseDown = (e: MouseEvent) => {
+            this.UpdateCanvasPosition(e);
+            this.mouse.canvas.isInside = true;
+            this.canvasMouseDownCallbacks.get(e.button as MouseButton)?.forEach(cb => cb(e));
+            LogManager.Instance?.Log({
+                text: 'Mouse pressed on canvas.',
+                options: { noisy: true, tags: ['Input', 'Mouse'], data: this.mouse.canvas.pos }
+            });
+        };
+
+        this.onCanvasMouseUp = (e: MouseEvent) => {
+            this.canvasMouseUpCallbacks.get(e.button as MouseButton)?.forEach(cb => cb(e));
+            LogManager.Instance?.Log({
+                text: 'Mouse released on canvas.',
+                options: { noisy: true, tags: ['Input', 'Mouse'], data: this.mouse.canvas.pos }
+            });
+        };
+
+        this.onCanvasMouseLeave = () => {
+            this.mouse.canvas.isInside = false;
+            LogManager.Instance?.Log({
+                text: 'Mouse left canvas bounds.',
+                options: { noisy: true, tags: ['Input', 'Mouse'] }
+            });
+        };
+
+        window.addEventListener('mousemove', this.onScreenMouseMove);
+        window.addEventListener('mousedown', this.onScreenMouseDown);
+        window.addEventListener('mouseup', this.onScreenMouseUp);
+        canvas.addEventListener('mousemove', this.onCanvasMouseMove);
+        canvas.addEventListener('mousedown', this.onCanvasMouseDown);
+        canvas.addEventListener('mouseup', this.onCanvasMouseUp);
+        canvas.addEventListener('mouseleave', this.onCanvasMouseLeave);
     }
 
     /** Returns a snapshot of the current mouse state. */
     public GetMouseState(): MouseState { return { ...this.mouse }; }
 
-    /** Subscribes to mousedown on the canvas for a specific button. Returns an unsubscribe function. */
-    public OnMouseDown(button: MouseButton, callback: (e: MouseEvent) => void): () => void {
-        if (!this.mouseDownCallbacks.has(button)) { this.mouseDownCallbacks.set(button, new Set()); }
-        const set = this.mouseDownCallbacks.get(button);
-        if (set) { set.add(callback); }
-        return () => { this.mouseDownCallbacks.get(button)?.delete(callback); };
+    /** Subscribes to mousemove on the screen (window-level). Returns an unsubscribe function. */
+    public OnScreenMouseMove(callback: (e: MouseEvent) => void): () => void {
+        this.screenMouseMoveCallbacks.add(callback);
+        return () => { this.screenMouseMoveCallbacks.delete(callback); };
     }
 
-    /** Subscribes to mouseup (window-level, catches drag-releases). Returns an unsubscribe function. */
-    public OnMouseUp(button: MouseButton, callback: (e: MouseEvent) => void): () => void {
-        if (!this.mouseUpCallbacks.has(button)) { this.mouseUpCallbacks.set(button, new Set()); }
-        const set = this.mouseUpCallbacks.get(button);
+    /** Subscribes to mousedown (window-level) for a specific button. Returns an unsubscribe function. */
+    public OnScreenMouseDown(button: MouseButton, callback: (e: MouseEvent) => void): () => void {
+        if (!this.screenMouseDownCallbacks.has(button)) { this.screenMouseDownCallbacks.set(button, new Set()); }
+        const set = this.screenMouseDownCallbacks.get(button);
         if (set) { set.add(callback); }
-        return () => { this.mouseUpCallbacks.get(button)?.delete(callback); };
+        return () => { this.screenMouseDownCallbacks.get(button)?.delete(callback); };
+    }
+
+    /** Subscribes to mouseup (window-level) for a specific button. Returns an unsubscribe function. */
+    public OnScreenMouseUp(button: MouseButton, callback: (e: MouseEvent) => void): () => void {
+        if (!this.screenMouseUpCallbacks.has(button)) { this.screenMouseUpCallbacks.set(button, new Set()); }
+        const set = this.screenMouseUpCallbacks.get(button);
+        if (set) { set.add(callback); }
+        return () => { this.screenMouseUpCallbacks.get(button)?.delete(callback); };
     }
 
     /** Subscribes to mousemove on the canvas. Returns an unsubscribe function. */
-    public OnMouseMove(callback: (e: MouseEvent) => void): () => void {
-        this.mouseMoveCallbacks.add(callback);
-        return () => { this.mouseMoveCallbacks.delete(callback); };
+    public OnCanvasMouseMove(callback: (e: MouseEvent) => void): () => void {
+        this.canvasMouseMoveCallbacks.add(callback);
+        return () => { this.canvasMouseMoveCallbacks.delete(callback); };
+    }
+
+    /** Subscribes to mousedown on the canvas for a specific button. Returns an unsubscribe function. */
+    public OnCanvasMouseDown(button: MouseButton, callback: (e: MouseEvent) => void): () => void {
+        if (!this.canvasMouseDownCallbacks.has(button)) { this.canvasMouseDownCallbacks.set(button, new Set()); }
+        const set = this.canvasMouseDownCallbacks.get(button);
+        if (set) { set.add(callback); }
+        return () => { this.canvasMouseDownCallbacks.get(button)?.delete(callback); };
+    }
+
+    /** Subscribes to mouseup on the canvas for a specific button. Returns an unsubscribe function. */
+    public OnCanvasMouseUp(button: MouseButton, callback: (e: MouseEvent) => void): () => void {
+        if (!this.canvasMouseUpCallbacks.has(button)) { this.canvasMouseUpCallbacks.set(button, new Set()); }
+        const set = this.canvasMouseUpCallbacks.get(button);
+        if (set) { set.add(callback); }
+        return () => { this.canvasMouseUpCallbacks.get(button)?.delete(callback); };
     }
 
     /** Resets all mouse state to defaults. Call on scene transitions to prevent stale input. */
     public ResetMouseState(): void {
-        this.mouse.pos = { x: 0, y: 0 };
+        this.mouse.canvas.pos = { x: 0, y: 0 };
+        this.mouse.canvas.isInside = false;
+        this.mouse.screen.pos = { x: 0, y: 0 };
         this.mouse.leftDown = false;
         this.mouse.middleDown = false;
         this.mouse.rightDown = false;
-        this.mouse.isInside = false;
     }
 
     /** Computes canvas-relative mouse position from a DOM mouse event and flips Y to sim-space. */
-    private UpdateMousePosition(e: MouseEvent): void {
+    private UpdateCanvasPosition(e: MouseEvent): void {
         const rect = this.canvas.getBoundingClientRect();
         const normalizedX = (e.clientX - rect.left) / rect.width;
         const normalizedY = (e.clientY - rect.top) / rect.height;
-        this.mouse.pos.x = normalizedX * this.canvas.width;
-        this.mouse.pos.y = Utils.FlipY(normalizedY * this.canvas.height, this.canvas.height);
+        this.mouse.canvas.pos.x = normalizedX * this.canvas.width;
+        this.mouse.canvas.pos.y = Utils.FlipY(normalizedY * this.canvas.height, this.canvas.height);
     }
     //#endregion
 
     //#region KEYBOARD
-    private onKeyDown: (e: KeyboardEvent) => void = () => {};
-    private onKeyUp: (e: KeyboardEvent) => void = () => {};
+    private onKeyDown: (e: KeyboardEvent) => void = () => { };
+    private onKeyUp: (e: KeyboardEvent) => void = () => { };
     private readonly keysDown: Set<string> = new Set();
     private readonly codesDown: Set<string> = new Set();
     private readonly keyDownCallbacks: Map<string, Set<() => void>> = new Map();
@@ -265,13 +299,17 @@ export class Input extends NitrateProcess {
     //#endregion
 
     public OnDestroy(): void {
-        this.canvas.removeEventListener('mousemove', this.onMouseMove);
-        this.canvas.removeEventListener('mousedown', this.onMouseDown);
-        this.canvas.removeEventListener('mouseleave', this.onMouseLeave);
-        window.removeEventListener('mouseup', this.onMouseUp);
+        window.removeEventListener('mousemove', this.onScreenMouseMove);
+        window.removeEventListener('mousedown', this.onScreenMouseDown);
+        window.removeEventListener('mouseup', this.onScreenMouseUp);
         window.removeEventListener('keydown', this.onKeyDown);
         window.removeEventListener('keyup', this.onKeyUp);
         window.removeEventListener('blur', this.onBlur);
+
+        this.canvas.removeEventListener('mousemove', this.onCanvasMouseMove);
+        this.canvas.removeEventListener('mousedown', this.onCanvasMouseDown);
+        this.canvas.removeEventListener('mouseup', this.onCanvasMouseUp);
+        this.canvas.removeEventListener('mouseleave', this.onCanvasMouseLeave);
 
         if (Input.Instance === this) {
             Input.Instance = null;

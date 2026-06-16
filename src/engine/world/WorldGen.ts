@@ -1,14 +1,17 @@
 import type { ChunkAddress, ChunkEntry, ChunkViews } from './chunk/ChunkData';
 import type { NoiseOptions, NoiseType } from '../utility/Noise';
+import type { OreDefinition } from './ore/OreModel';
 import type { StampCell, WorldStamp } from './WorldStamp';
 
 import { BiomeQuery } from './biome/BiomeQuery';
 import { ChunkData } from './chunk/ChunkData';
+import { ColorNoise } from '../utility/ColorNoise';
 import { LogManager } from '../debug/LogManager';
 import { MaterialRegistry } from '../materials/MaterialRegistry';
 import { MaterialVisualSchema } from '../materials/MaterialVisualSchema';
 import { Noise } from '../utility/Noise';
 import { OccupancyIds } from '../materials/definitions/MaterialIdentity';
+import { OreRegistry } from './ore/OreRegistry';
 import { WorldConfig } from '../config/WorldConfig';
 
 //@omitfromdocs
@@ -54,6 +57,7 @@ export class WorldGen {
         WorldGen.StampPass(address, views);
         WorldGen.DetailPass(address, seed, views);
         WorldGen.StampErosionPass(address, seed, views);
+        WorldGen.OrePass(address, seed, views);
 
         LogManager.Instance?.Log({
             text: `Generated chunk (${address.cx},${address.cy}).`,
@@ -120,13 +124,13 @@ export class WorldGen {
 
                 const layerColor = layer?.detail?.color;
                 const colorSeed = layerColor
-                    ? Math.round((Noise.GetColorNoise({
+                    ? Math.round(ColorNoise.GetColorNoise({
                         noiseType: layerColor.type,
                         coords: { x: worldX, y: worldY },
                         seed,
                         weights: layerColor.weights,
                         scale: layerColor.scale,
-                    }) + 0.5) / MaterialVisualSchema.GetColorsPerMaterial() * 255)
+                    }) * 255)
                     : Math.floor(Math.random() * 256);
 
                 //TODO: Go through all of these and make sure that they are correct
@@ -234,6 +238,116 @@ export class WorldGen {
                     colorSeed: views.identity.getUint8(base + 1),
                     variantId: detail.material.variantId ?? 0,
                     occupancy: OccupancyIds[detail.material.occupancy],
+                });
+            }
+        }
+    }
+
+    /** Places world-coordinate ore pockets into static layer-material cells based on biome ore lists. @internal */
+    private static OrePass(address: ChunkAddress, seed: number, views: ChunkViews): void {
+        const chunkSize = ChunkData.GetChunkSize();
+        const bytesPerCell = ChunkData.GetIdentityBytesPerCell();
+        const { ore } = WorldConfig.GetConfig().generation;
+        const { placement } = ore;
+        const worleyScale = placement.noise.options.scale ?? 20;
+        const air = MaterialRegistry.Materials.air;
+        const minAirDistance = 2;
+
+        type PocketInfo = { oreMaterial: OreDefinition; radiusX: number; radiusY: number; layerIds: Set<number>; shapeSeed: number } | null;
+        const pocketCache = new Map<string, PocketInfo>();
+
+        for (let localY = 0; localY < chunkSize; localY++) {
+            for (let localX = 0; localX < chunkSize; localX++) {
+                const cellIndex = localY * chunkSize + localX;
+                const base = cellIndex * bytesPerCell;
+                if (views.identity.getUint8(base + 3) !== OccupancyIds.static) { continue; }
+
+                let tooCloseToAir = false;
+                for (let dy = -minAirDistance; dy <= minAirDistance && !tooCloseToAir; dy++) {
+                    for (let dx = -minAirDistance; dx <= minAirDistance && !tooCloseToAir; dx++) {
+                        if (dx === 0 && dy === 0) { continue; }
+                        const nx = localX + dx;
+                        const ny = localY + dy;
+                        if (nx < 0 || nx >= chunkSize || ny < 0 || ny >= chunkSize) { continue; }
+                        const neighborBase = (ny * chunkSize + nx) * bytesPerCell;
+                        if (views.identity.getUint8(neighborBase) === air.id) { tooCloseToAir = true; }
+                    }
+                }
+                if (tooCloseToAir) { continue; }
+
+                const worldX = address.cx * chunkSize + localX;
+                const worldY = address.cy * chunkSize + localY;
+
+                const { wx, wy, gridCX, gridCY } = Noise.FindNearestWorleyPoint(worldX, worldY, seed, worleyScale);
+
+                const cacheKey = `${gridCX},${gridCY}`;
+                let pocketInfo = pocketCache.get(cacheKey);
+                if (pocketInfo === undefined) {
+                    pocketInfo = null;
+                    const pocketHash = Noise.Hash2D(gridCX, gridCY, seed + 3);
+                    if (pocketHash <= placement.noise.threshold) {
+                        const { biome } = BiomeQuery.FindByWorldPos({ x: wx, y: wy });
+                        if (biome.ores && biome.ores.length > 0) {
+                            const padding = placement.padding;
+                            const paddingOk =
+                                BiomeQuery.FindByWorldPos({ x: wx + padding, y: wy }).biome.name === biome.name &&
+                                BiomeQuery.FindByWorldPos({ x: wx - padding, y: wy }).biome.name === biome.name &&
+                                BiomeQuery.FindByWorldPos({ x: wx, y: wy + padding }).biome.name === biome.name &&
+                                BiomeQuery.FindByWorldPos({ x: wx, y: wy - padding }).biome.name === biome.name;
+                            if (paddingOk) {
+                                const oreIndex = Math.floor(Noise.Hash2D(gridCX, gridCY, seed + 4) * biome.ores.length);
+                                const oreDefinition = OreRegistry.Ores[biome.ores[oreIndex]];
+                                if (oreDefinition && wy >= oreDefinition.depth.min && wy < oreDefinition.depth.max) {
+                                    const radiusHashX = Noise.Hash2D(gridCX, gridCY, seed + 5);
+                                    const radiusHashY = Noise.Hash2D(gridCX, gridCY, seed + 6);
+                                    const sizeX = oreDefinition.pocket.size.x;
+                                    const sizeY = oreDefinition.pocket.size.y;
+                                    const radiusX = sizeX.min + (sizeX.max - sizeX.min) * radiusHashX;
+                                    const radiusY = sizeY.min + (sizeY.max - sizeY.min) * radiusHashY;
+                                    const layerIds: Set<number> = new Set(
+                                        biome.layers.map(l => MaterialRegistry.Materials[l.material.name]?.id).filter(id => id !== undefined)
+                                    );
+                                    const shapeSeed = seed + 7 + gridCX * 7919 + gridCY * 6271;
+                                    pocketInfo = { oreMaterial: oreDefinition, radiusX, radiusY, layerIds, shapeSeed };
+                                }
+                            }
+                        }
+                    }
+                    pocketCache.set(cacheKey, pocketInfo ?? null);
+                }
+
+                if (!pocketInfo) { continue; }
+                if (!pocketInfo.layerIds.has(views.identity.getUint8(base))) { continue; }
+
+                const relX = worldX - wx;
+                const relY = worldY - wy;
+                const noiseX = Noise.GetNoise({ noiseType: pocketInfo.oreMaterial.pocket.noise.type, coords: { x: relX, y: relY }, seed: pocketInfo.shapeSeed, options: pocketInfo.oreMaterial.pocket.noise.options });
+                const noiseY = Noise.GetNoise({ noiseType: pocketInfo.oreMaterial.pocket.noise.type, coords: { x: relX + 31337, y: relY }, seed: pocketInfo.shapeSeed, options: pocketInfo.oreMaterial.pocket.noise.options });
+                const ddx = (worldX + noiseX) - wx;
+                const ddy = (worldY + noiseY) - wy;
+                const rotation = pocketInfo.oreMaterial.pocket.rotation ?? 0;
+                const cosR = Math.cos(rotation);
+                const sinR = Math.sin(rotation);
+                const localDdx = ddx * cosR + ddy * sinR;
+                const localDdy = -ddx * sinR + ddy * cosR;
+                if ((localDdx / pocketInfo.radiusX) ** 2 + (localDdy / pocketInfo.radiusY) ** 2 >= 1) { continue; }
+
+                const mat = MaterialRegistry.Materials[pocketInfo.oreMaterial.material.name];
+                if (!mat) { continue; }
+                const orePattern = pocketInfo.oreMaterial.pattern;
+                const oreColorSeed = Math.round(ColorNoise.GetColorNoise({
+                    noiseType: orePattern.type,
+                    coords: { x: worldX, y: worldY },
+                    seed,
+                    weights: orePattern.weights,
+                    scale: orePattern.scale,
+                    angle: orePattern.angle,
+                }) * 255);
+                ChunkData.WriteIdentity(views.identity, cellIndex, {
+                    materialId: mat.id,
+                    colorSeed: oreColorSeed,
+                    variantId: pocketInfo.oreMaterial.material.variantId ?? 0,
+                    occupancy: OccupancyIds[pocketInfo.oreMaterial.material.occupancy],
                 });
             }
         }

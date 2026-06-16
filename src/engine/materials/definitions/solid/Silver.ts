@@ -40,5 +40,5 @@ export const Silver: MaterialDefinition = {
             condition: { temperature: 0.79 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'metal', 'ore']
 };

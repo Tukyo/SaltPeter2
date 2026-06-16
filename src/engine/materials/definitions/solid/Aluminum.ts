@@ -40,5 +40,5 @@ export const Aluminum: MaterialDefinition = {
             condition: { temperature: 0.78 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'metal', 'ore']
 };

@@ -412,7 +412,7 @@ export class World extends NitrateProcess {
         this.blit.Reset();
         LogManager.Instance?.Log({
             text: 'World OnResize.',
-            options: { tags: ['World'] }
+            options: { tags: ['Resize', 'World'] }
         });
     }
 

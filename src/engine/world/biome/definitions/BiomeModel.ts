@@ -1,7 +1,9 @@
 import type { BiomeId, BiomeName } from "./BiomeIdentity";
 import type { MaterialName, MaterialOccupancy } from "../../../materials/definitions/MaterialIdentity";
 import type { NoiseOptions, NoiseType } from "../../../utility/Noise";
+import type { ColorNoiseType } from "../../../utility/ColorNoise";
 import type { NumberRange } from "../../../definitions/Primitives";
+import type { OreName } from "../../ore/OreIdentity";
 
 // References:
 // https://noita.wiki.gg/wiki/Biomes
@@ -13,6 +15,7 @@ export interface BiomeDefinition {
     layers: readonly BiomeLayer[];
     stamps?: BiomeStampMaterialMap;
     detail?: BiomeDetail;
+    ores?: readonly OreName[];
 }
 
 export interface BiomeMaterial {
@@ -29,7 +32,7 @@ export interface BiomeLayer {
 
 export interface BiomeLayerDetail {
     color?: {
-        type: NoiseType;
+        type: ColorNoiseType;
         scale: number;
         weights: number[];
     }

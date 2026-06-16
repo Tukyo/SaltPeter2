@@ -1,8 +1,9 @@
-import { Nitrate } from '@Nitrate';
-
 import type { SelectSetting } from '../UserInterfaceTypes';
 import type { ControlHandler } from '../UserInterfaceRegistry';
+
+import { TooltipManager } from '../TooltipManager';
 import { UserInterfaceRegistry } from '../UserInterfaceRegistry';
+import { Utils } from '../../utility/Utils';
 
 /** Control handler for `SelectSetting`. Renders a labeled dropdown. */
 export class SelectControl implements ControlHandler<SelectSetting> {
@@ -32,6 +33,12 @@ export class SelectControl implements ControlHandler<SelectSetting> {
         select.value = String(setting.default);
         wrapper.appendChild(select);
 
+        if (setting.tooltip) {
+            const tooltip = setting.tooltip;
+            wrapper.addEventListener('mouseenter', () => TooltipManager.Instance?.Show(tooltip));
+            wrapper.addEventListener('mouseleave', () => TooltipManager.Instance?.Hide());
+        }
+
         return { wrapper, element: select, isValue: true };
     }
 
@@ -42,9 +49,9 @@ export class SelectControl implements ControlHandler<SelectSetting> {
 
     // @omitfromdocs
     public GetRawValue(element: HTMLSelectElement, setting: SelectSetting): number {
-        const fallback = Nitrate.Utils.FiniteNumber(setting.default, 0);
-        const allowed = setting.options.map(o => Nitrate.Utils.FiniteNumber(o.value, fallback));
-        const raw = Nitrate.Utils.FiniteNumber(element.value, fallback);
+        const fallback = Utils.FiniteNumber(setting.default, 0);
+        const allowed = setting.options.map(o => Utils.FiniteNumber(o.value, fallback));
+        const raw = Utils.FiniteNumber(element.value, fallback);
         if (allowed.includes(raw)) { return raw; }
         if (allowed.includes(fallback)) { return fallback; }
         return allowed[0] ?? fallback;

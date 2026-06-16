@@ -42,5 +42,5 @@ export const BronzePowder: MaterialDefinition = {
             condition: { temperature: 0.78 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'metal']
 };

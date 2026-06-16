@@ -34,4 +34,5 @@ export const Diamond: MaterialDefinition = {
             restingStrength: 0.5
         }
     },
+    tags: ['ore']
 };

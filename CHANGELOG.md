@@ -2,6 +2,48 @@
 
 ---
 
+## [0.1.5] - [06/16/2026]
+### Updates & Changes
+- **Brush**
+  - Brush masking mode now allows for filtering for erasing on top of painting. When overlay filter is active, the brush will only erase the active material
+- **Electron IPC**
+  - Added the ability for the app to locate files
+    - Used by screenshots and gameobjects to allow you to click directly in the notification to show the files in your file explorer
+- **Input**
+  - Fully overhauled the `Input` class
+    - Now full parity and split between Window related events and Canvas events
+    - The `MouseState` has also been split to provide canvas and screen related information
+- **Logging**
+  - Added more logging to many different places
+    - All `OnDestroy` for all `NitrateProcess` implementers now log2
+    - All `OnResize` for all `NitrateProcess` implementers also log
+- **Materials**
+  - Added 4 new material tags `Metal`, `Organic`, `Ore`, `Alloy`
+    - Tagged all relevant materials such as Solid metals, all being tagged with `Metal`, and many being tagged with `Ore`. All organic materials also tagged such as human-related products like `Meat` or `Urine` or `Blood`, and all alloys such as `Steel` tagged as well
+- **UI**
+  - Massive UI overhaul including Tooltips and Notifications
+  - All controls and component fields now implement tooltips, explaining what each parameter is used for
+  - `TooltipManager` and `NotificationManager` both instantiated by the `UserInterfaceManager`
+  - Moved general shared helpers from `ParticleSystemField` to `ComponentField`
+- **Utility**
+  - Separated `Noise` functions into new file `ColorNoise`
+    - Used during worldgen, and can be used for anywhere color variation is needed
+- **World**
+  - Added `OrePass` that places ore based on ore defintions, ore definition model follows same setup as materials and biomes
+  - `Aluminum`, `Coal`, `Copper`, `Diamond`, `Iron`, `Lead`, `Silver`, `Tin` definitions added
+    - `Coal` is the only definition with actual properties right now
+  - `Ores`, `OreRegistry`, `OreModel` and `OreIdentity` files created for auto-discovery and Name/ID lookup
+
+### Bug Fixes
+- Fixed a bug limiting the sandbox brush size to be much larger, allowing easier painting at higher resolutions/scale
+- Fixed a bug causing the "Run Saltpeter" checkbox during install to not actually run the app
+- Fixed a silent error when exporting gameobjects
+- Fixed a bug causing `plastic_molten` to burn itself by removing the burns tag
+- Fixed a bug causing molten metals to not boil water
+- Unified getter functions into named `public GetFoo(): foo` methods instead of `public get foo`
+
+---
+
 ## [0.1.4] - [06/14/2026]
 ### Updates & Changes
 - **Brush**

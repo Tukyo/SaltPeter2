@@ -1,4 +1,5 @@
 import { Import } from './Import';
+import { LogManager } from '../../debug/LogManager';
 
 /**
  * Reads a `.gameobject.json` file and hydrates the target game object
@@ -17,15 +18,33 @@ export class ImportGameObject extends Import {
      * Accepts an optional filename override; falls back to the filename provider.
      * @internal
      */
-    public async Run(filename?: string): Promise<void> {
+    public async Run(filename?: string): Promise<boolean> {
         const go = this.gameObjectProvider?.() ?? null;
+        if (!go) {
+            LogManager.Instance?.LogWarning({
+                text: 'ImportGameObject skipped: no game object target.',
+                options: { tags: ['GameObject', 'Import'] }
+            });
+            return false;
+        }
         const data = await this.ReadFileEditor(filename);
-        if (!go || !data) { return; }
+        if (!data) { return false; }
         Import.HydrateGameObject(go, data);
+        LogManager.Instance?.Log({
+            text: `Imported game object '${go.name}'.`,
+            options: { tags: ['GameObject', 'Import'] }
+        });
+        return true;
     }
 
     public OnDestroy(): void {
         super.OnDestroy();
-        if (ImportGameObject.Instance === this) { ImportGameObject.Instance = null; }
+        if (ImportGameObject.Instance === this) {
+            ImportGameObject.Instance = null;
+            LogManager.Instance?.Log({
+                text: 'Cleared ImportGameObject singleton instance.',
+                options: { tags: ['GameObject', 'NitrateProcessDestroy'] }
+            });
+        }
     }
 }

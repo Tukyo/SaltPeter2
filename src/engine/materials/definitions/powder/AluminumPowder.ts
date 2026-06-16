@@ -43,5 +43,5 @@ export const AluminumPowder: MaterialDefinition = {
             condition: { temperature: 0.765 }
         }
     },
-    tags: ['corrodes', 'burns']
+    tags: ['corrodes', 'burns', 'metal']
 };

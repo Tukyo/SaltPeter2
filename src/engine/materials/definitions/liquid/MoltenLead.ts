@@ -42,5 +42,5 @@ export const MoltenLead: MaterialDefinition = {
             condition: { temperature: 0.61 }
         }
     },
-    tags: ['corrodes', 'molten']
+    tags: ['corrodes', 'molten', 'metal']
 };

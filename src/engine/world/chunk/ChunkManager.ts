@@ -225,7 +225,7 @@ export class ChunkManager extends NitrateProcess {
     public OnResize(): void {
         LogManager.Instance?.Log({
             text: 'ChunkManager OnResize.',
-            options: { tags: ['Chunk'] }
+            options: { tags: ['Resize', 'Chunk'] }
         });
     }
 

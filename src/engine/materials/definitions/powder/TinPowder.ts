@@ -16,10 +16,10 @@ export const TinPowder: MaterialDefinition = {
     phase: 'powder',
     phaseBehavior: {
         powder: {
-            activity: 0.8,
-            mobility: 0.7,
-            flow: 0.6,
-            cohesion: 0.3
+            activity: 1,
+            mobility: 0.05,
+            flow: 0.02,
+            cohesion: 0.0175
         }
     },
     physics: {
@@ -42,5 +42,5 @@ export const TinPowder: MaterialDefinition = {
             condition: { temperature: 0.6 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'metal']
 };

@@ -41,7 +41,7 @@ export class SelectionController extends Nitrate.NitrateProcess {
             }
         });
 
-        this.unsubMouseDown = input?.OnMouseDown(0, (e) => {
+        this.unsubMouseDown = input?.OnCanvasMouseDown(0, (e) => {
             if (!input.IsKeyDown('Shift')) { return; }
             e.preventDefault();
             const cell = this.MouseToCell(e);
@@ -49,7 +49,7 @@ export class SelectionController extends Nitrate.NitrateProcess {
             this.selection = { x1: cell.x, y1: cell.y, x2: cell.x, y2: cell.y };
         });
 
-        this.unsubMouseMove = input?.OnMouseMove((e) => {
+        this.unsubMouseMove = input?.OnCanvasMouseMove((e) => {
             if (!this.selectionDragStart || !input.GetMouseState().leftDown) { return; }
             const cell = this.MouseToCell(e);
             this.selection = {
@@ -60,7 +60,7 @@ export class SelectionController extends Nitrate.NitrateProcess {
             };
         });
 
-        this.unsubMouseUp = input?.OnMouseUp(0, (e) => {
+        this.unsubMouseUp = input?.OnScreenMouseUp(0, (e) => {
             if (!this.selectionDragStart) { return; }
             const dragStart = this.selectionDragStart;
             this.selectionDragStart = null;

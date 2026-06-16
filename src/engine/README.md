@@ -47,6 +47,8 @@ import { Nitrate } from '@Nitrate';
 &nbsp;&nbsp;&nbsp;&nbsp;↳ [`biome/`](world/biome/README.md)  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↳ [`definitions/`](world/biome/definitions/README.md)  
 &nbsp;&nbsp;&nbsp;&nbsp;↳ [`chunk/`](world/chunk/README.md)  
+&nbsp;&nbsp;&nbsp;&nbsp;↳ [`ore/`](world/ore/README.md)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↳ [`definitions/`](world/ore/definitions/README.md)  
 
 <!-- TABLE_OF_CONTENTS_END -->
 

@@ -53,12 +53,12 @@ export class PlayerScaleController extends Nitrate.NitrateProcess {
 
         this.unsubKeyDown = input?.OnKeyDown(keybind, () => {
             this.visible = !this.visible;
-            this.pixelDataRenderer.canvas.style.display = this.visible ? 'block' : 'none';
+            this.pixelDataRenderer.GetCanvas().style.display = this.visible ? 'block' : 'none';
         });
 
-        this.unsubMouseDown = input?.OnMouseDown(0, (e) => {
+        this.unsubMouseDown = input?.OnCanvasMouseDown(0, (e) => {
             if (!this.visible) { return; }
-            const rect = this.pixelDataRenderer.canvas.getBoundingClientRect();
+            const rect = this.pixelDataRenderer.GetCanvas().getBoundingClientRect();
             if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
                 return;
             }
@@ -68,7 +68,7 @@ export class PlayerScaleController extends Nitrate.NitrateProcess {
             Nitrate.BrushManager.Instance?.Block();
         });
 
-        this.unsubMouseMove = input?.OnMouseMove((e) => {
+        this.unsubMouseMove = input?.OnCanvasMouseMove((e) => {
             if (!this.dragging) { return; }
             const rect = this.containerRect ?? document.getElementById('sim-container')?.getBoundingClientRect();
             if (!rect) { return; }
@@ -76,11 +76,11 @@ export class PlayerScaleController extends Nitrate.NitrateProcess {
             const cellY = Math.round((e.clientY - rect.top) / this.cellPxH) - this.dragOffsetCellY;
             this.positionX = cellX * this.cellPxW;
             this.positionY = cellY * this.cellPxH;
-            this.pixelDataRenderer.canvas.style.left = `${this.positionX}px`;
-            this.pixelDataRenderer.canvas.style.top = `${this.positionY}px`;
+            this.pixelDataRenderer.GetCanvas().style.left = `${this.positionX}px`;
+            this.pixelDataRenderer.GetCanvas().style.top = `${this.positionY}px`;
         });
 
-        this.unsubMouseUp = input?.OnMouseUp(0, () => {
+        this.unsubMouseUp = input?.OnScreenMouseUp(0, () => {
             if (!this.dragging) { return; }
             this.dragging = false;
             Nitrate.BrushManager.Instance?.Unblock();
@@ -93,15 +93,15 @@ export class PlayerScaleController extends Nitrate.NitrateProcess {
         this.containerRect = document.getElementById('sim-container')?.getBoundingClientRect() ?? null;
 
         this.pixelDataRenderer.Render(this.cells, this.pixelDataSize, 1);
-        this.pixelDataRenderer.canvas.style.width = `${this.pixelDataSize.width * this.cellPxW}px`;
-        this.pixelDataRenderer.canvas.style.height = `${this.pixelDataSize.height * this.cellPxH}px`;
+        this.pixelDataRenderer.GetCanvas().style.width = `${this.pixelDataSize.width * this.cellPxW}px`;
+        this.pixelDataRenderer.GetCanvas().style.height = `${this.pixelDataSize.height * this.cellPxH}px`;
 
         const centerCellX = Math.round((grid.width - this.pixelDataSize.width) / 2);
         const centerCellY = Math.round((grid.height - this.pixelDataSize.height) / 2);
         this.positionX = centerCellX * this.cellPxW;
         this.positionY = centerCellY * this.cellPxH;
-        this.pixelDataRenderer.canvas.style.left = `${this.positionX}px`;
-        this.pixelDataRenderer.canvas.style.top = `${this.positionY}px`;
+        this.pixelDataRenderer.GetCanvas().style.left = `${this.positionX}px`;
+        this.pixelDataRenderer.GetCanvas().style.top = `${this.positionY}px`;
     }
 
     public OnDestroy(): void {

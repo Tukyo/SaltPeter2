@@ -12,6 +12,25 @@ General-purpose helpers used across the engine — clamping, number parsing, and
 
 ## API
 
+### [`ColorNoise`](ColorNoise.ts)
+
+| Interfaces & Types |
+|--------------------|
+```ts
+enum ColorNoiseType {
+    Boxes = 'boxes',
+    Circles = 'circles',
+    Scatter = 'scatter',
+    Stripes = 'stripes'
+}
+```
+
+| Method | Description |
+|--------|-------------|
+| [`static GetColorNoise(params: ColorNoiseParams): number`](ColorNoise.ts) | Returns a 0–1 float encoding which color bucket this cell belongs to. Callers use Math.round(result * 255) for colorSeed. |
+
+---
+
 ### [`Noise`](Noise.ts)
  Utility class that provides general noise-based math.
 
@@ -23,9 +42,7 @@ enum NoiseType {
     Ridged = 'ridged',
     Worley = 'worley',
     Voronoi = 'voronoi',
-    Hash2D = 'hash2d',
-    Boxes = 'boxes',
-    Circles = 'circles',
+    Hash2D = 'hash2d'
 }
 ```
 
@@ -42,15 +59,11 @@ interface NoiseOptions {
 }
 ```
 
-```ts
-interface ColorNoiseParams extends NoiseParams { weights: number[]; scale?: number; }
-```
-
 | Method | Description |
 |--------|-------------|
 | [`static GetNoise(params: GetNoiseParams): number`](Noise.ts) | Helper function to switch between noise types |
-| [`static GetColorNoise(params: ColorNoiseParams): number`](Noise.ts) | Returns noise functions used for color variation. |
 | [`static Hash2D(x: number, y: number, seed: number): number`](Noise.ts) | Generates a deterministic pseudo-random value from integer coordinates and a seed. Uses a fast 2D hash function to produce a normalized float in [0, 1]. |
+| [`static FindNearestWorleyPoint(x: number, y: number, seed: number, scale: number): { wx: number; wy: number; gridCX: number; gridCY: number }`](Noise.ts) | Returns the world-space position and grid address of the nearest Worley point to (x, y) at the given scale. |
 
 ---
 

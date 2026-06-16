@@ -1,7 +1,8 @@
 import type { TextSetting } from '../UserInterfaceTypes';
 import type { ControlHandler } from '../UserInterfaceRegistry';
-import { UserInterfaceRegistry } from '../UserInterfaceRegistry';
 
+import { TooltipManager } from '../TooltipManager';
+import { UserInterfaceRegistry } from '../UserInterfaceRegistry';
 
 /** Control handler for `TextSetting`. Renders a labeled text input. */
 export class TextControl implements ControlHandler<TextSetting> {
@@ -26,6 +27,12 @@ export class TextControl implements ControlHandler<TextSetting> {
         input.placeholder = setting.placeholder ?? '';
         input.value = setting.default;
         wrapper.appendChild(input);
+
+        if (setting.tooltip) {
+            const tooltip = setting.tooltip;
+            wrapper.addEventListener('mouseenter', () => TooltipManager.Instance?.Show(tooltip));
+            wrapper.addEventListener('mouseleave', () => TooltipManager.Instance?.Hide());
+        }
 
         return { wrapper, element: input, isValue: true };
     }

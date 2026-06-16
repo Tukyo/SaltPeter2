@@ -42,5 +42,5 @@ export const SilverPowder: MaterialDefinition = {
             condition: { temperature: 0.765 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'metal']
 };

@@ -73,8 +73,8 @@ export class GameObjectManager extends NitrateProcess {
         this.objects.clear();
         this.nextId = 1;
         LogManager.Instance?.Log({
-            text: 'GameObjectManager reset on resize.',
-            options: { tags: ['GameObject'] }
+            text: 'GameObjectManager OnResize.',
+            options: { tags: ['Resize', 'GameObject'] }
         });
     }
 

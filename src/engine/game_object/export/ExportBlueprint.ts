@@ -3,6 +3,7 @@ import type { BlueprintEdges } from '../../component/definitions/blueprint/Bluep
 import { Blueprint } from '../../component/definitions/blueprint/Blueprint';
 import { BlueprintLayout } from '../../component/BlueprintLayout';
 import { Export } from './Export';
+import { LogManager } from '../../debug/LogManager';
 import { MaterialIds } from '../../materials/definitions/Materials';
 import { MaterialQuery } from '../../materials/MaterialQuery';
 import { SimulationManager } from '../../simulation/SimulationManager';
@@ -25,13 +26,25 @@ export class ExportBlueprint extends Export {
     }
 
     /** Serialises all non-empty cells into the blueprint component before writing to disk. @internal */
-    public async Run(): Promise<void> {
+    public async Run(): Promise<string | null> {
         const go = this.gameObjectProvider?.() ?? null;
         const sim = SimulationManager.Instance;
-        if (!go || !sim) { return; }
+        if (!go || !sim) {
+            LogManager.Instance?.LogWarning({
+                text: 'ExportBlueprint skipped: missing game object or simulation.',
+                options: { tags: ['GameObject', 'Export'] }
+            });
+            return null;
+        }
 
         const { simulationLayer, texturePixelReader } = sim;
-        if (!simulationLayer || !texturePixelReader) { return; }
+        if (!simulationLayer || !texturePixelReader) {
+            LogManager.Instance?.LogWarning({
+                text: 'ExportBlueprint skipped: simulation layer not ready.',
+                options: { tags: ['GameObject', 'Export'] }
+            });
+            return null;
+        }
 
         const { width, height } = simulationLayer;
 
@@ -61,7 +74,7 @@ export class ExportBlueprint extends Export {
             }
         }
 
-        await this.WriteFile(go, 'blueprint', { size: { width, height } });
+        return this.WriteFile(go, 'blueprint', { size: { width, height } });
     }
 
     /** Reads edge zone pixels from raw texture data and returns the populated edge map. */
@@ -87,6 +100,10 @@ export class ExportBlueprint extends Export {
         super.OnDestroy();
         if (ExportBlueprint.Instance === this) {
             ExportBlueprint.Instance = null;
+            LogManager.Instance?.Log({
+                text: 'Cleared ExportBlueprint singleton instance.',
+                options: { tags: ['GameObject', 'NitrateProcessDestroy'] }
+            });
         }
     }
 }

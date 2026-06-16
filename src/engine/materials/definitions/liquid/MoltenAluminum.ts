@@ -33,7 +33,7 @@ export const MoltenAluminum: MaterialDefinition = {
         temperature: {
             specificHeat: 5,
             restingTemperature: 0.85,
-            restingStrength: 0.75
+            restingStrength: 0.85
         }
     },
     transitions: {
@@ -42,5 +42,5 @@ export const MoltenAluminum: MaterialDefinition = {
             condition: { temperature: 0.72 }
         }
     },
-    tags: ['corrodes', 'molten']
+    tags: ['corrodes', 'molten', 'metal']
 };

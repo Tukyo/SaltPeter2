@@ -79,6 +79,7 @@ export class CollapsiblePanel extends NitrateProcess {
         this.WireResizeHandle(this.resizeHandleLeft, -1);
         this.WireResizeHandle(this.resizeHandleRight, 1);
         this.SetCollapsed(collapsed);
+        CollapsiblePanel.ScheduleReflow();
     }
 
     /** Returns true if the panel is currently collapsed. */

@@ -33,6 +33,7 @@ export class ScenePanel extends NitrateProcess {
         type: 'button',
         label: 'Export Object',
         action: 'export',
+        tooltip: 'Export the GameObject selected in the Hierarchy.',
     };
 
     private static readonly clearSetting: ButtonSetting = {
@@ -41,6 +42,7 @@ export class ScenePanel extends NitrateProcess {
         label: 'Clear Scene',
         action: 'clear',
         variant: 'warn',
+        tooltip: 'Clear the current scene.'
     };
 
     private static readonly exitSetting: ButtonSetting = {
@@ -49,6 +51,7 @@ export class ScenePanel extends NitrateProcess {
         label: 'Exit Scene',
         action: 'exit',
         variant: 'danger',
+        tooltip: 'Exit the current scene.'
     };
 
     constructor(params?: ScenePanelParams) {

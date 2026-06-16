@@ -47,7 +47,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
         }
     }
 
-    if !isAirMaterial(brush.materialId) && !isRegisteredMaterialId(brush.materialId) {
+    if brush.isErase < 0.5 && !isRegisteredMaterialId(brush.materialId) {
         textureStore(nextIdentityTexture, vec2i(id.xy), currentState);
         textureStore(nextPhysicsTexture, vec2i(id.xy), currentPhysics);
         textureStore(nextCellStateTexture, vec2i(id.xy), currentCellState);
@@ -59,22 +59,31 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
     var shouldPlace = brushRandom < brush.density;
 
     if !shouldPlace &&
-       !isAirMaterial(brush.materialId) &&
+       brush.isErase < 0.5 &&
        isOccupiedState(currentState) &&
        !isMaterialId(getStateMaterialId(currentState), brush.materialId) {
         shouldPlace = true;
     }
 
     // mask (paintMode=1): only paint on empty cells
-    if brush.paintMode >= 0.5 && brush.paintMode < 1.5 && !isAirMaterial(brush.materialId) && isOccupiedState(currentState) {
+    if brush.paintMode >= 0.5 && brush.paintMode < 1.5 && brush.isErase < 0.5 && isOccupiedState(currentState) {
         shouldPlace = false;
     }
     // overlay (paintMode=2): only paint on occupied cells
-    if brush.paintMode >= 1.5 && !isAirMaterial(brush.materialId) && !isOccupiedState(currentState) {
+    if brush.paintMode >= 1.5 && brush.isErase < 0.5 && !isOccupiedState(currentState) {
         shouldPlace = false;
     }
     // overlay filter: restrict to cells matching the active material and variant
-    if brush.paintMode >= 1.5 && brush.overlayFilter >= 0.5 && shouldPlace && !isAirMaterial(brush.materialId) {
+    if brush.paintMode >= 1.5 && brush.overlayFilter >= 0.5 && shouldPlace && brush.isErase < 0.5 {
+        let cellMaterialId = getStateMaterialId(currentState);
+        let cellVariantId = decodeVariantId(currentState);
+        if !isMaterialId(cellMaterialId, brush.materialId) || !isMaterialId(cellVariantId, brush.variantId) {
+            shouldPlace = false;
+        }
+    }
+
+    // mask mode erase: only erase cells matching selected material + variant
+    if brush.isErase > 0.5 && brush.paintMode >= 0.5 && brush.paintMode < 1.5 && shouldPlace {
         let cellMaterialId = getStateMaterialId(currentState);
         let cellVariantId = decodeVariantId(currentState);
         if !isMaterialId(cellMaterialId, brush.materialId) || !isMaterialId(cellVariantId, brush.variantId) {
@@ -139,7 +148,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
             else if cellHash < c2 { colorSeed = 2.5 / COLORS_PER_MATERIAL; }
             else { colorSeed = 3.5 / COLORS_PER_MATERIAL; }
         }
-        if isAirMaterial(brush.materialId) {
+        if brush.isErase > 0.5 {
             textureStore(nextIdentityTexture, vec2i(id.xy), AIR_STATE);
             textureStore(nextPhysicsTexture, vec2i(id.xy), vec4f(0.0));
             textureStore(nextCellStateTexture, vec2i(id.xy), vec4f(0.0));

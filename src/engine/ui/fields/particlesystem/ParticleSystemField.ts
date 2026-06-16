@@ -2,12 +2,9 @@ import type { ParticleSystem } from '../../../component/definitions/particlesyst
 import type { ParticleDefinition, ParticleModule } from '../../../particle/ParticleModel';
 import type { ParticleId } from '../../../particle/ParticleIdentity';
 import type { MaterialId } from '../../../materials/definitions/MaterialIdentity';
-import type { Color, NumberRange, RandomBetweenTwo, Vec2 } from '../../../definitions/Primitives';
 
 import { NoiseType } from '../../../utility/Noise';
-import { Utils } from '../../../utility/Utils';
 import { MaterialQuery } from '../../../materials/MaterialQuery';
-import { ColorPickerControl } from '../../controls/ColorPickerControl';
 import { ComponentField } from '../ComponentField';
 
 export class ParticleSystemField extends ComponentField<ParticleSystem> {
@@ -163,295 +160,54 @@ export class ParticleSystemField extends ComponentField<ParticleSystem> {
         return section;
     }
 
-    private static IsRandom<T>(value: T | RandomBetweenTwo<T>): boolean {
-        return typeof value === 'object' && value !== null && 'first' in (value as object);
-    }
-
-    private RandomFieldWrapper(
-        label: string,
-        isRange: boolean,
-        onToggle: (isRange: boolean) => void,
-        buildSingle: (container: HTMLElement) => void,
-        buildRange: (container: HTMLElement) => void,
-    ): HTMLElement {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'particle-random-group';
-
-        const header = document.createElement('div');
-        header.className = 'particle-random-header';
-
-        const lbl = document.createElement('span');
-        lbl.className = 'particle-module-sub-label';
-        lbl.textContent = label;
-
-        const modeBtn = document.createElement('button');
-        modeBtn.className = `particle-random-mode${isRange ? ' is-active' : ''}`;
-        modeBtn.textContent = '±';
-        modeBtn.title = isRange ? 'Switch to constant' : 'Switch to random between two';
-
-        header.appendChild(lbl);
-        header.appendChild(modeBtn);
-
-        const singleDiv = document.createElement('div');
-        singleDiv.className = 'particle-random-single';
-        buildSingle(singleDiv);
-
-        const rangeDiv = document.createElement('div');
-        rangeDiv.className = 'particle-random-range';
-        buildRange(rangeDiv);
-
-        singleDiv.style.display = isRange ? 'none' : '';
-        rangeDiv.style.display = isRange ? '' : 'none';
-
-        let current = isRange;
-        modeBtn.addEventListener('click', () => {
-            current = !current;
-            modeBtn.classList.toggle('is-active', current);
-            modeBtn.title = current ? 'Switch to constant' : 'Switch to random between two';
-            singleDiv.style.display = current ? 'none' : '';
-            rangeDiv.style.display = current ? '' : 'none';
-            onToggle(current);
-        });
-
-        wrapper.appendChild(header);
-        wrapper.appendChild(singleDiv);
-        wrapper.appendChild(rangeDiv);
-        return wrapper;
-    }
-
-    private RandomColorField(
-        label: string,
-        getValue: () => Color | RandomBetweenTwo<Color>,
-        onChange: (v: Color | RandomBetweenTwo<Color>) => void,
-    ): HTMLElement {
-        const [first, second] = Utils.RandomBetweenTwo(getValue());
-        return this.RandomFieldWrapper(
-            label,
-            ParticleSystemField.IsRandom(getValue()),
-            (toRange) => {
-                const [f] = Utils.RandomBetweenTwo(getValue());
-                onChange(toRange ? { first: f, second: f } : f);
-            },
-            (c) => {
-                c.appendChild(new ColorPickerControl(first, v => onChange(v)).element);
-            },
-            (c) => {
-                c.appendChild(this.SubLabel('A'));
-                c.appendChild(new ColorPickerControl(first, v => {
-                    const [, s] = Utils.RandomBetweenTwo(getValue());
-                    onChange({ first: v, second: s });
-                }).element);
-                c.appendChild(this.SubLabel('B'));
-                c.appendChild(new ColorPickerControl(second, v => {
-                    const [f] = Utils.RandomBetweenTwo(getValue());
-                    onChange({ first: f, second: v });
-                }).element);
-            },
-        );
-    }
-
-    private RandomNumberField(
-        label: string,
-        getValue: () => number | RandomBetweenTwo<number>,
-        onChange: (v: number | RandomBetweenTwo<number>) => void,
-    ): HTMLElement {
-        const [first, second] = Utils.RandomBetweenTwo(getValue());
-        return this.RandomFieldWrapper(
-            label,
-            ParticleSystemField.IsRandom(getValue()),
-            (toRange) => {
-                const [f] = Utils.RandomBetweenTwo(getValue());
-                onChange(toRange ? { first: f, second: f } : f);
-            },
-            (c) => {
-                c.appendChild(this.NumberField('', first, v => onChange(v)));
-            },
-            (c) => {
-                c.appendChild(this.NumberField('A', first, v => {
-                    const [, s] = Utils.RandomBetweenTwo(getValue());
-                    onChange({ first: v, second: s });
-                }));
-                c.appendChild(this.NumberField('B', second, v => {
-                    const [f] = Utils.RandomBetweenTwo(getValue());
-                    onChange({ first: f, second: v });
-                }));
-            },
-        );
-    }
-
-    private RandomStartEndField(
-        label: string,
-        getValue: () => { start: number; end: number } | RandomBetweenTwo<{ start: number; end: number }>,
-        onChange: (v: { start: number; end: number } | RandomBetweenTwo<{ start: number; end: number }>) => void,
-    ): HTMLElement {
-        const [first, second] = Utils.RandomBetweenTwo(getValue());
-        return this.RandomFieldWrapper(
-            label,
-            ParticleSystemField.IsRandom(getValue()),
-            (toRange) => {
-                const [f] = Utils.RandomBetweenTwo(getValue());
-                onChange(toRange ? { first: f, second: f } : f);
-            },
-            (c) => {
-                c.appendChild(this.NumberField('Start', first.start, v => {
-                    const [f] = Utils.RandomBetweenTwo(getValue());
-                    onChange({ start: v, end: f.end });
-                }));
-                c.appendChild(this.NumberField('End', first.end, v => {
-                    const [f] = Utils.RandomBetweenTwo(getValue());
-                    onChange({ start: f.start, end: v });
-                }));
-            },
-            (c) => {
-                c.appendChild(this.SubLabel('A'));
-                c.appendChild(this.NumberField('Start', first.start, v => {
-                    const [f, s] = Utils.RandomBetweenTwo(getValue());
-                    onChange({ first: { start: v, end: f.end }, second: s });
-                }));
-                c.appendChild(this.NumberField('End', first.end, v => {
-                    const [f, s] = Utils.RandomBetweenTwo(getValue());
-                    onChange({ first: { start: f.start, end: v }, second: s });
-                }));
-                c.appendChild(this.SubLabel('B'));
-                c.appendChild(this.NumberField('Start', second.start, v => {
-                    const [f, s] = Utils.RandomBetweenTwo(getValue());
-                    onChange({ first: f, second: { start: v, end: s.end } });
-                }));
-                c.appendChild(this.NumberField('End', second.end, v => {
-                    const [f, s] = Utils.RandomBetweenTwo(getValue());
-                    onChange({ first: f, second: { start: s.start, end: v } });
-                }));
-            },
-        );
-    }
-
-    private RandomVec2Field(
-        label: string,
-        getValue: () => Vec2 | RandomBetweenTwo<Vec2>,
-        onChange: (v: Vec2 | RandomBetweenTwo<Vec2>) => void,
-    ): HTMLElement {
-        const [first, second] = Utils.RandomBetweenTwo(getValue());
-        return this.RandomFieldWrapper(
-            label,
-            ParticleSystemField.IsRandom(getValue()),
-            (toRange) => {
-                const [f] = Utils.RandomBetweenTwo(getValue());
-                onChange(toRange ? { first: f, second: f } : f);
-            },
-            (c) => {
-                c.appendChild(this.Vec2Field('', first, v => onChange(v)));
-            },
-            (c) => {
-                c.appendChild(this.Vec2Field('A', first, v => {
-                    const [, s] = Utils.RandomBetweenTwo(getValue());
-                    onChange({ first: v, second: s });
-                }));
-                c.appendChild(this.Vec2Field('B', second, v => {
-                    const [f] = Utils.RandomBetweenTwo(getValue());
-                    onChange({ first: f, second: v });
-                }));
-            },
-        );
-    }
-
-    private NumberRangeField(
-        label: string,
-        getValue: () => number | NumberRange,
-        onChange: (v: number | NumberRange) => void,
-    ): HTMLElement {
-        const value = getValue();
-        const isRange = typeof value !== 'number';
-        const single = isRange ? value.min : value;
-        const rangeMin = isRange ? value.min : value;
-        const rangeMax = isRange ? value.max : value;
-        return this.RandomFieldWrapper(
-            label,
-            isRange,
-            (toRange) => {
-                const current = getValue();
-                if (toRange) {
-                    const n = typeof current === 'number' ? current : current.min;
-                    onChange({ min: n, max: n });
-                } else {
-                    onChange(typeof current === 'number' ? current : current.min);
-                }
-            },
-            (c) => {
-                c.appendChild(this.NumberField('', single, v => onChange(v)));
-            },
-            (c) => {
-                c.appendChild(this.NumberField('Min', rangeMin, v => {
-                    const current = getValue();
-                    const max = typeof current === 'number' ? current : current.max;
-                    onChange({ min: v, max });
-                }));
-                c.appendChild(this.NumberField('Max', rangeMax, v => {
-                    const current = getValue();
-                    const min = typeof current === 'number' ? current : current.min;
-                    onChange({ min, max: v });
-                }));
-            },
-        );
-    }
-
-    private SubLabel(text: string): HTMLElement {
-        const el = document.createElement('div');
-        el.className = 'particle-module-sub-label';
-        el.textContent = text;
-        return el;
-    }
-
-    private InlineBoolField(label: string, value: boolean, onChange: (v: boolean) => void): HTMLElement {
-        const row = document.createElement('div');
-        row.className = 'particle-inline-bool';
-        const lbl = document.createElement('span');
-        lbl.className = 'particle-inline-bool-label';
-        lbl.textContent = label;
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = value;
-        checkbox.addEventListener('change', () => onChange(checkbox.checked));
-        row.appendChild(lbl);
-        row.appendChild(checkbox);
-        return row;
-    }
-
     private BuildMainFields(container: HTMLElement, modules: ParticleDefinition['modules']): void {
-        container.appendChild(this.NumberField('Duration', modules.main.duration, v => {
-            modules.main.duration = v;
-        }));
-        container.appendChild(this.BoolField('Loop', modules.main.loop, v => {
-            modules.main.loop = v;
-        }));
-        container.appendChild(this.NumberField('Gravity', modules.main.gravityMultiplier ?? 0, v => {
-            modules.main.gravityMultiplier = v;
-        }));
-        container.appendChild(this.NumberField('Start Delay', modules.main.start.delay ?? 0, v => {
-            modules.main.start.delay = v;
-        }));
+        container.appendChild(this.NumberField(
+            'Duration',
+            modules.main.duration, v => { modules.main.duration = v; },
+            'Total duration of the particle system in seconds.'
+        ));
+        container.appendChild(this.BoolField(
+            'Loop',
+            modules.main.loop, v => { modules.main.loop = v; },
+            'When enabled, the particle system restarts automatically after completing.'
+        ));
+        container.appendChild(this.NumberField(
+            'Gravity',
+            modules.main.gravityMultiplier ?? 0, v => { modules.main.gravityMultiplier = v; },
+            'Multiplier applied to gravity for all particles in this system.'
+        ));
+        container.appendChild(this.NumberField(
+            'Start Delay',
+            modules.main.start.delay ?? 0, v => { modules.main.start.delay = v; },
+            'Delay in seconds before the system begins emitting.'
+        ));
         container.appendChild(this.NumberRangeField(
             'Lifetime',
             () => modules.main.start.lifetime,
             v => { modules.main.start.lifetime = v; },
+            'How long each particle lives in seconds.',
         ));
         container.appendChild(this.NumberRangeField(
             'Speed',
             () => modules.main.start.speed,
             v => { modules.main.start.speed = v; },
+            'Initial speed of each particle at birth.',
         ));
     }
 
     private BuildEmissionFields(container: HTMLElement): void {
         const emission = this.component.particle.emission;
         if (!emission) return;
-        container.appendChild(this.NumberField('Rate Over Time', emission.rate?.time ?? 0, v => {
-            if (!emission.rate) emission.rate = {};
-            emission.rate.time = v;
-        }));
-        container.appendChild(this.NumberField('Rate Over Distance', emission.rate?.distance ?? 0, v => {
-            if (!emission.rate) emission.rate = {};
-            emission.rate.distance = v;
-        }));
+        container.appendChild(this.NumberField(
+            'Rate Over Time',
+            emission.rate?.time ?? 0, v => { if (!emission.rate) emission.rate = {}; emission.rate.time = v; },
+            'Number of particles emitted per second.'
+        ));
+        container.appendChild(this.NumberField(
+            'Rate Over Distance',
+            emission.rate?.distance ?? 0, v => { if (!emission.rate) emission.rate = {}; emission.rate.distance = v; },
+            'Number of particles emitted per unit of distance traveled.'
+        ));
     }
 
     private BuildVisualFields(container: HTMLElement): void {
@@ -484,6 +240,7 @@ export class ParticleSystemField extends ComponentField<ParticleSystem> {
             'Color',
             () => visual.color ?? { r: 255, g: 255, b: 255, a: 1 },
             v => { visual.color = v; visual.material = undefined; },
+            'Color of the particle.'
         ));
         container.appendChild(colorDiv);
 
@@ -566,20 +323,42 @@ export class ParticleSystemField extends ComponentField<ParticleSystem> {
                 }
                 updateVisibility(v);
             },
+            'Shape used to emit particles from.',
         ));
 
         const cone = shape.cone ?? { angle: 25, direction: { x: 0, y: -1 }, length: 1 };
-        coneDiv.appendChild(this.NumberField('Angle', cone.angle, v => { if (shape.cone) shape.cone.angle = v; }));
-        coneDiv.appendChild(this.Vec2Field('Direction', cone.direction, v => { if (shape.cone) shape.cone.direction = v; }));
-        coneDiv.appendChild(this.NumberField('Length', cone.length, v => { if (shape.cone) shape.cone.length = v; }));
+        coneDiv.appendChild(this.NumberField(
+            'Angle',
+            cone.angle, v => { if (shape.cone) shape.cone.angle = v; },
+            'Spread angle of the cone in degrees.'
+        ));
+        coneDiv.appendChild(this.Vec2Field(
+            'Direction',
+            cone.direction, v => { if (shape.cone) shape.cone.direction = v; },
+            ['X', 'Y'],
+            'Direction the cone is facing.'
+        ));
+        coneDiv.appendChild(this.NumberField(
+            'Length',
+            cone.length, v => { if (shape.cone) shape.cone.length = v; },
+            'Length of the cone emitter.'
+        ));
         container.appendChild(coneDiv);
 
         const box = shape.box ?? { size: { width: 10, height: 10 } };
-        boxDiv.appendChild(this.Size2DField('Size', box.size, v => { if (shape.box) shape.box.size = v; }));
+        boxDiv.appendChild(this.Size2DField(
+            'Size',
+            box.size, v => { if (shape.box) shape.box.size = v; },
+            'Size of the box emitter in cells.'
+        ));
         container.appendChild(boxDiv);
 
         const circle = shape.circle ?? { radius: 5 };
-        circleDiv.appendChild(this.NumberField('Radius', circle.radius, v => { if (shape.circle) shape.circle.radius = v; }));
+        circleDiv.appendChild(this.NumberField(
+            'Radius',
+            circle.radius, v => { if (shape.circle) shape.circle.radius = v; },
+            'Radius of the circle emitter in cells.'
+        ));
         container.appendChild(circleDiv);
 
         updateVisibility(currentType);
@@ -589,44 +368,58 @@ export class ParticleSystemField extends ComponentField<ParticleSystem> {
         const vol = this.component.particle.velocityOverLifetime;
         if (!vol) return;
 
-        container.appendChild(this.NumberField('Speed Multiplier', vol.speedMultiplier ?? 1, v => {
-            vol.speedMultiplier = v;
-        }));
+        container.appendChild(this.NumberField(
+            'Speed Multiplier',
+            vol.speedMultiplier ?? 1, v => { vol.speedMultiplier = v; },
+            'Multiplier applied to particle speed over its lifetime.'
+        ));
         container.appendChild(this.RandomStartEndField(
             'Linear X',
             () => vol.linear?.x ?? { start: 0, end: 0 },
             v => { vol.linear = vol.linear ?? {}; vol.linear.x = v; },
+            'Velocity applied along the X axis over the particle\'s lifetime.',
         ));
         container.appendChild(this.RandomStartEndField(
             'Linear Y',
             () => vol.linear?.y ?? { start: 0, end: 0 },
             v => { vol.linear = vol.linear ?? {}; vol.linear.y = v; },
+            'Velocity applied along the Y axis over the particle\'s lifetime.',
         ));
     }
 
     private BuildInheritVelocityFields(container: HTMLElement): void {
         const inheritVelocity = this.component.particle.inheritVelocity;
         if (!inheritVelocity) return;
-        container.appendChild(this.SelectField('Mode', inheritVelocity.mode, ['Initial', 'Current'], v => {
-            inheritVelocity.mode = v as 'Initial' | 'Current';
-        }));
-        container.appendChild(this.NumberField('Multiplier', inheritVelocity.multiplier, v => {
-            inheritVelocity.multiplier = v;
-        }));
+        container.appendChild(this.SelectField(
+            'Mode',
+            inheritVelocity.mode,
+            ['Initial', 'Current'],
+            v => { inheritVelocity.mode = v as 'Initial' | 'Current'; },
+            'Whether to inherit emitter velocity at birth only or continuously.'
+        ));
+        container.appendChild(this.NumberField(
+            'Multiplier',
+            inheritVelocity.multiplier, v => {
+                inheritVelocity.multiplier = v;
+            }, 'Scale factor applied to the inherited velocity.'
+        ));
     }
 
     private BuildColorOverLifetimeFields(container: HTMLElement): void {
         const colorOverLifetime = this.component.particle.colorOverLifetime;
         if (!colorOverLifetime) return;
+
         container.appendChild(this.RandomColorField(
             'Start',
             () => colorOverLifetime.start,
             v => { colorOverLifetime.start = v; },
+            'Color of the particle at the start of its lifetime.',
         ));
         container.appendChild(this.RandomColorField(
             'End',
             () => colorOverLifetime.end,
             v => { colorOverLifetime.end = v; },
+            'Color of the particle at the end of its lifetime.',
         ));
     }
 
@@ -634,7 +427,7 @@ export class ParticleSystemField extends ComponentField<ParticleSystem> {
         const noise = this.component.particle.noise;
         if (!noise) return;
 
-        const noiseDisplayNames: Record<NoiseType, string> = {
+        const noiseDisplayNames = {
             [NoiseType.Perlin]: 'Perlin',
             [NoiseType.Ridged]: 'Ridged',
             [NoiseType.Worley]: 'Worley',
@@ -659,53 +452,83 @@ export class ParticleSystemField extends ComponentField<ParticleSystem> {
         typeRow.appendChild(typeSelect);
         container.appendChild(typeRow);
 
-        container.appendChild(this.NumberField('Octaves', noise.octaves, v => { noise.octaves = v; }));
-        container.appendChild(this.SliderField('Persistence', noise.persistence, 0, 1, 0.01, v => {
-            noise.persistence = v;
-        }));
-        container.appendChild(this.NumberField('Scale', noise.scale, v => { noise.scale = v; }));
+        container.appendChild(this.NumberField(
+            'Octaves',
+            noise.octaves, v => { noise.octaves = v; },
+            'Number of noise layers stacked for detail.'
+        ));
+        container.appendChild(this.SliderField(
+            'Persistence',
+            noise.persistence, 0, 1, 0.01, v => { noise.persistence = v; },
+            'How much each octave contributes relative to the previous.'
+        ));
+        container.appendChild(this.NumberField(
+            'Scale',
+            noise.scale, v => { noise.scale = v; },
+            'Frequency of the noise pattern. Higher values zoom out.'
+        ));
         container.appendChild(this.RandomNumberField(
             'Amplitude',
             () => noise.amplitude,
             v => { noise.amplitude = v; },
+            'Strength of the noise displacement applied to particle velocity.',
         ));
         container.appendChild(this.RandomVec2Field(
             'Scroll Speed',
             () => noise.scrollSpeed,
             v => { noise.scrollSpeed = v; },
+            'Speed at which the noise field scrolls over time.',
         ));
     }
 
     private BuildCollisionFields(container: HTMLElement): void {
         const collision = this.component.particle.collision;
         if (!collision) return;
-        container.appendChild(this.SliderField('Bounce', collision.bounce, 0, 1, 0.01, v => {
-            collision.bounce = v;
-        }));
-        container.appendChild(this.SliderField('Dampen', collision.dampen, 0, 1, 0.01, v => {
-            collision.dampen = v;
-        }));
-        container.appendChild(this.SliderField('Lifetime Loss', collision.lifetimeLoss, 0, 1, 0.01, v => {
-            collision.lifetimeLoss = v;
-        }));
-        container.appendChild(this.NumberField('Min Kill Speed', collision.minKillSpeed, v => {
-            collision.minKillSpeed = v;
-        }));
+        container.appendChild(this.SliderField(
+            'Bounce',
+            collision.bounce, 0, 1, 0.01, v => { collision.bounce = v; },
+            'Elasticity of particle collisions. 0 is no bounce, 1 is full rebound.'
+        ));
+        container.appendChild(this.SliderField(
+            'Dampen',
+            collision.dampen, 0, 1, 0.01, v => { collision.dampen = v; },
+            'Speed reduction applied on each collision.'
+        ));
+        container.appendChild(this.SliderField(
+            'Lifetime Loss',
+            collision.lifetimeLoss, 0, 1, 0.01, v => { collision.lifetimeLoss = v; },
+            'Fraction of remaining lifetime lost on each collision.'
+        ));
+        container.appendChild(this.NumberField(
+            'Min Kill Speed',
+            collision.minKillSpeed, v => { collision.minKillSpeed = v; },
+            'Particles slower than this speed are destroyed on collision.'
+        ));
     }
 
     private BuildSubEmitterFields(container: HTMLElement): void {
         const subEmitter = this.component.particle.subEmitter;
         if (!subEmitter) return;
         container.appendChild(this.SelectField(
-            'Condition', subEmitter.spawnCondition, ['Birth', 'Collision', 'Death'],
+            'Condition',
+            subEmitter.spawnCondition,
+            ['Birth', 'Collision', 'Death'],
             v => { subEmitter.spawnCondition = v as 'Birth' | 'Collision' | 'Death'; },
+            'Event that triggers the sub emitter to spawn particles.'
         ));
-        container.appendChild(this.NumberField('Particle ID', subEmitter.particle, v => {
-            subEmitter.particle = v as ParticleId;
-        }));
-        container.appendChild(this.SliderField('Probability', subEmitter.probability, 0, 1, 0.01, v => {
-            subEmitter.probability = v;
-        }));
+        // TODO: Unsure what this is - we either need to have MaterialName (like visual module), or ParticleName, or rethink
+        // this completely... What if someone wants to emit one of their own created particles? I guess that would be a prefab
+        // reference and come much later... We need to think about this!
+        container.appendChild(this.NumberField(
+            'Particle ID',
+            subEmitter.particle, v => { subEmitter.particle = v as ParticleId; },
+            'ID of the particle definition used by the sub emitter.'
+        ));
+        container.appendChild(this.SliderField(
+            'Probability',
+            subEmitter.probability, 0, 1, 0.01, v => { subEmitter.probability = v; },
+            'Chance the sub emitter fires on each trigger event.'
+        ));
         container.appendChild(this.SubLabel('Inherit Modules'));
 
         const moduleLabels: Record<keyof ParticleDefinition['modules'], string> = {

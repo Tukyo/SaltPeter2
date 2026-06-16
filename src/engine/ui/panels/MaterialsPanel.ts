@@ -106,6 +106,7 @@ export class MaterialsPanel extends NitrateProcess {
             type: 'select',
             default: defaultMaterialId ?? 0,
             options: [],
+            tooltip: 'Change the material painted by the brush.',
         };
         const { wrapper, element } = SelectControl.Instance.Build('mat-active', this.materialSetting);
         this.materialElement = element as HTMLSelectElement;
@@ -120,8 +121,8 @@ export class MaterialsPanel extends NitrateProcess {
             type: 'choice',
             default: params?.occupancy?.default ?? 'dynamic',
             options: [
-                { value: 'dynamic', label: 'Dynamic' },
-                { value: 'static', label: 'Static' },
+                { value: 'dynamic', label: 'Dynamic', tooltip: 'Cells simulate physics and can move.' },
+                { value: 'static', label: 'Static', tooltip: 'Cells are fixed in place and do not move.' },
             ],
         };
         const { wrapper, element } = ChoiceControl.Instance.Build('mat-occupancy', this.occupancySetting);
@@ -162,11 +163,19 @@ export class MaterialsPanel extends NitrateProcess {
 
         const section = this.panel.AddSection('Filters');
 
+        const phaseTooltips: Record<string, string> = {
+            solid: 'Show solid materials.',
+            powder: 'Show powder materials.',
+            liquid: 'Show liquid materials.',
+            gas: 'Show gas materials.',
+            fire: 'Show fire materials.',
+        };
+
         this.phaseSetting = {
             id: 'mat-phase-filter',
             label: 'Phases',
             type: 'toggleGroup',
-            options: [...phases],
+            options: phases.map(p => ({ ...p, tooltip: phaseTooltips[p.value] })),
             default: phaseDefault,
         };
         const { wrapper: phaseWrapper, element: phaseEl } = ToggleGroupControl.Instance.Build(
@@ -182,6 +191,7 @@ export class MaterialsPanel extends NitrateProcess {
             type: 'toggleList',
             options: [...tags],
             default: [],
+            tooltip: 'Filter the material list to only show materials with the selected tags.',
         };
         const { wrapper: tagWrapper, element: tagEl } = ToggleListControl.Instance.Build(
             'mat-tag-filter',

@@ -1,5 +1,7 @@
 import type { ActionGroupSetting } from '../UserInterfaceTypes';
 import type { ControlHandler } from '../UserInterfaceRegistry';
+
+import { TooltipManager } from '../TooltipManager';
 import { UserInterfaceRegistry } from '../UserInterfaceRegistry';
 
 /** Control handler for `ActionGroupSetting`. Renders a row of icon buttons that fire action callbacks. */
@@ -22,7 +24,13 @@ export class ActionGroupControl implements ControlHandler<ActionGroupSetting> {
             btn.className = 'icon-button icon-button-' + opt.icon;
             btn.dataset.action = opt.value;
             btn.setAttribute('aria-label', opt.label);
-            btn.title = opt.label;
+
+            if (opt.tooltip) {
+                const tooltip = opt.tooltip;
+                btn.addEventListener('mouseenter', () => TooltipManager.Instance?.Show(tooltip));
+                btn.addEventListener('mouseleave', () => TooltipManager.Instance?.Hide());
+            }
+
             group.appendChild(btn);
         }
 
@@ -38,7 +46,5 @@ export class ActionGroupControl implements ControlHandler<ActionGroupSetting> {
     }
 
     // @omitfromdocs
-    public GetRawValue(_element: HTMLDivElement, _setting: ActionGroupSetting): string {
-        return '';
-    }
+    public GetRawValue(_element: HTMLDivElement, _setting: ActionGroupSetting): string { return ''; }
 }

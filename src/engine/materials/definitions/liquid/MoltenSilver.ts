@@ -33,7 +33,7 @@ export const MoltenSilver: MaterialDefinition = {
         temperature: {
             specificHeat: 5,
             restingTemperature: 0.88,
-            restingStrength: 0.7
+            restingStrength: 0.85
         }
     },
     transitions: {
@@ -42,5 +42,5 @@ export const MoltenSilver: MaterialDefinition = {
             condition: { temperature: 0.73 }
         }
     },
-    tags: ['corrodes', 'molten']
+    tags: ['corrodes', 'molten', 'metal']
 };

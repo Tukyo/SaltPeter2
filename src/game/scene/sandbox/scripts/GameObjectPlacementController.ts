@@ -42,7 +42,7 @@ export class GameObjectPlacementController extends Nitrate.NitrateProcess {
             e.dataTransfer.dropEffect = 'copy';
 
             if (this.dragPreviewReady) {
-                const previewCanvas = this.dragPreviewRenderer.canvas;
+                const previewCanvas = this.dragPreviewRenderer.GetCanvas();
                 this.dragPreviewContainer.style.display = 'block';
                 this.dragPreviewContainer.style.left = `${e.clientX - previewCanvas.offsetWidth / 2}px`;
                 this.dragPreviewContainer.style.top = `${e.clientY - previewCanvas.offsetHeight / 2}px`;

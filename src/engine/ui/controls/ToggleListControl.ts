@@ -1,5 +1,7 @@
 import type { ToggleListSetting } from '../UserInterfaceTypes';
 import type { ControlHandler } from '../UserInterfaceRegistry';
+
+import { TooltipManager } from '../TooltipManager';
 import { UserInterfaceRegistry } from '../UserInterfaceRegistry';
 
 /** Control handler for `ToggleListSetting`. Renders a scrollable vertical list of toggle rows with multi-selection. */
@@ -46,11 +48,25 @@ export class ToggleListControl implements ControlHandler<ToggleListSetting> {
             lbl.textContent = opt.label;
             btn.appendChild(dot);
             btn.appendChild(lbl);
+
+            if (opt.tooltip) {
+                const tooltip = opt.tooltip;
+                btn.addEventListener('mouseenter', () => TooltipManager.Instance?.Show(tooltip));
+                btn.addEventListener('mouseleave', () => TooltipManager.Instance?.Hide());
+            }
+
             list.appendChild(btn);
         }
 
         this.Sync(list, setting);
         wrapper.appendChild(list);
+
+        if (setting.tooltip) {
+            const tooltip = setting.tooltip;
+            wrapper.addEventListener('mouseenter', () => TooltipManager.Instance?.Show(tooltip));
+            wrapper.addEventListener('mouseleave', () => TooltipManager.Instance?.Hide());
+        }
+
         return { wrapper, element: list, sync: () => { this.Sync(list, setting); }, isValue: true };
     }
 

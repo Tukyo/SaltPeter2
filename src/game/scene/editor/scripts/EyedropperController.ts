@@ -74,14 +74,14 @@ export class EyedropperController extends Nitrate.NitrateProcess {
             this.HideTooltip();
         });
 
-        this.unsubMouseMove = input?.OnMouseMove((e) => {
+        this.unsubMouseMove = input?.OnCanvasMouseMove((e) => {
             this.lastClientX = e.clientX;
             this.lastClientY = e.clientY;
             if (!input.IsKeyDown('Alt')) { return; }
             this.MoveTooltip(e.clientX, e.clientY);
         });
 
-        this.unsubMouseDown = input?.OnMouseDown(0, (e) => {
+        this.unsubMouseDown = input?.OnCanvasMouseDown(0, (e) => {
             if (!input.IsKeyDown('Alt')) { return; }
             e.preventDefault();
             this.ApplyEyedropper();
@@ -109,8 +109,8 @@ export class EyedropperController extends Nitrate.NitrateProcess {
         const canvas = Nitrate.Renderer.Instance?.GetWebGPU()?.canvas;
         if (!mouse || !simulationLayer || !reader || !canvas) { return; }
 
-        const texX = Math.floor(mouse.pos.x * simulationLayer.width / Math.max(1, canvas.width));
-        const texY = Math.floor(mouse.pos.y * simulationLayer.height / Math.max(1, canvas.height));
+        const texX = Math.floor(mouse.canvas.pos.x * simulationLayer.width / Math.max(1, canvas.width));
+        const texY = Math.floor(mouse.canvas.pos.y * simulationLayer.height / Math.max(1, canvas.height));
 
         if (texX < 0 || texX >= simulationLayer.width || texY < 0 || texY >= simulationLayer.height) { return; }
 

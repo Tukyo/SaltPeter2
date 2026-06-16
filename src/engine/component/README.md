@@ -79,6 +79,9 @@ type ComponentType =
 ### [`PixelDataRenderer`](PixelDataRenderer.ts)
 Renders a flat array of `PixelCell` data onto a 2D canvas using material color lookups.
 
+| Method | Description |
+|--------|-------------|
+| [`GetCanvas(): HTMLCanvasElement`](PixelDataRenderer.ts) | Returns the PixelDataRenderer canvas. |
 
 ---
 

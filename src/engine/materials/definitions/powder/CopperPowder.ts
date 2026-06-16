@@ -42,5 +42,5 @@ export const CopperPowder: MaterialDefinition = {
             condition: { temperature: 0.7 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'metal']
 };

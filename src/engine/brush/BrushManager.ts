@@ -105,7 +105,7 @@ export class BrushManager extends NitrateProcess {
         const dt = Math.min(Math.max(0, time - this.lastUpdateTime), config.time.maxDeltaTime);
         this.lastUpdateTime = time;
 
-        const mouseActive = (mouse.leftDown || mouse.rightDown) && mouse.isInside && !this.blocked;
+        const mouseActive = (mouse.leftDown || mouse.rightDown) && mouse.canvas.isInside && !this.blocked;
         if (!mouseActive) { this.brushAccumulator = 0; return; }
 
         this.brushAccumulator = Math.min(
@@ -123,8 +123,8 @@ export class BrushManager extends NitrateProcess {
         const contentH = simulationLayer.height - 2 * margin;
         const camX = Camera.Instance?.GetCameraPos().x ?? 0;
         const camY = Camera.Instance?.GetCameraPos().y ?? 0;
-        const simX = margin + (mouse.pos.x + camX) * contentW / canvas.width;
-        const simY = margin + (mouse.pos.y - camY) * contentH / canvas.height;
+        const simX = margin + (mouse.canvas.pos.x + camX) * contentW / canvas.width;
+        const simY = margin + (mouse.canvas.pos.y - camY) * contentH / canvas.height;
         const isErase = mouse.rightDown;
         for (let i = 0; i < steps; i++) {
             this.simTime += 1 / config.time.baseTickRate;
@@ -177,7 +177,7 @@ export class BrushManager extends NitrateProcess {
     private Apply(simX: number, simY: number, simTime: number, isErase: boolean): void {
         if (!this.device || !this.brushPass || !this.simulationLayer) { return; }
         const { state } = this;
-        const materialId = isErase ? 0 : state.GetMaterialId();
+        const materialId = state.GetMaterialId();
         if (!SceneManager.IsDirty() && materialId !== 0) { SceneManager.MarkDirty(); }
         if (this.onFirstPaint && materialId !== 0) { this.onFirstPaint(); }
 
@@ -209,6 +209,7 @@ export class BrushManager extends NitrateProcess {
             stripeAngle: state.GetStripeAngle() * (Math.PI / 180),
             stripeWidth: state.GetStripeWidth(),
             overlayFilter: state.GetOverlayFilter() ? 1 : 0,
+            isErase: isErase ? 1 : 0,
         });
         this.device.queue.submit([enc.finish()]);
         this.simulationLayer.SwapIdentity();

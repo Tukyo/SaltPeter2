@@ -43,5 +43,5 @@ export const MoltenPlastic: MaterialDefinition = {
             condition: { temperature: 0.6 }
         }
     },
-    tags: ['burns', 'corrodes', 'molten'],
+    tags: ['corrodes', 'molten'],
 };

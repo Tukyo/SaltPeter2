@@ -118,11 +118,55 @@ interface ModalOptions {
 
 ---
 
+### [`NotificationManager`](NotificationManager.ts)
+Manages a toast notification stack anchored at the bottom-center of the screen.
+Instantiated by UserInterfaceManager. Callers pass `duration: 0` for persistent toasts
+that require an explicit click to dismiss.
+
+```ts
+NotificationManager.Instance?.Notify({ message: 'Export complete!', level: 'success', duration: 4000 });
+NotificationManager.Instance?.Notify({ title: 'Export Failed', message: 'Invalid material in margin.', level: 'error', duration: 0 });
+```
+
+| Interfaces & Types |
+|--------------------|
+```ts
+interface NotificationOptions {
+    message: string;
+    level?: NotificationLevel;
+    title?: string;
+    duration: number;
+    action?: { label: string; onClick: () => void };
+}
+```
+
+| Method | Description |
+|--------|-------------|
+| [`Notify(options: NotificationOptions): void`](NotificationManager.ts) | Builds and shows a notification. If the stack is full the oldest notification is immediately evicted to make room. |
+
+---
+
 ### [`Resources`](Resources.ts)
 File browser panel for the editor.
 Renders two root sections — Shipped (read-only, import only) and a user assets folder (full operations).
 Requires the Electron resources and userdata APIs.
 
+
+---
+
+### [`TooltipManager`](TooltipManager.ts)
+Manages a single persistent tooltip overlay. Controls call Show/Hide on hover.
+Instantiated by UserInterfaceManager — the engine handles its lifecycle.
+
+```ts
+element.addEventListener('mouseenter', () => HintManager.Instance?.Show('Brush size in cells.'));
+element.addEventListener('mouseleave', () => HintManager.Instance?.Hide());
+```
+
+| Method | Description |
+|--------|-------------|
+| [`Show(text: string): void`](TooltipManager.ts) | — |
+| [`Hide(): void`](TooltipManager.ts) | — |
 
 ---
 
@@ -188,7 +232,7 @@ interface RangeSetting extends BaseSetting {
 interface ChoiceSetting extends BaseSetting {
     type: 'choice';
     default: string;
-    options: ReadonlyArray<{ value: string; label: string }>;
+    options: ReadonlyArray<{ value: string; label: string; tooltip?: string }>;
     hideLabel?: boolean;
 }
 ```
@@ -196,7 +240,7 @@ interface ChoiceSetting extends BaseSetting {
 ```ts
 interface ActionGroupSetting extends BaseSetting {
     type: 'actionGroup';
-    options: ReadonlyArray<{ value: string; label: string; icon: string }>;
+    options: ReadonlyArray<{ value: string; label: string; icon: string; tooltip?: string }>;
 }
 ```
 
@@ -236,7 +280,7 @@ interface TextSetting extends BaseSetting {
 ```ts
 interface ToggleGroupSetting extends BaseSetting {
     type: 'toggleGroup';
-    options: ReadonlyArray<{ value: string; label: string }>;
+    options: ReadonlyArray<{ value: string; label: string; tooltip?: string }>;
     default: readonly string[];
 }
 ```
@@ -244,7 +288,7 @@ interface ToggleGroupSetting extends BaseSetting {
 ```ts
 interface ToggleListSetting extends BaseSetting {
     type: 'toggleList';
-    options: ReadonlyArray<{ value: string; label: string }>;
+    options: ReadonlyArray<{ value: string; label: string; tooltip?: string }>;
     default: readonly string[];
 }
 ```

@@ -1,5 +1,6 @@
 import { CompositePass } from './passes/CompositePass';
 import { GameObjectRenderPass } from './passes/GameObjectRenderPass';
+import { LogManager } from '../debug/LogManager';
 import { NitrateProcess } from '../NitrateProcess';
 import { ParticleRenderPass } from './passes/ParticleRenderPass';
 import { Renderer } from './Renderer';
@@ -38,11 +39,23 @@ export class RenderingManager extends NitrateProcess {
     private async Init(): Promise<void> {
         const renderer = Renderer.Instance?.GetWebGPU();
         const sim = SimulationManager.Instance;
-        if (!renderer || !sim?.simulationLayer || !sim?.gameObjectLayer || !sim.materialVisualBuffer) { return; }
+        if (!renderer || !sim?.simulationLayer || !sim?.gameObjectLayer || !sim.materialVisualBuffer) {
+            LogManager.Instance?.LogWarning({
+                text: 'RenderingManager init skipped: missing renderer or simulation layer.',
+                options: { tags: ['Rendering'] }
+            });
+            return;
+        }
 
         const { device, format } = renderer;
         const { simulationLayer, gameObjectLayer, materialVisualBuffer, particleBuffer, particleDefinitionBuffer } = sim;
-        if (!particleBuffer || !particleDefinitionBuffer) { return; }
+        if (!particleBuffer || !particleDefinitionBuffer) {
+            LogManager.Instance?.LogWarning({
+                text: 'RenderingManager init skipped: missing particle buffer.',
+                options: { tags: ['Rendering'] }
+            });
+            return;
+        }
 
         this.layers = RenderingLayers.Create(device, { width: simulationLayer.width, height: simulationLayer.height });
 
@@ -57,6 +70,11 @@ export class RenderingManager extends NitrateProcess {
         this.gameObjectRenderPass = gameObjectRenderPass;
         this.particleRenderPass = particleRenderPass;
         this.compositePass = compositePass;
+
+        LogManager.Instance?.Log({
+            text: 'RenderingManager initialized.',
+            options: { tags: ['Rendering', 'NitrateProcessInit'] }
+        });
     }
 
     public Update(now: number): void {
@@ -99,6 +117,10 @@ export class RenderingManager extends NitrateProcess {
         this.particleRenderPass?.Destroy();
         this.particleRenderPass = null;
         this.compositePass = null;
+        LogManager.Instance?.Log({
+            text: 'RenderingManager OnResize.',
+            options: { tags: ['Resize', 'GameObject'] }
+        });
     }
 
     public OnDestroy(): void {
@@ -111,6 +133,12 @@ export class RenderingManager extends NitrateProcess {
         this.particleRenderPass?.Destroy();
         this.particleRenderPass = null;
         this.compositePass = null;
-        if (RenderingManager.Instance === this) { RenderingManager.Instance = null; }
+        if (RenderingManager.Instance === this) {
+            RenderingManager.Instance = null;
+            LogManager.Instance?.Log({
+                text: 'Cleared RenderingManager singleton instance.',
+                options: { tags: ['Rendering', 'NitrateProcessDestroy'] }
+            });
+        }
     }
 }

@@ -42,8 +42,8 @@ export class Camera extends NitrateProcess {
         if (state.middleDown) {
             if (this.wasMiddleDown) {
                 const max = Camera.maxPanPerFrame;
-                const rawDx = state.pos.x - this.lastMousePos.x;
-                const rawDy = state.pos.y - this.lastMousePos.y;
+                const rawDx = state.canvas.pos.x - this.lastMousePos.x;
+                const rawDy = state.canvas.pos.y - this.lastMousePos.y;
                 const dx = Math.max(-max, Math.min(max, rawDx));
                 const dy = Math.max(-max, Math.min(max, rawDy));
                 this.Pan(-dx, dy);
@@ -52,8 +52,8 @@ export class Camera extends NitrateProcess {
                     options: { tags: ["Camera"], noisy: true }
                 });
             }
-            this.lastMousePos.x = state.pos.x;
-            this.lastMousePos.y = state.pos.y;
+            this.lastMousePos.x = state.canvas.pos.x;
+            this.lastMousePos.y = state.canvas.pos.y;
         }
 
         this.wasMiddleDown = state.middleDown;
@@ -76,7 +76,7 @@ export class Camera extends NitrateProcess {
     public OnResize(): void {
         LogManager.Instance?.Log({
             text: 'Camera OnResize.',
-            options: { tags: ['Camera'] }
+            options: { tags: ['Resize', 'Camera'] }
         });
     }
 

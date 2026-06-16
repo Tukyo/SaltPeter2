@@ -70,4 +70,10 @@ contextBridge.exposeInMainWorld('api', {
         capture: (rect: { x: number; y: number; width: number; height: number }, filename: string): Promise<void> =>
             ipcRenderer.invoke('screenshot:capture', rect, filename),
     },
+    shell: {
+        showAsset: (relativePath: string): Promise<void> =>
+            ipcRenderer.invoke('shell:showItemInFolder', assetsChannel, relativePath),
+        showScreenshot: (relativePath: string): Promise<void> =>
+            ipcRenderer.invoke('shell:showItemInFolder', 'screenshots', relativePath),
+    },
 });

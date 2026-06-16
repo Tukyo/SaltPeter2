@@ -69,14 +69,20 @@ export class SimulationManager extends NitrateProcess {
 
     public simulationLayer: SimulationLayer | null = null;
     public gameObjectLayer: GameObjectLayer | null = null;
-    public gameObjectBuffers: GameObjectBuffers | null = null;
     public intent: SimulationTexture | null = null;
     public texturePixelReader: TexturePixelReader | null = null;
 
+    public gameObjectBuffers: GameObjectBuffers | null = null;
     public materialPhysicsBuffer: MaterialPhysicsBuffer | null = null;
     public materialSimBuffer: MaterialSimulationBuffer | null = null;
     public materialStateBuffer: MaterialStateBuffer | null = null;
     public materialVisualBuffer: MaterialVisualBuffer | null = null;
+    public particleBuffer: ParticleBuffer | null = null;
+    public particleDefinitionBuffer: ParticleDefinitionBuffer | null = null;
+    public particleEmitterBuffer: ParticleEmitterBuffer | null = null;
+    public particleSourceLookupBuffer: ParticleSourceLookupBuffer | null = null;
+    public particleEmissionPass: ParticleEmissionPass | null = null;
+    public particleSimulationPass: ParticleSimulationPass | null = null;
     public reactionBuffer: ReactionLookupBuffer | null = null;
 
     public simAnalyticsPass: AnalyticsPass | null = null;
@@ -86,13 +92,6 @@ export class SimulationManager extends NitrateProcess {
     public intentPass: IntentPass | null = null;
     public physicsPass: PhysicsPass | null = null;
     public simPass: SimulationPass | null = null;
-
-    public particleBuffer: ParticleBuffer | null = null;
-    public particleDefinitionBuffer: ParticleDefinitionBuffer | null = null;
-    public particleEmitterBuffer: ParticleEmitterBuffer | null = null;
-    public particleSourceLookupBuffer: ParticleSourceLookupBuffer | null = null;
-    public particleEmissionPass: ParticleEmissionPass | null = null;
-    public particleSimulationPass: ParticleSimulationPass | null = null;
 
     public readonly state: SimulationState = new SimulationState();
 
@@ -382,7 +381,7 @@ export class SimulationManager extends NitrateProcess {
         if (!webgpu) { return; }
         LogManager.Instance?.Log({
             text: 'Simulation OnResize.',
-            options: { tags: ['Sim'] }
+            options: { tags: ['Resize', 'Sim'] }
         });
 
         this.state.Reset();

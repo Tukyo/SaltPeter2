@@ -47,7 +47,7 @@ export class BrushPreview extends NitrateProcess {
 
     public Update(now: number): void {
         const mouse = Input.Instance?.GetMouseState();
-        if (!mouse || !mouse.isInside) { this.Hide(); return; }
+        if (!mouse || !mouse.canvas.isInside) { this.Hide(); return; }
 
         const brushState = BrushManager.Instance?.state;
         const simulationLayer = SimulationManager.Instance?.simulationLayer;
@@ -69,18 +69,18 @@ export class BrushPreview extends NitrateProcess {
         let cellY: number;
 
         if (brushState.GetSnap()) {
-            cellX = Math.floor(mouse.pos.x * simWidth / Math.max(1, this.canvas.width));
-            cellY = Math.floor(mouse.pos.y * simHeight / Math.max(1, this.canvas.height));
+            cellX = Math.floor(mouse.canvas.pos.x * simWidth / Math.max(1, this.canvas.width));
+            cellY = Math.floor(mouse.canvas.pos.y * simHeight / Math.max(1, this.canvas.height));
             const halfSize = Math.floor(size / 2);
             screenX = rect.left + (cellX - halfSize) * cellW;
             screenY = rect.top + rect.height - (cellY + 1 + halfSize) * cellH;
         } else {
             const csX = rect.width / Math.max(1, this.canvas.width);
             const csY = rect.height / Math.max(1, this.canvas.height);
-            cellX = Math.floor(mouse.pos.x * simWidth / Math.max(1, this.canvas.width));
-            cellY = Math.floor(mouse.pos.y * simHeight / Math.max(1, this.canvas.height));
-            screenX = rect.left + mouse.pos.x * csX - elW / 2;
-            screenY = rect.top + rect.height - mouse.pos.y * csY - elH / 2;
+            cellX = Math.floor(mouse.canvas.pos.x * simWidth / Math.max(1, this.canvas.width));
+            cellY = Math.floor(mouse.canvas.pos.y * simHeight / Math.max(1, this.canvas.height));
+            screenX = rect.left + mouse.canvas.pos.x * csX - elW / 2;
+            screenY = rect.top + rect.height - mouse.canvas.pos.y * csY - elH / 2;
         }
 
         const isErase = mouse.rightDown;

@@ -84,6 +84,7 @@ export class BrushPanel extends NitrateProcess {
         type: 'palette',
         count: 4,
         default: 0,
+        tooltip: 'Select the active color variant for the brush.',
     };
 
     constructor(options: BrushOptions) {
@@ -140,6 +141,7 @@ export class BrushPanel extends NitrateProcess {
             min: o.min, max: o.max, step: 1,
             default: o.default ?? o.min,
             suffix: '', decimals: 0, readout: true,
+            tooltip: 'Adjusts the size of the brush.',
         };
         const { wrapper, element, sync } = RangeControl.Instance.Build('brush-size', this.sizeSetting);
         this.sizeElement = element as HTMLInputElement;
@@ -165,6 +167,7 @@ export class BrushPanel extends NitrateProcess {
             min: o.min, max: o.max, step: 1,
             default: o.default ?? o.max,
             suffix: '%', decimals: 0, readout: true,
+            tooltip: 'Percentage of cells filled within the brush area.',
         };
         const { wrapper, element, sync } = RangeControl.Instance.Build('brush-density', this.densitySetting);
         this.densityElement = element as HTMLInputElement;
@@ -187,7 +190,10 @@ export class BrushPanel extends NitrateProcess {
         if (!o) { return; }
         this.shapeSetting = {
             id: 'brush-shape', type: 'choice',
-            options: [{ value: 'circle', label: 'Circle' }, { value: 'square', label: 'Square' }],
+            options: [
+                { value: 'circle', label: 'Circle', tooltip: 'Round brush shape.' },
+                { value: 'square', label: 'Square', tooltip: 'Square brush shape.' },
+            ],
             default: o.default ?? 'circle',
         };
         const { wrapper, element } = ChoiceControl.Instance.Build('brush-shape', this.shapeSetting);
@@ -211,9 +217,9 @@ export class BrushPanel extends NitrateProcess {
         this.modeSetting = {
             id: 'brush-mode', type: 'choice',
             options: [
-                { value: 'fill', label: 'Fill' },
-                { value: 'mask', label: 'Mask' },
-                { value: 'overlay', label: 'Overlay' },
+                { value: 'fill', label: 'Fill', tooltip: 'Enables painting over any cells.' },
+                { value: 'mask', label: 'Mask', tooltip: 'Only places material where cells are empty.' },
+                { value: 'overlay', label: 'Overlay', tooltip: 'Enables painting only on cells that are not empty.' },
             ],
             default: o.default ?? 'fill',
         };
@@ -231,7 +237,10 @@ export class BrushPanel extends NitrateProcess {
     private SetupOverlayFilter(brushManager: () => BrushState | undefined): void {
         this.overlayFilterSetting = {
             id: 'brush-overlay-filter', type: 'choice',
-            options: [{ value: 'disabled', label: 'Disabled' }, { value: 'enabled', label: 'Enabled' }],
+            options: [
+                { value: 'disabled', label: 'Disabled', tooltip: 'Overlay draws on any painted cells.' },
+                { value: 'enabled', label: 'Enabled', tooltip: 'Overlay only draws on cells matching the active material.' },
+            ],
             default: 'disabled',
         };
         const { wrapper, element } = ChoiceControl.Instance.Build('brush-overlay-filter', this.overlayFilterSetting);
@@ -258,12 +267,12 @@ export class BrushPanel extends NitrateProcess {
         this.typeSetting = {
             id: 'brush-type', type: 'choice',
             options: [
-                { value: 'noise', label: 'Noise' },
-                { value: 'palette', label: 'Palette' },
-                { value: 'scatter', label: 'Scatter' },
-                { value: 'boxes', label: 'Boxes' },
-                { value: 'stripes', label: 'Stripes' },
-                { value: 'circles', label: 'Circles' },
+                { value: 'noise', label: 'Noise', tooltip: 'Random color variation within the palette.' },
+                { value: 'palette', label: 'Palette', tooltip: 'Solid fill using the selected palette color.' },
+                { value: 'scatter', label: 'Scatter', tooltip: 'Randomly scatter palette colors across the brush area.' },
+                { value: 'boxes', label: 'Boxes', tooltip: 'Fill with rectangular blocks of palette colors.' },
+                { value: 'stripes', label: 'Stripes', tooltip: 'Fill with angled stripes of palette colors.' },
+                { value: 'circles', label: 'Circles', tooltip: 'Fill with circular patches of palette colors.' },
             ],
             default: o.default ?? 'noise',
         };
@@ -290,7 +299,10 @@ export class BrushPanel extends NitrateProcess {
         if (!o) { return; }
         this.snapSetting = {
             id: 'brush-snap', type: 'choice',
-            options: [{ value: 'free', label: 'Free' }, { value: 'snap', label: 'Snap' }],
+            options: [
+                { value: 'free', label: 'Free', tooltip: 'Brush follows the cursor freely.' },
+                { value: 'snap', label: 'Snap', tooltip: 'Brush snaps to a fixed grid when painting.' },
+            ],
             default: (o.default ?? false) ? 'snap' : 'free',
         };
         const { wrapper, element } = ChoiceControl.Instance.Build('brush-snap', this.snapSetting);
@@ -368,6 +380,7 @@ export class BrushPanel extends NitrateProcess {
             min: 0, max: 360, step: 1,
             default: 45,
             suffix: '°', decimals: 0, readout: true,
+            tooltip: 'Angle of the stripe pattern.',
         };
         const { wrapper, element, sync } = RangeControl.Instance.Build('brush-stripe-angle', this.stripeAngleSetting);
         this.stripeAngleElement = element as HTMLInputElement;
@@ -390,6 +403,7 @@ export class BrushPanel extends NitrateProcess {
             min: 1, max: 32, step: 1,
             default: 4,
             suffix: '', decimals: 0, readout: true,
+            tooltip: 'Width of each stripe.',
         };
         const { wrapper, element, sync } = RangeControl.Instance.Build('brush-stripe-width', this.stripeWidthSetting);
         this.stripeWidthElement = element as HTMLInputElement;

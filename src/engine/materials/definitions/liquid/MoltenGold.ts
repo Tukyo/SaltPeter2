@@ -33,7 +33,7 @@ export const MoltenGold: MaterialDefinition = {
         temperature: {
             specificHeat: 5,
             restingTemperature: 0.90,
-            restingStrength: 0.75
+            restingStrength: 0.85
         }
     },
     transitions: {
@@ -42,5 +42,5 @@ export const MoltenGold: MaterialDefinition = {
             condition: { temperature: 0.76 }
         }
     },
-    tags: ['corrodes', 'molten']
+    tags: ['corrodes', 'molten', 'metal']
 };

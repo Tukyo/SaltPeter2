@@ -1,3 +1,5 @@
+import { LogManager } from "../debug/LogManager";
+
 export interface ModalOptions {
     title: string;
     confirmLabel?: string;
@@ -25,7 +27,20 @@ export class Modal {
         overlay.appendChild(container);
         document.body.appendChild(overlay);
 
-        return { close: () => overlay.remove() };
+        LogManager.Instance?.Log({
+            text: 'Modal shown.',
+            options: { tags: ["UserInterface"] }
+        });
+
+        return {
+            close: () => {
+                overlay.remove();
+                LogManager.Instance?.Log({
+                    text: 'Modal closed.',
+                    options: { tags: ["UserInterface"] }
+                });
+            }
+        };
     }
 
     /** Shows a confirm/cancel modal with a title. Resolves true if confirmed, false if cancelled or dismissed. */
@@ -65,8 +80,17 @@ export class Modal {
             overlay.appendChild(container);
             document.body.appendChild(overlay);
 
+            LogManager.Instance?.Log({
+                text: 'Modal shown.',
+                options: { tags: ["UserInterface"], data: { title } }
+            });
+
             const cleanup = (result: boolean) => {
                 overlay.remove();
+                LogManager.Instance?.Log({
+                    text: 'Modal dismissed.',
+                    options: { tags: ["UserInterface"], data: { confirmed: result } }
+                });
                 resolve(result);
             };
 

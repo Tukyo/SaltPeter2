@@ -40,5 +40,5 @@ export const Bronze: MaterialDefinition = {
             condition: { temperature: 0.825 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'metal', 'alloy']
 };

@@ -40,5 +40,5 @@ export const Lead: MaterialDefinition = {
             condition: { temperature: 0.67 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'metal', 'ore']
 };

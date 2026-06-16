@@ -260,9 +260,64 @@ export class EditorScene extends Nitrate.Scene {
         Nitrate.NitrateEngine.Unregister(p);
     }
 
-    private RunExport(): void {
-        if (this.mode === 'gameobject') { void this.goExport?.Run(); }
-        else { void this.bpExport?.Run(); }
+    private async RunExport(): Promise<void> {
+        const go = this.hierarchy?.GetSelectedGameObject() ?? null;
+        if (!go?.name.trim()) {
+            Nitrate.NotificationManager.Instance?.Notify({
+                message: 'Enter a name for the GameObject before exporting.',
+                level: 'error',
+                duration: 4000,
+            });
+            return;
+        }
+
+        if (this.mode === 'gameobject') {
+            const hasPixelData = !!go.GetComponent(Nitrate.PixelData);
+            const hasSelection = !!this.selectionController?.GetNormalizedSelection();
+            if (hasPixelData && !hasSelection) {
+                Nitrate.NotificationManager.Instance?.Notify({
+                    message: 'No bounding box. Shift+Click and drag around the desired area to export.',
+                    level: 'error',
+                    duration: 4000,
+                });
+                return;
+            }
+            if (!hasPixelData && hasSelection) {
+                Nitrate.NotificationManager.Instance?.Notify({
+                    message: 'No PixelData component found. A GameObject with pixels requires a PixelData component.',
+                    level: 'error',
+                    duration: 4000,
+                });
+                return;
+            }
+            if (hasSelection && !this.anchorController?.GetAnchorCell()) {
+                Nitrate.NotificationManager.Instance?.Notify({
+                    message: 'No anchor set. Ctrl+Click within the bounding box to add an anchor.',
+                    level: 'error',
+                    duration: 4000,
+                });
+                return;
+            }
+        }
+
+        const success = this.mode === 'gameobject'
+            ? await this.goExport?.Run()
+            : await this.bpExport?.Run();
+
+        if (success) {
+            Nitrate.NotificationManager.Instance?.Notify({
+                message: `'${go.name}' exported successfully.`,
+                level: 'success',
+                duration: 4000,
+                action: { label: 'Show in folder', onClick: () => { void window.api.shell.showAsset(success); } },
+            });
+        } else {
+            Nitrate.NotificationManager.Instance?.Notify({
+                message: 'Export failed. Check the console for details.',
+                level: 'error',
+                duration: 6000,
+            });
+        }
     }
 
     private async RunImport(filename: string): Promise<void> {
@@ -285,7 +340,15 @@ export class EditorScene extends Nitrate.Scene {
         if (modeChanging) { this.SwitchModeNoInit(targetMode); }
 
         if (targetMode === 'gameobject') {
-            await this.goImport?.Run(filename);
+            const imported = await this.goImport?.Run(filename) ?? false;
+            if (!imported) {
+                Nitrate.NotificationManager.Instance?.Notify({
+                    message: 'Import failed. Check the console for details.',
+                    level: 'error',
+                    duration: 6000,
+                });
+                return;
+            }
             let editorSize = meta?.editor.size ?? null;
             if (!editorSize) {
                 const pd = this.hierarchy?.GetSelectedGameObject()?.GetComponent(Nitrate.PixelData);
@@ -293,7 +356,15 @@ export class EditorScene extends Nitrate.Scene {
             }
             if (editorSize) { this.renderingPanel?.SetGridSize(editorSize.width, editorSize.height); }
         } else {
-            await this.bpImport?.Run(filename);
+            const imported = await this.bpImport?.Run(filename) ?? false;
+            if (!imported) {
+                Nitrate.NotificationManager.Instance?.Notify({
+                    message: 'Import failed. Check the console for details.',
+                    level: 'error',
+                    duration: 6000,
+                });
+                return;
+            }
             let editorSize = meta?.editor.size ?? null;
             if (!editorSize) {
                 const bp = this.hierarchy?.GetSelectedGameObject()?.GetComponent(Nitrate.Blueprint);
@@ -309,6 +380,13 @@ export class EditorScene extends Nitrate.Scene {
 
         this.hierarchy?.Refresh();
         Nitrate.SceneManager.MarkDirty();
+
+        const importedName = this.hierarchy?.GetSelectedGameObject()?.name ?? null;
+        Nitrate.NotificationManager.Instance?.Notify({
+            message: importedName ? `'${importedName}' imported successfully.` : 'Imported successfully.',
+            level: 'success',
+            duration: 4000,
+        });
     }
 
     /** Calls InitGPU and resolves once SimulationManager has finished reinitialising. */

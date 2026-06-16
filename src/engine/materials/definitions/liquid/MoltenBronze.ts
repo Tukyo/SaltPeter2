@@ -33,7 +33,7 @@ export const MoltenBronze: MaterialDefinition = {
         temperature: {
             specificHeat: 4.5,
             restingTemperature: 0.88,
-            restingStrength: 0.75
+            restingStrength: 0.85
         }
     },
     transitions: {
@@ -42,5 +42,5 @@ export const MoltenBronze: MaterialDefinition = {
             condition: { temperature: 0.7 }
         }
     },
-    tags: ['corrodes', 'molten']
+    tags: ['corrodes', 'molten', 'metal']
 };

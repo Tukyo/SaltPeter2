@@ -40,5 +40,5 @@ export const FrozenMilk: MaterialDefinition = {
             condition: { temperature: 0.45 }
         }
     },
-    tags: ['corrodes', 'frozen']
+    tags: ['corrodes', 'frozen', 'organic']
 };

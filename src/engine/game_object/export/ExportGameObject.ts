@@ -2,6 +2,7 @@ import type { MaterialId } from '../../materials/definitions/MaterialIdentity';
 import type { Rect2D, Vec2 } from '../../definitions/Primitives';
 
 import { Export } from './Export';
+import { LogManager } from '../../debug/LogManager';
 import { MaterialQuery } from '../../materials/MaterialQuery';
 import { PixelData } from '../../component/definitions/pixeldata/PixelData';
 import { SimulationManager } from '../../simulation/SimulationManager';
@@ -32,25 +33,42 @@ export class ExportGameObject extends Export {
     }
 
     /** Reads the simulation texture within the selection rect and serialises the cell data into the PixelData component before writing to disk. @internal */
-    public async Run(): Promise<void> {
+    public async Run(): Promise<string | null> {
         const go = this.gameObjectProvider?.() ?? null;
         const sim = SimulationManager.Instance;
-        if (!go || !sim) { return; }
+        if (!go || !sim) {
+            LogManager.Instance?.LogWarning({
+                text: 'ExportGameObject skipped: missing game object or simulation.',
+                options: { tags: ['GameObject', 'Export'] }
+            });
+            return null;
+        }
 
         const { simulationLayer, texturePixelReader } = sim;
-        if (!simulationLayer || !texturePixelReader) { return; }
+        if (!simulationLayer || !texturePixelReader) {
+            LogManager.Instance?.LogWarning({
+                text: 'ExportGameObject skipped: simulation layer not ready.',
+                options: { tags: ['GameObject', 'Export'] }
+            });
+            return null;
+        }
 
         const gridSize = simulationLayer.width;
         const pixelData = go.GetComponent(PixelData);
 
         if (!pixelData) {
-            await this.WriteFile(go, 'gameobject', { size: { width: gridSize, height: gridSize } });
-            return;
+            return this.WriteFile(go, 'gameobject', { size: { width: gridSize, height: gridSize } });
         }
 
         const norm = this.selectionProvider?.() ?? null;
         const anchor = this.anchorProvider?.() ?? null;
-        if (!norm || !anchor) { return; }
+        if (!norm || !anchor) {
+            LogManager.Instance?.LogWarning({
+                text: 'ExportGameObject skipped: missing selection or anchor.',
+                options: { tags: ['GameObject', 'Export'] }
+            });
+            return null;
+        }
 
         const { x1, y1, x2, y2 } = norm;
         const width = x2 - x1 + 1;
@@ -78,13 +96,19 @@ export class ExportGameObject extends Export {
             }
         }
 
-        await this.WriteFile(go, 'gameobject', { size: { width: gridSize, height: gridSize }, pos: { x: x1, y: y1 } });
+        return this.WriteFile(go, 'gameobject', { size: { width: gridSize, height: gridSize }, pos: { x: x1, y: y1 } });
     }
 
     public OnDestroy(): void {
         super.OnDestroy();
         this.selectionProvider = null;
         this.anchorProvider = null;
-        if (ExportGameObject.Instance === this) { ExportGameObject.Instance = null; }
+        if (ExportGameObject.Instance === this) {
+            ExportGameObject.Instance = null;
+            LogManager.Instance?.Log({
+                text: 'Cleared ExportGameObject singleton instance.',
+                options: { tags: ['GameObject', 'NitrateProcessDestroy'] }
+            });
+        }
     }
 }

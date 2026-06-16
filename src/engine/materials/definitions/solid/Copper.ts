@@ -40,5 +40,5 @@ export const Copper: MaterialDefinition = {
             condition: { temperature: 0.795 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'metal', 'ore']
 };

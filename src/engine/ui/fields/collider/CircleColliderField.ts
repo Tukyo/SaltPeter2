@@ -6,8 +6,20 @@ export class CircleColliderField extends ComponentField<CircleCollider> {
     public static readonly forType = 'CircleCollider';
 
     protected BuildFields(container: HTMLElement): void {
-        container.appendChild(this.Vec2Field('Offset', this.component.offset, v => { this.component.offset = v; }));
-        container.appendChild(this.NumberField('Radius', this.component.radius, v => { this.component.radius = v; }));
-        container.appendChild(this.BoolField('Is Trigger', this.component.isTrigger, v => { this.component.isTrigger = v; }));
+        container.appendChild(this.Vec2Field(
+            'Offset',
+            this.component.offset, v => { this.component.offset = v; },
+            ['X', 'Y'], 'Offset of the collider from the GameObject origin.'
+        ));
+        container.appendChild(this.NumberField(
+            'Radius',
+            this.component.radius, v => { this.component.radius = v; },
+            'Radius of the circle collider in cells.'
+        ));
+        container.appendChild(this.BoolField(
+            'Is Trigger',
+            this.component.isTrigger, v => { this.component.isTrigger = v; },
+            'When enabled, detects overlaps but does not resolve physics collisions.'
+        ));
     }
 }

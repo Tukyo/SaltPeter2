@@ -7,8 +7,8 @@ const modeSetting: Nitrate.ChoiceSetting = {
     type: 'choice',
     default: 'gameobject',
     options: [
-        { value: 'gameobject', label: 'Game Object' },
-        { value: 'blueprint', label: 'Blueprint' },
+        { value: 'gameobject', label: 'Game Object', tooltip: 'Switch to GameObject authoring mode.' },
+        { value: 'blueprint', label: 'Blueprint', tooltip: 'Switch to Blueprint authoring mode.' },
     ],
 };
 

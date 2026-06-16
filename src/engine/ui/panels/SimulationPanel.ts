@@ -30,8 +30,8 @@ export class SimulationPanel extends NitrateProcess {
         id: 'sim-controls',
         type: 'actionGroup',
         options: [
-            { value: 'play', label: 'Play', icon: 'play' },
-            { value: 'pause', label: 'Pause', icon: 'pause' },
+            { value: 'play', label: 'Play', icon: 'play', tooltip: 'Resume the simulation.' },
+            { value: 'pause', label: 'Pause', icon: 'pause', tooltip: 'Pause the simulation.' },
         ],
     };
 
@@ -46,6 +46,7 @@ export class SimulationPanel extends NitrateProcess {
         suffix: 'x',
         decimals: 2,
         readout: true,
+        tooltip: 'Controls the speed of the simulation.',
     };
 
     constructor(params?: SimulationPanelParams) {

@@ -29,6 +29,9 @@ type LogTag =
     | "Metadata"
     | "GameObject"
     | "PassRegistry"
+    | "UserInterface"
+    | "Rendering"
+    | "Resize"
 
 const TAG_COLORS: Record<LogTag, string> = {
     Camera: '#4fc3f7',
@@ -53,7 +56,10 @@ const TAG_COLORS: Record<LogTag, string> = {
     Import: '#1f6cb4',
     Metadata: '#b26f0a',
     GameObject: '#b4017e',
-    PassRegistry: '#ff0000'
+    PassRegistry: '#ff0000',
+    UserInterface: '#0c8b45',
+    Rendering: '#5640b6',
+    Resize: '#8e309b'
 };
 
 export interface LogManagerOptions {
@@ -140,8 +146,6 @@ export class LogManager extends NitrateProcess {
     }
 
     public OnDestroy(): void {
-        if (LogManager.Instance === this) {
-            LogManager.Instance = null;
-        }
+        if (LogManager.Instance === this) { LogManager.Instance = null; }
     }
 }

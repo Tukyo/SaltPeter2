@@ -40,5 +40,9 @@ interface Window {
         screenshot: {
             capture: (rect: { x: number; y: number; width: number; height: number }, filename: string) => Promise<void>;
         };
+        shell: {
+            showAsset: (relativePath: string) => Promise<void>;
+            showScreenshot: (relativePath: string) => Promise<void>;
+        };
     };
 }

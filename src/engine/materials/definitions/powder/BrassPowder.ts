@@ -42,5 +42,5 @@ export const BrassPowder: MaterialDefinition = {
             condition: { temperature: 0.775 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'metal']
 };

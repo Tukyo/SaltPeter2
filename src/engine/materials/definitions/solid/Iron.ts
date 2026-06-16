@@ -40,5 +40,5 @@ export const Iron: MaterialDefinition = {
             condition: { temperature: 0.81 }
         }
     },
-    tags: ['corrodes', 'rustable']
+    tags: ['corrodes', 'rustable', 'metal', 'ore']
 };

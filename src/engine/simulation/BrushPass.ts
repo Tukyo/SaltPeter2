@@ -36,6 +36,7 @@ interface BrushParams {
     stripeAngle?: number,
     stripeWidth?: number,
     overlayFilter?: number,
+    isErase?: number,
 }
 
 /**
@@ -111,6 +112,7 @@ export class BrushPass {
             stripeAngle = Math.PI / 4,
             stripeWidth = 4,
             overlayFilter = 0,
+            isErase = 0,
         } = params;
 
         const x = snap ? Math.floor(mouseX) + 0.5 : mouseX;
@@ -137,6 +139,7 @@ export class BrushPass {
             stripeAngle,
             stripeWidth,
             overlayFilter,
+            isErase,
         ]));
 
         const bindGroup = device.createBindGroup({

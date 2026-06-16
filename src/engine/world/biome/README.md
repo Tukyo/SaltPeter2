@@ -2,10 +2,7 @@
 [Nitrate](../../README.md) / [World](../README.md) / Biome
 <!-- HIERARCHY_END -->
 # Biome
-
 Biome definitions and spatial lookup for world generation.
-
-[`BiomeRegistry`](BiomeRegistry.ts) auto-discovers every biome definition at startup — no manual registration needed. [`BiomeQuery`](BiomeQuery.ts) sits on top for runtime reads, resolving world-space positions to biome definitions via the [`WorldMap`](../WorldMap.ts) chunk table.
 
 New biomes go in [`definitions/`](definitions/README.md).
 

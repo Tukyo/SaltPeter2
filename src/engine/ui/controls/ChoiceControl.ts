@@ -1,5 +1,7 @@
 import type { ChoiceSetting } from '../UserInterfaceTypes';
 import type { ControlHandler } from '../UserInterfaceRegistry';
+
+import { TooltipManager } from '../TooltipManager';
 import { UserInterfaceRegistry } from '../UserInterfaceRegistry';
 
 /** Control handler for `ChoiceSetting`. Renders a segmented button group with single selection. */
@@ -44,6 +46,13 @@ export class ChoiceControl implements ControlHandler<ChoiceSetting> {
             lbl.textContent = opt.label;
             btn.appendChild(dot);
             btn.appendChild(lbl);
+
+            if (opt.tooltip) {
+                const tooltip = opt.tooltip;
+                btn.addEventListener('mouseenter', () => TooltipManager.Instance?.Show(tooltip));
+                btn.addEventListener('mouseleave', () => TooltipManager.Instance?.Hide());
+            }
+
             group.appendChild(btn);
         }
 

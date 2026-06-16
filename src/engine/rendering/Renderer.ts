@@ -1,6 +1,7 @@
 import type { Renderer2DParams } from './Renderer2D';
 import type { RendererWebGPUParams } from './RendererWebGPU';
 
+import { LogManager } from '../debug/LogManager';
 import { NitrateProcess } from '../NitrateProcess';
 import { Renderer2D } from './Renderer2D';
 import { RendererWebGPU } from './RendererWebGPU';
@@ -83,6 +84,10 @@ export class Renderer extends NitrateProcess {
 
         if (Renderer.Instance === this) {
             Renderer.Instance = null;
+            LogManager.Instance?.Log({
+                text: 'Cleared Renderer singleton instance.',
+                options: { tags: ['Rendering', 'NitrateProcessDestroy'] }
+            });
         }
     }
 }

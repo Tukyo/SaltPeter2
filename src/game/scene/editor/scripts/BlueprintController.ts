@@ -15,10 +15,10 @@ export class BlueprintController extends Nitrate.NitrateProcess {
         const brush = Nitrate.BrushManager.Instance;
 
         if (!mouse || !canvas || !sim || !brush) { return; }
-        if (!mouse.leftDown || !mouse.isInside) { return; }
+        if (!mouse.leftDown || !mouse.canvas.isInside) { return; }
 
-        const cellX = Math.floor(mouse.pos.x * sim.width / canvas.width);
-        const cellY = Math.floor(mouse.pos.y * sim.height / canvas.height);
+        const cellX = Math.floor(mouse.canvas.pos.x * sim.width / canvas.width);
+        const cellY = Math.floor(mouse.canvas.pos.y * sim.height / canvas.height);
         const zone = this.GetZone(cellX, cellY, sim.width, sim.height);
         const variantId = brush.state.GetVariantId();
         const blueprintId = Nitrate.MaterialRegistry.Materials['blueprint'].id;

@@ -138,14 +138,14 @@ export class GameObjectOverlay {
         );
         if (gameObjectPass && stateReadbackBuffer) {
             enc.copyBufferToBuffer(
-                gameObjectPass.stateBuffer, 0,
+                gameObjectPass.GetStateBuffer(), 0,
                 stateReadbackBuffer, 0,
                 totalSlots * GameObjectStateSchema.byteStride
             );
         }
         if (gameObjectPass && colliderReadbackBuffer) {
             enc.copyBufferToBuffer(
-                gameObjectPass.colliderBuffer, 0,
+                gameObjectPass.GetColliderBuffer(), 0,
                 colliderReadbackBuffer, 0,
                 totalBoundaryPoints * GameObjectColliderSchema.byteStride
             );

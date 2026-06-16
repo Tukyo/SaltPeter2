@@ -34,6 +34,7 @@
     ${If} $wantStartMenu == 0
       Delete "$newStartMenuLink"
     ${EndIf}
+    StrCpy $launchLink "$INSTDIR\${APP_EXECUTABLE_FILENAME}"
   !endif
 !macroend
 

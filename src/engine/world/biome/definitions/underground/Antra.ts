@@ -2,6 +2,7 @@ import type { BiomeDefinition } from '../BiomeModel';
 
 import { BiomeIds } from '../Biomes';
 import { NoiseType } from '../../../../utility/Noise';
+import { ColorNoiseType } from '../../../../utility/ColorNoise';
 
 export const Antra: BiomeDefinition = {
     id: BiomeIds.antra,
@@ -24,7 +25,7 @@ export const Antra: BiomeDefinition = {
             depth: { min: -Infinity, max: -64 },
             detail: {
                 color: {
-                    type: NoiseType.Boxes,
+                    type: ColorNoiseType.Boxes,
                     weights: [0.82, 0.06, 0.06, 0.06],
                     scale: 1
                 }
@@ -51,5 +52,6 @@ export const Antra: BiomeDefinition = {
             type: NoiseType.Perlin,
             options: { octaves: 24, persistence: 0.5, scale: 64, amplitude: 2 }
         }
-    }
+    },
+    ores: ['coal']
 };

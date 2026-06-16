@@ -220,7 +220,7 @@ export class DebugPanel extends NitrateProcess {
             return;
         }
 
-        if (!mouse || !mouse.isInside) {
+        if (!mouse || !mouse.canvas.isInside) {
             this.lastHoveredCellKey = null;
             this.ClearHoveredCellInfo();
             return;
@@ -235,11 +235,11 @@ export class DebugPanel extends NitrateProcess {
             const contentW = simulationLayer.width - 2 * margin;
             const contentH = simulationLayer.height - 2 * margin;
             const cam = Camera.Instance?.GetCameraPos() ?? { x: 0, y: 0 };
-            cellX = Math.floor(margin + (cam.x + mouse.pos.x) * contentW / Math.max(1, canvasWidth));
-            cellY = Math.floor(margin + (mouse.pos.y - cam.y) * contentH / Math.max(1, canvasHeight));
+            cellX = Math.floor(margin + (cam.x + mouse.canvas.pos.x) * contentW / Math.max(1, canvasWidth));
+            cellY = Math.floor(margin + (mouse.canvas.pos.y - cam.y) * contentH / Math.max(1, canvasHeight));
         } else {
-            cellX = Math.floor(mouse.pos.x * (simulationLayer.width / Math.max(1, canvasWidth)));
-            cellY = Math.floor(mouse.pos.y * (simulationLayer.height / Math.max(1, canvasHeight)));
+            cellX = Math.floor(mouse.canvas.pos.x * (simulationLayer.width / Math.max(1, canvasWidth)));
+            cellY = Math.floor(mouse.canvas.pos.y * (simulationLayer.height / Math.max(1, canvasHeight)));
         }
 
         cellX = Utils.Clamp(cellX, 0, simulationLayer.width - 1);

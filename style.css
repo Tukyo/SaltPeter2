@@ -18,6 +18,11 @@
 
 /* ─── Base ────────────────────────────────────────────────────────────────── */
 
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
 body {
     margin: 0;
     background: var(--color-dark-primary);
@@ -107,6 +112,7 @@ canvas {
     min-height: 0;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
 }
 
 .ui-panel.is-collapsed .panel-body {
@@ -483,8 +489,6 @@ button.action-button--warn:hover {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
 }
 
 .toggle-list-row {
@@ -875,6 +879,113 @@ button.action-button--warn:hover {
     color: rgba(240, 120, 120, 1);
 }
 
+/* ─── Hint ────────────────────────────────────────────────────────────────── */
+
+#tooltip-overlay {
+    position: fixed;
+    z-index: 9000;
+    pointer-events: none;
+    max-width: 150px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(20, 20, 20, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+#tooltip-overlay.is-visible {
+    opacity: 1;
+}
+
+.tooltip-text {
+    font-size: var(--font-size-xs);
+    color: var(--color-light-secondary);
+    line-height: 1.5;
+}
+
+/* ─── Notifications ───────────────────────────────────────────────────────── */
+
+#notification-container {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.notification {
+    pointer-events: auto;
+    min-width: 260px;
+    max-width: 420px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(22, 22, 22, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-left: 3px solid transparent;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.notification--visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.notification--info {
+    border-left-color: rgba(100, 160, 255, 0.85);
+}
+
+.notification--success {
+    border-left-color: rgba(100, 220, 130, 0.85);
+}
+
+.notification--warn {
+    border-left-color: rgba(255, 175, 60, 0.85);
+}
+
+.notification--error {
+    border-left-color: rgba(220, 80, 80, 0.85);
+}
+
+.notification-title {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-light-primary);
+    margin-bottom: 3px;
+    letter-spacing: 0.3px;
+}
+
+.notification-message {
+    font-size: var(--font-size-xs);
+    color: var(--color-light-secondary);
+    line-height: 1.5;
+}
+
+.notification-action {
+    display: inline-block;
+    margin-top: 5px;
+    font-size: var(--font-size-xs);
+    color: rgba(150, 180, 255, 0.85);
+    cursor: pointer;
+}
+
+.notification-action:hover {
+    color: rgba(180, 200, 255, 1);
+}
+
 /* ─── Loader ──────────────────────────────────────────────────────────────── */
 
 .loader {
@@ -1040,8 +1151,6 @@ button.action-button--warn:hover {
     overflow-y: auto;
     overflow-x: hidden;
     padding: 4px 0;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
 }
 
 
@@ -1334,8 +1443,6 @@ button.action-button--warn:hover {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
     display: flex;
     flex-direction: column;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -1540,7 +1647,7 @@ button.action-button--warn:hover {
 }
 
 .inspector-field input[type=checkbox],
-.particle-inline-bool input[type=checkbox] {
+.inspector-inline-bool input[type=checkbox] {
     width: 14px;
     height: 14px;
     margin: 0;
@@ -1629,8 +1736,6 @@ button.action-button--warn:hover {
     z-index: 10;
     max-height: 200px;
     overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
     background: rgba(28, 28, 28, 0.98);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
@@ -1735,7 +1840,7 @@ button.action-button--warn:hover {
     pointer-events: none;
 }
 
-.particle-module-sub-label {
+.inspector-sub-label {
     font-size: var(--font-size-xs);
     font-weight: 600;
     color: var(--color-light-tertiary);
@@ -1793,26 +1898,26 @@ button.action-button--warn:hover {
 
 /* ─── Random Between Two wrapper ────────────────────────────────────────── */
 
-.particle-random-group {
+.inspector-random-group {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.particle-random-header {
+.inspector-random-header {
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
-.particle-random-header .particle-module-sub-label {
+.inspector-random-header .inspector-sub-label {
     flex: 1;
     border-bottom: none;
     margin-bottom: 0;
     padding-bottom: 0;
 }
 
-.particle-random-mode {
+.inspector-random-mode {
     flex-shrink: 0;
     width: 20px;
     height: 16px;
@@ -1829,19 +1934,19 @@ button.action-button--warn:hover {
     justify-content: center;
 }
 
-.particle-random-mode:hover {
+.inspector-random-mode:hover {
     border-color: rgba(255, 255, 255, 0.25);
     color: var(--color-light-secondary);
 }
 
-.particle-random-mode.is-active {
+.inspector-random-mode.is-active {
     background: rgba(255, 255, 255, 0.1);
     border-color: var(--color-light-secondary);
     color: var(--color-light-primary);
 }
 
-.particle-random-single,
-.particle-random-range {
+.inspector-random-single,
+.inspector-random-range {
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -1881,14 +1986,14 @@ button.action-button--warn:hover {
 
 /* ─── Inline Bool Field (label full-width, checkbox on right) ───────────── */
 
-.particle-inline-bool {
+.inspector-inline-bool {
     display: flex;
     align-items: center;
     min-height: 24px;
     gap: 8px;
 }
 
-.particle-inline-bool-label {
+.inspector-inline-bool-label {
     flex: 1;
     font-size: var(--font-size-sm);
     color: var(--color-light-secondary);

@@ -9,6 +9,10 @@ export const MaterialTags = {
     extinguishes: 7, // Materials that extinguish fire
     frozen: 8, // Materials that are frozen variants of their solid counterparts
     molten: 9, // Materials that are molten variants of their solid counterparts
+    metal: 10, // All materials in the metal family
+    organic: 11, // Any organic-like material
+    ore: 12, // A material that is classified as "ore"
+    alloy: 13 // Materials that are an alloy of two materials
 } as const;
 
 export type MaterialTag = keyof typeof MaterialTags;

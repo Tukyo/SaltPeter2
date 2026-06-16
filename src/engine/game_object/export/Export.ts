@@ -17,14 +17,14 @@ export abstract class Export extends NitrateProcess {
     // @omitfromdocs
     public SetGameObjectProvider(fn: () => GameObject | null): void { this.gameObjectProvider = fn; }
 
-    /** Executes the export. Implemented by subclasses. @internal */
-    public abstract Run(): Promise<void>;
+    /** Executes the export. Returns the written filename on success, null if cancelled or failed. @internal */
+    public abstract Run(): Promise<string | null>;
 
     /** Returns the output filename for the given game object. Defaults to `{name}.json`. */
     protected GetFilename(go: GameObject): string { return go.name + '.json'; }
 
     /** Serializes the game object and writes both the asset JSON and its .meta file to disk. Preserves the existing GUID on re-export. */
-    protected async WriteFile(go: GameObject, type: AssetType, editor: { size: Size2D, pos?: Vec2 }): Promise<void> {
+    protected async WriteFile(go: GameObject, type: AssetType, editor: { size: Size2D, pos?: Vec2 }): Promise<string | null> {
         const filename = this.GetFilename(go);
         const dir = filename.includes('/') ? filename.split('/').slice(0, -1).join('/') : null;
         if (dir) { await window.api.assets.mkdir(dir).catch(() => null); }
@@ -32,7 +32,7 @@ export abstract class Export extends NitrateProcess {
         const existing = await window.api.assets.read(filename).catch(() => null);
         if (existing !== null) {
             const confirmed = await Modal.Confirm({ title: `${filename} already exists. Overwrite?`, confirmLabel: 'Overwrite' });
-            if (!confirmed) { return; }
+            if (!confirmed) { return null; }
         }
 
         const output = { name: go.name, components: go.components };
@@ -43,7 +43,7 @@ export abstract class Export extends NitrateProcess {
                 text: `Failed to write ${filename}.`,
                 options: { tags: ['Export'] }
             });
-            return;
+            return null;
         }
 
         const meta = await Metadata.GenerateOrPreserve(filename, type, editor);
@@ -54,7 +54,7 @@ export abstract class Export extends NitrateProcess {
                 text: `Failed to write meta for ${filename}.`,
                 options: { tags: ['Export'] }
             });
-            return;
+            return null;
         }
 
         Metadata.InvalidateGuidCache();
@@ -63,6 +63,7 @@ export abstract class Export extends NitrateProcess {
             text: `Exported ${filename}.`,
             options: { tags: ['Export'] }
         });
+        return filename;
     }
 
     public OnDestroy(): void {

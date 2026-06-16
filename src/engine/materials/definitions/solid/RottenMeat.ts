@@ -34,5 +34,5 @@ export const RottenMeat: MaterialDefinition = {
             restingStrength: 0.5
         }
     },
-    tags: ['corrodes', 'rots_meat']
+    tags: ['corrodes', 'rots_meat', 'organic']
 };

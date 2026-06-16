@@ -22,11 +22,11 @@ new Nitrate.Input(canvas);
 |--------------------|
 ```ts
 interface MouseState {
-    pos: Vec2;
+    canvas: { pos: Vec2; isInside: boolean; }
+    screen: { pos: Vec2; }
     leftDown: boolean;
     middleDown: boolean;
     rightDown: boolean;
-    isInside: boolean;
 }
 ```
 
@@ -37,9 +37,12 @@ type MouseButton = 0 | 1 | 2;
 | Method | Description |
 |--------|-------------|
 | [`GetMouseState(): MouseState`](Input.ts) | Returns a snapshot of the current mouse state. |
-| [`OnMouseDown(button: MouseButton, callback: (e: MouseEvent) => void): () => void`](Input.ts) | Subscribes to mousedown on the canvas for a specific button. Returns an unsubscribe function. |
-| [`OnMouseUp(button: MouseButton, callback: (e: MouseEvent) => void): () => void`](Input.ts) | Subscribes to mouseup (window-level, catches drag-releases). Returns an unsubscribe function. |
-| [`OnMouseMove(callback: (e: MouseEvent) => void): () => void`](Input.ts) | Subscribes to mousemove on the canvas. Returns an unsubscribe function. |
+| [`OnScreenMouseMove(callback: (e: MouseEvent) => void): () => void`](Input.ts) | Subscribes to mousemove on the screen (window-level). Returns an unsubscribe function. |
+| [`OnScreenMouseDown(button: MouseButton, callback: (e: MouseEvent) => void): () => void`](Input.ts) | Subscribes to mousedown (window-level) for a specific button. Returns an unsubscribe function. |
+| [`OnScreenMouseUp(button: MouseButton, callback: (e: MouseEvent) => void): () => void`](Input.ts) | Subscribes to mouseup (window-level) for a specific button. Returns an unsubscribe function. |
+| [`OnCanvasMouseMove(callback: (e: MouseEvent) => void): () => void`](Input.ts) | Subscribes to mousemove on the canvas. Returns an unsubscribe function. |
+| [`OnCanvasMouseDown(button: MouseButton, callback: (e: MouseEvent) => void): () => void`](Input.ts) | Subscribes to mousedown on the canvas for a specific button. Returns an unsubscribe function. |
+| [`OnCanvasMouseUp(button: MouseButton, callback: (e: MouseEvent) => void): () => void`](Input.ts) | Subscribes to mouseup on the canvas for a specific button. Returns an unsubscribe function. |
 | [`ResetMouseState(): void`](Input.ts) | Resets all mouse state to defaults. Call on scene transitions to prevent stale input. |
 | [`IsKeyDown(key: string): boolean`](Input.ts) | Returns true while the given key is held (by key value). |
 | [`IsKeyCodeDown(code: string): boolean`](Input.ts) | Returns true while the given key is held (by key code, e.g. 'Numpad0'). |

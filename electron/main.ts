@@ -7,6 +7,7 @@ import fs from 'fs';
 import { registerSavesHandlers } from './ipc/saves';
 import { registerResourcesHandlers } from './ipc/resources';
 import { registerScreenshotHandlers } from './ipc/screenshot';
+import { registerShellHandlers } from './ipc/shell';
 import { registerUserdataHandlers } from './ipc/userdata';
 
 const resourcesDir = join(app.getAppPath(), 'src/game/resources');
@@ -30,6 +31,7 @@ function registerIpcHandlers(): void {
     registerSavesHandlers(saveRootDir);
     registerResourcesHandlers(resourcesDir);
     registerScreenshotHandlers(screenshotsDir);
+    registerShellHandlers(resourcesDir, userdataDir, screenshotsDir);
     registerUserdataHandlers(userdataDir);
 }
 

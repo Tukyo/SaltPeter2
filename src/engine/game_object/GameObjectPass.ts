@@ -76,22 +76,30 @@ interface GameObjectRunParams {
  */
 export class GameObjectPass implements SimulationResource {
     private readonly device: GPUDevice;
+
     private readonly simulationLayer: SimulationLayer;
     private readonly gameObjectLayer: GameObjectLayer;
+
     private readonly erasePipeline: GPUComputePipeline;
     private readonly stampPipeline: GPUComputePipeline;
-    private readonly gameObjectBuffers: GameObjectBuffers;
+
     private readonly physicsPass: GameObjectPhysicsPass;
     private readonly collisionPass: GameObjectCollisionPass;
+
+    private readonly gameObjectBuffers: GameObjectBuffers;
     private readonly materialPhysicsBuffer: MaterialPhysicsBuffer;
     private readonly materialStateBuffer: MaterialStateBuffer;
     private readonly reactionBuffer: ReactionLookupBuffer;
     private readonly particleDefinitionBuffer: ParticleDefinitionBuffer;
+
     private readonly workgroupSize: number;
 
-    public get colliderBuffer(): GPUBuffer { return this.gameObjectBuffers.colliderBuffer; }
-    public get stateBuffer(): GPUBuffer { return this.gameObjectBuffers.stateBuffer; }
-    public get cellBuffer(): GPUBuffer { return this.gameObjectBuffers.cellBuffer; }
+    /** Returns the GameObject Collider buffer. @internal */
+    public GetColliderBuffer(): GPUBuffer { return this.gameObjectBuffers.colliderBuffer; }
+    /** Returns the GameObject State buffer. @internal */
+    public GetStateBuffer(): GPUBuffer { return this.gameObjectBuffers.stateBuffer; }
+    /** Returns the GameObject Cell buffer. @internal */
+    public GetCellBuffer(): GPUBuffer { return this.gameObjectBuffers.cellBuffer; }
 
     // @omitfromdocs
     public GetTotalSlots(): number { return this.nextSlot; }

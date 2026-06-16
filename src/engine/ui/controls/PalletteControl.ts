@@ -1,5 +1,7 @@
 import type { PaletteSetting } from '../UserInterfaceTypes';
 import type { ControlHandler } from '../UserInterfaceRegistry';
+
+import { TooltipManager } from '../TooltipManager';
 import { UserInterfaceRegistry } from '../UserInterfaceRegistry';
 
 /** Control handler for `PaletteSetting`. Renders a row of color swatches with single selection. */
@@ -34,6 +36,13 @@ export class PaletteControl implements ControlHandler<PaletteSetting> {
 
         this.Sync(group, setting);
         wrapper.appendChild(group);
+
+        if (setting.tooltip) {
+            const tooltip = setting.tooltip;
+            wrapper.addEventListener('mouseenter', () => TooltipManager.Instance?.Show(tooltip));
+            wrapper.addEventListener('mouseleave', () => TooltipManager.Instance?.Hide());
+        }
+
         return { wrapper, element: group, sync: () => { this.Sync(group, setting); }, isValue: true };
     }
 

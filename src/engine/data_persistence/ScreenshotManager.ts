@@ -2,6 +2,7 @@ import { Input } from '../input/Input';
 import { KeybindConfig } from '../config/KeybindConfig';
 import { LogManager } from '../debug/LogManager';
 import { NitrateProcess } from '../NitrateProcess';
+import { NotificationManager } from '../ui/NotificationManager';
 import { Renderer } from '../rendering/Renderer';
 
 /** Captures a screenshot of the app as a PNG and writes it to the Screenshots directory. */
@@ -41,10 +42,22 @@ export class ScreenshotManager extends NitrateProcess {
                 text: `Screenshot saved: ${filename}`,
                 options: { tags: ['DataPersistence'] }
             });
+            NotificationManager.Instance?.Notify({
+                message: filename,
+                title: 'Screenshot Saved',
+                level: 'success',
+                duration: 10000,
+                action: { label: 'Show in folder', onClick: () => { void window.api.shell.showScreenshot(filename); } },
+            });
         } catch {
             LogManager.Instance?.LogWarning({
                 text: `Failed to save screenshot: ${filename}`,
                 options: { tags: ['DataPersistence'] }
+            });
+            NotificationManager.Instance?.Notify({
+                message: 'Failed to save screenshot.',
+                level: 'error',
+                duration: 6000,
             });
         }
     }

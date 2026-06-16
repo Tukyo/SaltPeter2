@@ -35,6 +35,7 @@ interface BiomeDefinition {
     layers: readonly BiomeLayer[];
     stamps?: BiomeStampMaterialMap;
     detail?: BiomeDetail;
+    ores?: readonly OreName[];
 }
 ```
 
@@ -57,7 +58,7 @@ interface BiomeLayer {
 ```ts
 interface BiomeLayerDetail {
     color?: {
-        type: NoiseType;
+        type: ColorNoiseType;
         scale: number;
         weights: number[];
     }

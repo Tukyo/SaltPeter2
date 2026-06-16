@@ -40,5 +40,5 @@ export const Brass: MaterialDefinition = {
             condition: { temperature: 0.795 }
         }
     },
-    tags: ['corrodes']
+    tags: ['corrodes', 'metal', 'alloy']
 };

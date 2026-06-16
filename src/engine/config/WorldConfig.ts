@@ -44,6 +44,16 @@ export class WorldConfig {
                     scale: 48,
                     amplitude: 64
                 } satisfies NoiseOptions
+            },
+            ore: {
+                placement: {
+                    padding: 12, // Padding around biomes for placement
+                    noise: {
+                        type: NoiseType.Worley,
+                        options: { scale: 32 } satisfies NoiseOptions,
+                        threshold: 0.1,
+                    }
+                }
             }
         },
         performance: {

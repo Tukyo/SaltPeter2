@@ -16,6 +16,9 @@ export class PixelDataRenderer {
         this.renderer = Renderer.Create2D(params);
     }
 
+    /** Returns the PixelDataRenderer canvas. */
+    public GetCanvas(): HTMLCanvasElement { return this.renderer.canvas; }
+
     /**
      * Draws a pixel cell array onto the canvas. Resizes the canvas to fit `size * scale` before rendering.
      * @internal
@@ -42,8 +45,6 @@ export class PixelDataRenderer {
             ctx.fillRect(canvasX, canvasY, scale, scale);
         }
     }
-
-    public get canvas(): HTMLCanvasElement { return this.renderer.canvas; }
 
     // @omitfromdocs
     public Destroy(): void {

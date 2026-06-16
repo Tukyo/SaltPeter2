@@ -1,8 +1,9 @@
-import { Nitrate } from '@Nitrate';
-
 import type { RangeSetting } from '../UserInterfaceTypes';
 import type { ControlHandler } from '../UserInterfaceRegistry';
+
+import { TooltipManager } from '../TooltipManager';
 import { UserInterfaceRegistry } from '../UserInterfaceRegistry';
+import { Utils } from '../../utility/Utils';
 
 /** Control handler for `RangeSetting`. Renders a labeled slider with optional readout. */
 export class RangeControl implements ControlHandler<RangeSetting> {
@@ -14,10 +15,10 @@ export class RangeControl implements ControlHandler<RangeSetting> {
     }
 
     private SyncSliderFill(input: HTMLInputElement, setting: RangeSetting, value: number): void {
-        const min = Nitrate.Utils.FiniteNumber(setting.min, 0);
-        const max = Nitrate.Utils.FiniteNumber(setting.max, 1);
+        const min = Utils.FiniteNumber(setting.min, 0);
+        const max = Utils.FiniteNumber(setting.max, 1);
         const range = max - min;
-        const percent = range > 0 ? Nitrate.Utils.Clamp((value - min) / range, 0, 1) : 0;
+        const percent = range > 0 ? Utils.Clamp((value - min) / range, 0, 1) : 0;
         input.style.setProperty('--value', (percent * 100) + '%');
     }
 
@@ -58,6 +59,12 @@ export class RangeControl implements ControlHandler<RangeSetting> {
         input.value = String(setting.default);
         wrapper.appendChild(input);
 
+        if (setting.tooltip) {
+            const tooltip = setting.tooltip;
+            wrapper.addEventListener('mouseenter', () => TooltipManager.Instance?.Show(tooltip));
+            wrapper.addEventListener('mouseleave', () => TooltipManager.Instance?.Hide());
+        }
+
         const sync = readout ? () => {
             const value = this.GetRawValue(input, setting) as number;
             input.value = String(value);
@@ -76,9 +83,9 @@ export class RangeControl implements ControlHandler<RangeSetting> {
 
     // @omitfromdocs
     public GetRawValue(element: HTMLInputElement, setting: RangeSetting): number {
-        const fallback = Nitrate.Utils.FiniteNumber(setting.default, 0);
-        const raw = Nitrate.Utils.FiniteNumber(element.value, fallback);
-        let value = Nitrate.Utils.Clamp(raw, setting.min, setting.max);
+        const fallback = Utils.FiniteNumber(setting.default, 0);
+        const raw = Utils.FiniteNumber(element.value, fallback);
+        let value = Utils.Clamp(raw, setting.min, setting.max);
         if (setting.integer) { value = Math.round(value); }
         return value;
     }

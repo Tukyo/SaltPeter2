@@ -1,6 +1,9 @@
+import { TooltipManager } from './TooltipManager';
 import { Input } from '../input/Input';
 import { KeybindConfig } from '../config/KeybindConfig';
+import { LogManager } from '../debug/LogManager';
 import { NitrateProcess } from '../NitrateProcess';
+import { NotificationManager } from './NotificationManager';
 
 /**
  * Creates the full-screen UI layer that all panels float within.
@@ -22,6 +25,9 @@ export class UserInterfaceManager extends NitrateProcess {
         super();
         UserInterfaceManager.Instance = this;
 
+        new TooltipManager();
+        new NotificationManager();
+
         this.panelContent = document.createElement('div');
         this.panelContent.id = 'ui-layer';
         document.body.appendChild(this.panelContent);
@@ -39,6 +45,10 @@ export class UserInterfaceManager extends NitrateProcess {
 
         if (UserInterfaceManager.Instance === this) {
             UserInterfaceManager.Instance = null;
+            LogManager.Instance?.Log({
+                text: 'Cleared UserInterfaceManager singleton instance.',
+                options: { tags: ["UserInterface", "NitrateProcessDestroy"] }
+            });
         }
     }
 }

@@ -54,7 +54,7 @@ export class SandboxScene extends Nitrate.Scene {
         });
         new Nitrate.SimulationPanel();
         new Nitrate.BrushPanel({
-            size: { min: 1, max: 50, default: 6 },
+            size: { min: 1, max: 512, default: 8 },
             density: { min: 0, max: 100, default: 90 },
             shape: { default: 'circle' },
             mode: { default: 'fill' },

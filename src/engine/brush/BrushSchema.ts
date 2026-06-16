@@ -24,6 +24,7 @@ export class BrushSchema {
         ['stripeAngle', 'f32'],
         ['stripeWidth', 'f32'],
         ['overlayFilter', 'f32'],
+        ['isErase', 'f32'],
     ] as const satisfies ReadonlyArray<readonly [string, string]>;
 
     /** Returns the list of uniform field name/type pairs used to build the brush compute shader. */

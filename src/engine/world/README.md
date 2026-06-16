@@ -92,5 +92,7 @@ can resolve each chunk cell in O(1) without scanning blueprint.cells.
 [`biome/`](biome/README.md)  
 &nbsp;&nbsp;&nbsp;&nbsp;↳ [`definitions/`](biome/definitions/README.md)  
 [`chunk/`](chunk/README.md)  
+[`ore/`](ore/README.md)  
+&nbsp;&nbsp;&nbsp;&nbsp;↳ [`definitions/`](ore/definitions/README.md)  
 
 <!-- TABLE_OF_CONTENTS_END -->

@@ -79,6 +79,7 @@ export class RenderingPanel extends NitrateProcess {
                     value: r.value,
                     label: r.label ?? (r.value === 0 ? 'Native' : `${r.value}p`),
                 })),
+                tooltip: 'Change the simulation resolution.',
             };
             const { wrapper, element } = SelectControl.Instance.Build('perf-resolution', this.resolutionSetting);
             this.resolutionElement = element as HTMLSelectElement;
@@ -111,6 +112,7 @@ export class RenderingPanel extends NitrateProcess {
                 suffix: '%',
                 decimals: 0,
                 readout: true,
+                tooltip: 'Adjust the scale of the simulation resolution.',
             };
             const { wrapper, element, sync } = RangeControl.Instance.Build('perf-scale', this.scaleSetting);
             this.scaleElement = element as HTMLInputElement;
@@ -151,6 +153,7 @@ export class RenderingPanel extends NitrateProcess {
                 value: i,
                 label: s.label ?? `${s.width} × ${s.height}`,
             })),
+            tooltip: 'Dimensions of the simulation grid in cells.',
         };
         const { wrapper, element } = SelectControl.Instance.Build('render-grid-size', this.gridSizeSetting);
         this.gridSizeElement = element as HTMLSelectElement;
