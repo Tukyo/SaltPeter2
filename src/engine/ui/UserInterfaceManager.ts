@@ -23,6 +23,8 @@ export class UserInterfaceManager extends NitrateProcess {
 
     constructor() {
         super();
+        this.Register();
+        
         UserInterfaceManager.Instance = this;
 
         new TooltipManager();

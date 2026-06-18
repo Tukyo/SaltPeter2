@@ -17,10 +17,10 @@ export const Smoke: MaterialDefinition = {
     phase: 'gas',
     phaseBehavior: {
         gas: {
-            activity: 2.5,
-            rise: 0.75,
+            activity: 11.25,
+            rise: 6.25,
             dissipation: 0.075,
-            turbulence: 0.5,
+            turbulence: 0.015,
         }
     },
     physics: {

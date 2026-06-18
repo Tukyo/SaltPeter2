@@ -5,6 +5,8 @@ type ZoneType = 'content' | 'edge' | 'dead';
 export class BlueprintController extends Nitrate.NitrateProcess {
     constructor() {
         super();
+        this.Register();
+        
         Nitrate.BrushManager.Instance?.SetMarginSize(Nitrate.BlueprintLayout.GetMarginSize());
     }
 
@@ -76,7 +78,7 @@ export class BlueprintController extends Nitrate.NitrateProcess {
     }
 
     public OnDestroy(): void {
-        Nitrate.BrushManager.Instance?.Unblock();
+        if (Nitrate.SimulationManager.Instance) { Nitrate.SimulationManager.Instance.enabled = true; }
         Nitrate.BrushManager.Instance?.SetMarginSize(0);
     }
 }

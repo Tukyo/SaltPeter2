@@ -51,6 +51,7 @@ export class SimulationPanel extends NitrateProcess {
 
     constructor(params?: SimulationPanelParams) {
         super();
+        this.Register();
 
         const defaults = UserInterfaceConfig.GetConfig().defaults.simulation;
         this.panel = new CollapsiblePanel({

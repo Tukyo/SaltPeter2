@@ -35,7 +35,15 @@ export abstract class Export extends NitrateProcess {
             if (!confirmed) { return null; }
         }
 
-        const output = { name: go.name, components: go.components };
+        const components = go.components.map(c => {
+            const serialized: Record<string, unknown> = { enabled: c.enabled };
+            for (const key of Object.keys(c)) {
+                if (key === 'gameObject' || key === '_enabled') { continue; }
+                serialized[key] = (c as unknown as Record<string, unknown>)[key];
+            }
+            return serialized;
+        });
+        const output = { name: go.name, components };
         try {
             await window.api.assets.write(filename, JSON.stringify(output, null, 2));
         } catch {

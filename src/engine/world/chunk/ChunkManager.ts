@@ -20,12 +20,14 @@ export class ChunkManager extends NitrateProcess {
 
     constructor() {
         super();
+        this.Register();
+        
         ChunkManager.Instance = this;
     }
 
-    public Start(): void {
+    public Awake(): void {
         LogManager.Instance?.Log({
-            text: 'ChunkManager start.',
+            text: 'ChunkManager awake.',
             options: { tags: ["Chunk", "NitrateProcessInit"] }
         });
     }

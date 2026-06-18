@@ -81,34 +81,38 @@ export class World extends NitrateProcess {
     /** Returns the world seed. Loaded from disk on resume, or randomly generated on first run. */
     public GetSeed(): number { return this.seed; }
 
-    private worldReady: Promise<void> = Promise.resolve();
+    private isWorldReady: Promise<void> = Promise.resolve();
     /** Resolves once the world seed has been loaded or created. Await before using the seed in generation. */
-    public IsWorldReady(): Promise<void> { return this.worldReady; }
+    public IsWorldReady(): Promise<void> { return this.isWorldReady; }
 
     private readonly blit = new WorldBlit();
 
     constructor() {
         super();
+        this.Register();
+
         World.Instance = this;
+        
         new ChunkManager();
     }
 
-    public Start(): void {
+    public Awake(): void {
         LogManager.Instance?.Log({
-            text: 'World start.',
+            text: 'World awake.',
             options: { tags: ['World', 'NitrateProcessInit'] }
         });
 
         const { chunk, generation } = WorldConfig.GetConfig();
         this.simOrigin.x = -(chunk.margin * chunk.size) + generation.spawnOffset.cx * chunk.size;
         this.simOrigin.y = -(chunk.margin * chunk.size) + generation.spawnOffset.cy * chunk.size;
-        WorldStampRegistry.LoadTemplates();
-        this.worldReady = this.CreateOrFetchMeta().then(() => { this.SetupStamps(); });
+        this.isWorldReady = this.CreateOrFetchMeta()
+            .then(() => WorldStampRegistry.LoadTemplates())
+            .then(() => { this.SetupStamps(); });
 
         SimulationManager.Instance?.state.SetResolutionScale(0.25);
     }
 
-    public Update(now: number): void {
+    public Update(): void {
         const sim = SimulationManager.Instance;
         const cam = Camera.Instance;
         const renderer = Renderer.Instance?.GetWebGPU();

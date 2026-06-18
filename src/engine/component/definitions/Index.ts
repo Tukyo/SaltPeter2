@@ -1,5 +1,6 @@
 export * from './blueprint/Blueprint'
 export * from './collider/Collider'
+export * from './custom/Custom'
 export * from './collider/boxcollider/BoxCollider'
 export * from './collider/circlecollider/CircleCollider'
 export * from './collider/pixelbodycollider/PixelBodyCollider'

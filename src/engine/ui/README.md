@@ -56,7 +56,7 @@ new Nitrate.Hierarchy();
 ```ts
 interface AddHierarchyObjectParams {
     name?: string;
-    components?: Array<new () => AnyComponent>;
+    components?: Array<new () => Component>;
 }
 ```
 

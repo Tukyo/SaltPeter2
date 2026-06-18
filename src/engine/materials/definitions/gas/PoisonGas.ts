@@ -17,10 +17,10 @@ export const PoisonGas: MaterialDefinition = {
     phase: 'gas',
     phaseBehavior: {
         gas: {
-            activity: 2.75,
-            rise: 0.575,
+            activity: 11.5,
+            rise: 6.125,
             dissipation: 0.05,
-            turbulence: 0.355,
+            turbulence: 0.01,
         }
     },
     physics: {

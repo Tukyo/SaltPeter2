@@ -9,12 +9,18 @@ fn chooseGasIntentForState(
     let up = vec2f(0.0, gravityDirection);
     let riseSeed = getMaterialStepSeed(time, sim.riseRandomRate);
     let spreadSeed = getMaterialStepSeed(time, sim.spreadRandomRate);
-    let riseRoll = hash(coord + vec2f(riseSeed, riseSeed * RANDOM_DECORRELATION));
-    let spreadRoll = hash(coord + vec2f(spreadSeed, spreadSeed * RANDOM_DECORRELATION));
+    let riseRoll = timeHash(coord, time);
+    let riseProb = 1.0 - exp(-sim.upwardRiseChance * sim.riseRandomRate * uniforms.deltaTime);
+    let diagRiseProb = 1.0 - exp(-sim.diagonalRiseChance * sim.riseRandomRate * uniforms.deltaTime);
+    let spreadRoll = timeHash(coord + vec2f(RANDOM_DECORRELATION, 0.0), time);
+    let spreadProb = 1.0 - exp(-sim.lateralSpreadChance * sim.spreadRandomRate * uniforms.deltaTime);
     let turbRoll = hash(coord + vec2f(riseSeed * RANDOM_DECORRELATION, spreadSeed));
     let dirRoll = hash(coord + vec2f(spreadSeed * RANDOM_DECORRELATION, riseSeed * 2.0));
     let vx = textureLoad(physicsTexture, vec2i(coord)).b;
     let velBias = clamp(0.5 + vx / MAX_VELOCITY * 0.5, 0.0, 1.0);
+    let noiseCoord = coord / NOISE_SCALE + vec2f(time * NOISE_SCROLL_SPEED, time * NOISE_SCROLL_SPEED * 0.61803);
+    let noiseVal = fbm(noiseCoord, NOISE_TYPE, NOISE_OCTAVES, NOISE_PERSISTENCE, time * NOISE_SCROLL_SPEED).x;
+    let noiseBias = clamp(noiseVal * NOISE_STRENGTH + (dirRoll - 0.5) * (1.0 - NOISE_STRENGTH) + 0.5, 0.0, 1.0);
 
     // Displacement sink: heavier gas sinks into lighter gas below
     let down = vec2f(0.0, -gravityDirection);
@@ -39,7 +45,7 @@ fn chooseGasIntentForState(
         let canLeft = isAirCoord(left, res);
         let canRight = isAirCoord(right, res);
         if canLeft && canRight {
-            return select(MATERIAL_INTENT_LATERAL_RIGHT, MATERIAL_INTENT_LATERAL_LEFT, dirRoll > velBias);
+            return select(MATERIAL_INTENT_LATERAL_RIGHT, MATERIAL_INTENT_LATERAL_LEFT, noiseBias > velBias);
         }
         if canLeft { return MATERIAL_INTENT_LATERAL_LEFT; }
         if canRight { return MATERIAL_INTENT_LATERAL_RIGHT; }
@@ -48,7 +54,7 @@ fn chooseGasIntentForState(
     // Rise straight up — only into air or fire (gas-gas displacement is handled by phaseIntent)
     let above = coord + up;
     let myState = textureLoad(identityTexture, vec2i(coord));
-    if (isAirCoord(above, res) || isFirePhaseCoord(above, res)) && riseRoll < sim.upwardRiseChance {
+    if (isAirCoord(above, res) || isFirePhaseCoord(above, res)) && riseRoll < riseProb {
         return MATERIAL_INTENT_RISE;
     }
 
@@ -58,9 +64,9 @@ fn chooseGasIntentForState(
     let canDiagLeft = isAirCoord(aboveLeft, res) || isFirePhaseCoord(aboveLeft, res);
     let canDiagRight = isAirCoord(aboveRight, res) || isFirePhaseCoord(aboveRight, res);
 
-    if (canDiagLeft || canDiagRight) && riseRoll < sim.diagonalRiseChance {
+    if (canDiagLeft || canDiagRight) && riseRoll < diagRiseProb {
         if canDiagLeft && canDiagRight {
-            return select(MATERIAL_INTENT_DIAGONAL_RISE_RIGHT, MATERIAL_INTENT_DIAGONAL_RISE_LEFT, dirRoll > velBias);
+            return select(MATERIAL_INTENT_DIAGONAL_RISE_RIGHT, MATERIAL_INTENT_DIAGONAL_RISE_LEFT, noiseBias > velBias);
         }
         if canDiagLeft { return MATERIAL_INTENT_DIAGONAL_RISE_LEFT; }
         return MATERIAL_INTENT_DIAGONAL_RISE_RIGHT;
@@ -72,9 +78,9 @@ fn chooseGasIntentForState(
     let canLeft = isAirCoord(left, res);
     let canRight = isAirCoord(right, res);
 
-    if (canLeft || canRight) && spreadRoll < sim.lateralSpreadChance {
+    if (canLeft || canRight) && spreadRoll < spreadProb {
         if canLeft && canRight {
-            return select(MATERIAL_INTENT_LATERAL_RIGHT, MATERIAL_INTENT_LATERAL_LEFT, dirRoll > velBias);
+            return select(MATERIAL_INTENT_LATERAL_RIGHT, MATERIAL_INTENT_LATERAL_LEFT, noiseBias > velBias);
         }
         if canLeft { return MATERIAL_INTENT_LATERAL_LEFT; }
         return MATERIAL_INTENT_LATERAL_RIGHT;

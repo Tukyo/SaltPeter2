@@ -18,6 +18,7 @@ export class EditorModeController extends Nitrate.NitrateProcess {
 
     constructor(onChange: (mode: EditorMode) => void) {
         super();
+        this.Register();
 
         this.panel = new Nitrate.CollapsiblePanel({
             label: 'Editor',

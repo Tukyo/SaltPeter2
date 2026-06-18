@@ -31,27 +31,42 @@ export class WorldStampRegistry {
     /** Returns all blueprint placement records in the StampRegistry. */
     public GetRecords(): ReadonlyArray<BlueprintPlacement> { return this.records; }
 
-    /** Eagerly imports all blueprints and separates them into H and V lists. @internal */
-    public static LoadTemplates(): void {
+    /** Loads all blueprint templates — bundled resources and user data — and separates them into H and V lists. @internal */
+    public static async LoadTemplates(): Promise<void> {
+        const horizontal: Blueprint[] = [];
+        const vertical: Blueprint[] = [];
+
         const modules = import.meta.glob<TemplateJson>(
             '/src/game/resources/Blueprints/*.blueprint.json',
             { eager: true, import: 'default' }
         );
-        const horizontal: Blueprint[] = [];
-        const vertical: Blueprint[] = [];
         for (const json of Object.values(modules)) {
-            const component = json.components.find(c => c.type === 'Blueprint');
-            if (!component) { continue; }
-            const bp = component as unknown as Blueprint;
-            bp.name = json.name;
-            (bp.size.width >= bp.size.height ? horizontal : vertical).push(bp);
+            WorldStampRegistry.ParseTemplate(json, horizontal, vertical);
         }
+
+        const allPaths = await window.api.userdata.list().catch(() => [] as string[]);
+        for (const path of allPaths.filter(p => p.endsWith('.blueprint.json'))) {
+            const raw = await window.api.userdata.read(path).catch(() => null);
+            if (!raw) { continue; }
+            try {
+                WorldStampRegistry.ParseTemplate(JSON.parse(raw) as TemplateJson, horizontal, vertical);
+            } catch { continue; }
+        }
+
         WorldStampRegistry.horizontalTemplates = horizontal;
         WorldStampRegistry.verticalTemplates = vertical;
         LogManager.Instance?.Log({
             text: `Blueprint templates loaded — H: ${horizontal.length}, V: ${vertical.length}.`,
             options: { tags: ['World'] }
         });
+    }
+
+    private static ParseTemplate(json: TemplateJson, horizontal: Blueprint[], vertical: Blueprint[]): void {
+        const component = json.components.find(c => c.type === 'Blueprint');
+        if (!component) { return; }
+        const bp = component as unknown as Blueprint;
+        bp.name = json.name;
+        (bp.size.width >= bp.size.height ? horizontal : vertical).push(bp);
     }
 
     /** Returns all loaded horizontal (landscape) blueprint templates. @internal */
@@ -109,7 +124,9 @@ export class WorldStampRegistry {
             if (!chunk.stampRegion) { continue; }
             const biome = BiomeRegistry.Biomes[chunk.biome];
             if (!biome.stamps) { continue; }
-            this.FillRegion(hTemplates, vTemplates, biome.stamps, chunk.stampRegion, seed);
+            const filteredH = hTemplates.filter(bp => bp.biomes.length === 0 || bp.biomes.includes(chunk.biome));
+            const filteredV = vTemplates.filter(bp => bp.biomes.length === 0 || bp.biomes.includes(chunk.biome));
+            this.FillRegion(filteredH, filteredV, biome.stamps, chunk.stampRegion, seed);
         }
     }
 

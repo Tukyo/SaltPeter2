@@ -10,19 +10,44 @@ import { NitrateEngine } from './NitrateEngine';
  * Available Hooks Include: `Start` | `Update` | `BeforeResize` | `OnResize` | `BeforeDestroy` | `OnDestroy`
  */
 export abstract class NitrateProcess {
-    constructor() {
-        NitrateEngine.Register(this);
-    }
+    private _enabled: boolean = true;
+
+    /** Registers a process with the engine. */
+    protected Register(): void { NitrateEngine.Register(this); }
+
+    /** Unregisters a process with the engine. */
+    protected Unregister(): void { NitrateEngine.Unregister(this); }
 
     /** 
      * Called once after all processes are registered. 
      * Use for initialization that depends on other processes existing.
      */
+    public Awake?(): void;
+
+    /**
+     * Called one frame after awake. Everything created in awake is available on Start.
+     */
     public Start?(): void;
 
-    /** Called every frame with the current timestamp in milliseconds. */
-    public Update?(now: number): void;
+    /** Called every frame. Use {@link Time} for timing values. */
+    public Update?(): void;
 
+    /** Fires when an engine process is enabled. */
+    public OnEnable?(): void;
+
+    /** Fires when an engine process is disabled. */
+    public OnDisable?(): void;
+
+    /** Gets the enabled state of an engine process */
+    public get enabled(): boolean { return this._enabled }
+
+    /** Sets the enabled state of an engine process. */
+    public set enabled(value: boolean) {
+        if (this._enabled === value) { return; }
+        this._enabled = value;
+        if (value) { this.OnEnable?.(); }
+        else { this.OnDisable?.(); }
+    }
 
     /** 
      * Called before OnResize.

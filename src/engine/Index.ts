@@ -14,6 +14,7 @@ export * from './materials/Index';
 export * from './rendering/Index';
 export * from './scene/Index';
 export * from './simulation/Index';
+export * from './time/Index';
 export * from './ui/Index';
 export * from './utility/Index';
 export * from './window/Index';

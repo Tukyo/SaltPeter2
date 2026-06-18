@@ -35,11 +35,16 @@ export class SceneManager {
 
         box.appendChild(title);
 
+        let launching = false;
         for (const entry of scenes) {
             const button = document.createElement('button');
             button.className = 'landing-button';
             button.textContent = entry.label;
-            button.addEventListener('click', () => { void this.Launch(entry); });
+            button.addEventListener('click', () => {
+                if (launching) { return; }
+                launching = true;
+                void this.Launch(entry);
+            });
             box.appendChild(button);
         }
 
@@ -69,14 +74,15 @@ export class SceneManager {
     private async Launch(entry: SceneEntry): Promise<void> {
         this.Destroy();
         SceneManager.ClearDirty();
+        NitrateEngine.Stop();
         await NitrateEngine.Destroy();
 
         const loading = Modal.Show(new Loader().element);
 
         try {
             const scene = entry.factory();
-            await scene.Init();
-            NitrateEngine.Start();
+            await scene.InitRenderer();
+            NitrateEngine.Run();
         } catch (error) {
             console.error(`Failed to launch scene: ${entry.label}`, error);
         } finally {

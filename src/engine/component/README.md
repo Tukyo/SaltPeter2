@@ -60,6 +60,7 @@ type ComponentType =
     | 'Blueprint'
     | 'BoxCollider'
     | 'CircleCollider'
+    | 'CustomComponent'
     | 'ParticleSystem'
     | 'PixelData'
     | 'PixelBodyCollider'

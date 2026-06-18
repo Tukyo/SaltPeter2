@@ -1,7 +1,7 @@
 import { Nitrate } from '@Nitrate';
 
 export class GameObjectPlacementController extends Nitrate.NitrateProcess {
-    private readonly canvas: HTMLCanvasElement;
+    private readonly canvas: HTMLCanvasElement | null;
     private readonly dragPreviewContainer: HTMLDivElement;
     private readonly dragPreviewRenderer: Nitrate.PixelDataRenderer;
 
@@ -20,9 +20,11 @@ export class GameObjectPlacementController extends Nitrate.NitrateProcess {
     private lastDragTime: number | null = null;
     private rotationResetTimeout: number | null = null;
 
-    constructor(canvas: HTMLCanvasElement) {
+    constructor() {
         super();
-        this.canvas = canvas;
+        this.Register();
+
+        this.canvas = Nitrate.Renderer.Instance?.GetWebGPU()?.canvas ?? null;
 
         this.dragPreviewContainer = document.createElement('div');
         this.dragPreviewContainer.id = 'drag-preview-container';
@@ -74,7 +76,7 @@ export class GameObjectPlacementController extends Nitrate.NitrateProcess {
         };
 
         this.handleDragLeave = (e: DragEvent) => {
-            if (this.canvas.contains(e.relatedTarget as Node)) { return; }
+            if (this.canvas && this.canvas.contains(e.relatedTarget as Node)) { return; }
             this.HideDragPreview();
         };
 
@@ -88,11 +90,14 @@ export class GameObjectPlacementController extends Nitrate.NitrateProcess {
 
         this.handleResourceDragEnd = () => {
             this.HideDragPreview();
+            Nitrate.Input.Instance?.ResetMouseState();
         };
 
-        this.canvas.addEventListener('dragover', this.handleDragOver);
-        this.canvas.addEventListener('drop', this.handleDrop);
-        this.canvas.addEventListener('dragleave', this.handleDragLeave);
+        if (this.canvas) {
+            this.canvas.addEventListener('dragover', this.handleDragOver);
+            this.canvas.addEventListener('drop', this.handleDrop);
+            this.canvas.addEventListener('dragleave', this.handleDragLeave);
+        }
         document.addEventListener('resource-drag-start', this.handleResourceDragStart);
         document.addEventListener('resource-drag-end', this.handleResourceDragEnd);
     }
@@ -133,6 +138,7 @@ export class GameObjectPlacementController extends Nitrate.NitrateProcess {
         const size = pixelDataRaw['size'] as Nitrate.Size2D;
         const cells = pixelDataRaw['cells'] as Nitrate.PixelCell[];
         const simLayer = Nitrate.SimulationManager.Instance?.simulationLayer;
+        if (!this.canvas) { return; }
         const rect = this.canvas.getBoundingClientRect();
         const pixelsPerCell = simLayer ? rect.width / simLayer.width : 1;
         const scale = Math.max(1, Math.floor(pixelsPerCell));
@@ -146,7 +152,7 @@ export class GameObjectPlacementController extends Nitrate.NitrateProcess {
         if (!meta || meta.type !== 'gameobject') { return; }
 
         const simLayer = Nitrate.SimulationManager.Instance?.simulationLayer;
-        if (!simLayer) { return; }
+        if (!simLayer || !this.canvas) { return; }
 
         const rect = this.canvas.getBoundingClientRect();
         const dropX = (clientX - rect.left) * (this.canvas.width / rect.width);
@@ -159,9 +165,11 @@ export class GameObjectPlacementController extends Nitrate.NitrateProcess {
     }
 
     public OnDestroy(): void {
-        this.canvas.removeEventListener('dragover', this.handleDragOver);
-        this.canvas.removeEventListener('drop', this.handleDrop);
-        this.canvas.removeEventListener('dragleave', this.handleDragLeave);
+        if (this.canvas) {
+            this.canvas.removeEventListener('dragover', this.handleDragOver);
+            this.canvas.removeEventListener('drop', this.handleDrop);
+            this.canvas.removeEventListener('dragleave', this.handleDragLeave);
+        }
         document.removeEventListener('resource-drag-start', this.handleResourceDragStart);
         document.removeEventListener('resource-drag-end', this.handleResourceDragEnd);
         this.dragPreviewRenderer.Destroy();

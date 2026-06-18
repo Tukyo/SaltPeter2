@@ -24,18 +24,19 @@ export class Camera extends NitrateProcess {
 
     constructor() {
         super();
+        this.Register();
 
         Camera.Instance = this;
     }
 
-    public Start(): void {
+    public Awake(): void {
         LogManager.Instance?.Log({
-            text: 'Camera start.',
+            text: 'Camera awake.',
             options: { tags: ["Camera", "NitrateProcessInit"] }
         });
     }
 
-    public Update(now: number): void {
+    public Update(): void {
         const state = Input.Instance?.GetMouseState();
         if (!state) { return; }
 

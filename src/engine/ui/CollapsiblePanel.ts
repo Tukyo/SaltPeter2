@@ -31,6 +31,7 @@ export class CollapsiblePanel extends NitrateProcess {
 
     constructor(params: CollapsiblePanelParams) {
         super();
+        this.Register();
 
         const { label, parent, collapsed = false, style } = params;
 
@@ -79,7 +80,22 @@ export class CollapsiblePanel extends NitrateProcess {
         this.WireResizeHandle(this.resizeHandleLeft, -1);
         this.WireResizeHandle(this.resizeHandleRight, 1);
         this.SetCollapsed(collapsed);
-        CollapsiblePanel.ScheduleReflow();
+        this.ClampToViewport();
+    }
+
+    private ClampToViewport(): void {
+        const padding = CollapsiblePanel.offscreenPadding;
+        const rect = this.section.getBoundingClientRect();
+        let top = parseFloat(this.section.style.top) || rect.top;
+        let left = parseFloat(this.section.style.left) || rect.left;
+
+        if (rect.right > window.innerWidth - padding) { left = window.innerWidth - rect.width - padding; }
+        if (rect.bottom > window.innerHeight - padding) { top = window.innerHeight - rect.height - padding; }
+        if (left < padding) { left = padding; }
+        if (top < padding) { top = padding; }
+
+        this.section.style.left = `${left}px`;
+        this.section.style.top = `${top}px`;
     }
 
     /** Returns true if the panel is currently collapsed. */
@@ -408,16 +424,12 @@ export class CollapsiblePanel extends NitrateProcess {
             }
         }
 
-        const rightGroup = all.filter(p => {
-            const left = parseFloat(p.style.left) || 0;
-            return left + p.offsetWidth / 2 > window.innerWidth / 2;
-        });
-        const leftGroup = all.filter(p => !rightGroup.includes(p));
+        const rightGroup = all.filter(p => p.dataset['rightAnchor'] !== undefined);
+        const leftGroup = all.filter(p => p.dataset['rightAnchor'] === undefined);
 
         rightGroup.sort((a, b) => (parseFloat(a.style.top) || 0) - (parseFloat(b.style.top) || 0));
         if (rightGroup.length > 0) {
-            const anchorRight = Math.max(...rightGroup.map(p => (parseFloat(p.style.left) || 0) + p.offsetWidth));
-            let columnRightEdge = anchorRight;
+            let columnRightEdge = window.innerWidth - padding;
             let currentTop = padding;
             for (const panel of rightGroup) {
                 const w = panel.offsetWidth;
@@ -434,8 +446,7 @@ export class CollapsiblePanel extends NitrateProcess {
 
         leftGroup.sort((a, b) => (parseFloat(a.style.top) || 0) - (parseFloat(b.style.top) || 0));
         if (leftGroup.length > 0) {
-            const anchorLeft = Math.min(...leftGroup.map(p => parseFloat(p.style.left) || 0));
-            let columnLeftEdge = anchorLeft;
+            let columnLeftEdge = padding;
             let currentTop = padding;
             for (const panel of leftGroup) {
                 const w = panel.offsetWidth;

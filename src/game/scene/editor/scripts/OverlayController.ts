@@ -15,6 +15,8 @@ export class OverlayController extends Nitrate.NitrateProcess {
 
     constructor(selection: SelectionController | null, anchor: AnchorController | null) {
         super();
+        this.Register();
+        
         this.selection = selection;
         this.anchor = anchor;
     }
@@ -34,7 +36,7 @@ export class OverlayController extends Nitrate.NitrateProcess {
 
     public SetBlueprintGuide(grid: { width: number; height: number }): void { this.blueprintGrid = grid; }
 
-    public Update(now: number): void {
+    public Update(): void {
         const ctx = this.ctx;
         const canvas = this.canvas;
         if (!ctx || !canvas) { return; }

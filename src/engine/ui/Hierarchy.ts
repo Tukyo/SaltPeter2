@@ -1,4 +1,4 @@
-import type { AnyComponent } from '../component/Component';
+import type { Component } from '../component/Component';
 
 import { CollapsiblePanel } from './CollapsiblePanel';
 import { GameObject } from '../game_object/GameObject';
@@ -17,7 +17,7 @@ interface HierarchyPanelParams {
 
 export interface AddHierarchyObjectParams {
     name?: string;
-    components?: Array<new () => AnyComponent>;
+    components?: Array<new () => Component>;
 }
 
 /**
@@ -44,6 +44,7 @@ export class Hierarchy extends NitrateProcess {
 
     constructor(params?: HierarchyPanelParams) {
         super();
+        this.Register();
 
         const defaults = UserInterfaceConfig.GetConfig().defaults.hierarchy;
         this.panel = new CollapsiblePanel({

@@ -23,6 +23,9 @@
         "width": 136,
         "height": 264
       },
+      "biomes": [
+        "antra"
+      ],
       "edges": {
         "W_T": "edge_01",
         "W_B": "edge_01",

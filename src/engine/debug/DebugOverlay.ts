@@ -43,6 +43,8 @@ export class DebugOverlay extends NitrateProcess {
 
     constructor() {
         super();
+        this.Register();
+        
         DebugOverlay.Instance = this;
 
         const input = Input.Instance;
@@ -85,7 +87,7 @@ export class DebugOverlay extends NitrateProcess {
         return this.temperature;
     }
 
-    public Update(now: number): void {
+    public Update(): void {
         if (!this.activeLayer) { return; }
         this.GetOverlay(this.activeLayer).Update();
     }

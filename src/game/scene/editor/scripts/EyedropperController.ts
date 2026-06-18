@@ -31,6 +31,8 @@ export class EyedropperController extends Nitrate.NitrateProcess {
         getBrushPanel: () => Nitrate.BrushPanel | null,
     ) {
         super();
+        this.Register();
+        
         this.canvas = canvas;
         this.getMaterialsPanel = getMaterialsPanel;
         this.getBrushPanel = getBrushPanel;
@@ -64,12 +66,12 @@ export class EyedropperController extends Nitrate.NitrateProcess {
         const input = Nitrate.Input.Instance;
 
         this.unsubAltDown = input?.OnKeyDown('Alt', () => {
-            Nitrate.BrushManager.Instance?.Block();
+            if (Nitrate.BrushManager.Instance) { Nitrate.BrushManager.Instance.enabled = false; }
             this.canvas.style.cursor = 'crosshair';
         });
 
         this.unsubAltUp = input?.OnKeyUp('Alt', () => {
-            Nitrate.BrushManager.Instance?.Unblock();
+            if (Nitrate.BrushManager.Instance) { Nitrate.BrushManager.Instance.enabled = true; }
             this.canvas.style.cursor = 'none';
             this.HideTooltip();
         });
@@ -96,7 +98,7 @@ export class EyedropperController extends Nitrate.NitrateProcess {
         this.tooltip.classList.remove('is-visible');
     }
 
-    public Update(now: number): void {
+    public Update(): void {
         if (!Nitrate.Input.Instance?.IsKeyDown('Alt') || this.isReading) { return; }
         void this.ReadAtPosition();
     }
@@ -181,7 +183,7 @@ export class EyedropperController extends Nitrate.NitrateProcess {
         this.unsubMouseDown?.();
         this.tooltip.remove();
         if (Nitrate.Input.Instance?.IsKeyDown('Alt')) {
-            Nitrate.BrushManager.Instance?.Unblock();
+            if (Nitrate.BrushManager.Instance) { Nitrate.BrushManager.Instance.enabled = true; }
         }
     }
 }

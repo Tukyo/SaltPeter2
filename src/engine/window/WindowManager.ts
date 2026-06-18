@@ -21,7 +21,10 @@ export class WindowManager extends NitrateProcess {
 
     constructor() {
         super();
+        this.Register();
+
         WindowManager.Instance = this;
+        
         this.handleWindowResize = () => { this.DoResize(); };
         window.addEventListener('resize', this.handleWindowResize);
     }

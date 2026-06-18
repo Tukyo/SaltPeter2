@@ -21,8 +21,6 @@ new Nitrate.BrushManager();
 
 | Method | Description |
 |--------|-------------|
-| [`Block(): void`](BrushManager.ts) | Prevents brush strokes from being applied. Useful for scenarios like when you need to capture mouse input for other purposes (e.g. drawing a bounding box or placing an anchor). |
-| [`Unblock(): void`](BrushManager.ts) | Restores normal brush painting after a [`Block`](../simulation/SimulationManager.ts) call. |
 | [`SetMarginSize(size: number): void`](BrushManager.ts) | Sets the number of margin cells the brush shader will refuse to write. Pass 0 to disable. |
 | [`SetMaterial(id: MaterialId): void`](BrushManager.ts) | Sets the current active material for the brush. |
 | [`SetOccupancy(value: MaterialOccupancy): void`](BrushManager.ts) | Sets whether cells placed by the brush are dynamic (simulated) or static (bypasses sim). |

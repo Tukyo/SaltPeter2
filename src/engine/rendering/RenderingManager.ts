@@ -28,6 +28,8 @@ export class RenderingManager extends NitrateProcess {
 
     constructor() {
         super();
+        this.Register();
+        
         RenderingManager.Instance = this;
         this.onSimInit = async () => {
             if (RenderingManager.Instance !== this) { return; }
@@ -77,7 +79,7 @@ export class RenderingManager extends NitrateProcess {
         });
     }
 
-    public Update(now: number): void {
+    public Update(): void {
         const renderer = Renderer.Instance?.GetWebGPU();
         const sim = SimulationManager.Instance;
         if (!renderer || !sim?.simulationLayer || !this.layers || !this.simRenderPass || !this.gameObjectRenderPass || !this.particleRenderPass || !this.compositePass) { return; }

@@ -27,6 +27,7 @@ export class PlayerScaleController extends Nitrate.NitrateProcess {
 
     constructor() {
         super();
+        this.Register();
 
         const json = PlayerCapsuleRaw as unknown as GameObjectJson;
         const pixelDataRaw = json.components.find(c => c['type'] === 'PixelData');
@@ -65,7 +66,7 @@ export class PlayerScaleController extends Nitrate.NitrateProcess {
             this.dragging = true;
             this.dragOffsetCellX = Math.round((e.clientX - rect.left) / this.cellPxW);
             this.dragOffsetCellY = Math.round((e.clientY - rect.top) / this.cellPxH);
-            Nitrate.BrushManager.Instance?.Block();
+            if (Nitrate.BrushManager.Instance) { Nitrate.BrushManager.Instance.enabled = false; }
         });
 
         this.unsubMouseMove = input?.OnCanvasMouseMove((e) => {
@@ -83,7 +84,7 @@ export class PlayerScaleController extends Nitrate.NitrateProcess {
         this.unsubMouseUp = input?.OnScreenMouseUp(0, () => {
             if (!this.dragging) { return; }
             this.dragging = false;
-            Nitrate.BrushManager.Instance?.Unblock();
+            if (Nitrate.BrushManager.Instance) { Nitrate.BrushManager.Instance.enabled = true; }
         });
     }
 
@@ -110,7 +111,7 @@ export class PlayerScaleController extends Nitrate.NitrateProcess {
         this.unsubMouseMove?.();
         this.unsubMouseUp?.();
 
-        if (this.dragging) { Nitrate.BrushManager.Instance?.Unblock(); }
+        if (this.dragging) if (Nitrate.BrushManager.Instance) { Nitrate.BrushManager.Instance.enabled = true; }
         this.pixelDataRenderer.Destroy();
     }
 }

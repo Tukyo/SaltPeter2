@@ -1,16 +1,12 @@
-import type { Blueprint } from './definitions/blueprint/Blueprint';
-import type { BoxCollider } from './definitions/collider/boxcollider/BoxCollider';
-import type { CircleCollider } from './definitions/collider/circlecollider/CircleCollider';
-import type { ParticleSystem } from './definitions/particlesystem/ParticleSystem';
-import type { PixelData } from './definitions/pixeldata/PixelData';
-import type { PixelBodyCollider } from './definitions/collider/pixelbodycollider/PixelBodyCollider';
-import type { Rigidbody } from './definitions/rigidbody/Rigidbody';
-import type { Transform } from './definitions/transform/Transform';
+import type { GameObject } from '../game_object/GameObject';
+
+import { NitrateProcess } from '../NitrateProcess';
 
 export type ComponentType =
     | 'Blueprint'
     | 'BoxCollider'
     | 'CircleCollider'
+    | 'CustomComponent'
     | 'ParticleSystem'
     | 'PixelData'
     | 'PixelBodyCollider'
@@ -18,19 +14,23 @@ export type ComponentType =
     | 'Transform'
 
 
-// @omitfromdocs
-export type AnyComponent =
-    | Blueprint
-    | BoxCollider
-    | CircleCollider
-    | ParticleSystem
-    | PixelData
-    | PixelBodyCollider
-    | Rigidbody
-    | Transform
-
 /** Shared base for all component types. */
-export abstract class Component {
+export abstract class Component extends NitrateProcess {
     abstract readonly type: ComponentType;
-    enabled: boolean = true;
+    gameObject: GameObject | null = null;
+
+    /** Binds this component to its owner and registers it with the engine. Called by AddComponent. @internal */
+    public Attach(gameObject: GameObject): void {
+        this.gameObject = gameObject;
+        this.Register();
+        this.Awake?.();
+        this.OnEnable?.();
+    }
+
+    /** Unregisters this component from the engine and clears its owner. Called by RemoveComponent and Destroy. @internal */
+    public Detach(): void {
+        this.OnDisable?.();
+        this.gameObject = null;
+        this.Unregister();
+    }
 }

@@ -55,6 +55,8 @@ export class RenderingPanel extends NitrateProcess {
 
     constructor(params: RenderingPanelParams) {
         super();
+        this.Register();
+        
         const defaults = UserInterfaceConfig.GetConfig().defaults.rendering;
         this.panel = new CollapsiblePanel({
             label: 'Rendering',

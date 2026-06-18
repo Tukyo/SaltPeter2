@@ -1,4 +1,4 @@
-import type { AnyComponent } from '../../component/Component';
+import type { Component } from '../../component/Component';
 import type { ComponentConstructor } from '../../component/ComponentRegistry';
 import type { Color, NumberRange, RandomBetweenTwo, Size2D, Vec2 } from '../../definitions/Primitives';
 
@@ -11,7 +11,7 @@ import { Utils } from '../../utility/Utils';
  *
  * Builds the component section shell (header, icon, enable toggle, remove button) and exposes field builder helpers to subclasses.
  */
-export abstract class ComponentField<T extends AnyComponent = AnyComponent> {
+export abstract class ComponentField<T extends Component = Component> {
     public readonly element: HTMLElement;
     protected readonly component: T;
 
@@ -369,6 +369,68 @@ export abstract class ComponentField<T extends AnyComponent = AnyComponent> {
         }
 
         return row;
+    }
+
+    /** Builds a multi-select toggle list field, matching the panel toggle-list styling. */
+    protected ToggleListField(
+        label: string,
+        options: { value: string; label: string }[],
+        getValue: () => string[],
+        onChange: (values: string[]) => void,
+        tooltip?: string,
+    ): HTMLElement {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'control-item';
+
+        const lbl = document.createElement('label');
+        lbl.textContent = label;
+        wrapper.appendChild(lbl);
+
+        const list = document.createElement('div');
+        list.className = 'toggle-list';
+        list.style.maxHeight = '75px';
+
+        const sync = () => {
+            const active = new Set(getValue());
+            list.querySelectorAll<HTMLElement>('button').forEach(btn => {
+                const on = active.has(btn.dataset.value ?? '');
+                btn.classList.toggle('is-selected', on);
+                btn.setAttribute('aria-checked', String(on));
+            });
+        };
+
+        for (const opt of options) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'toggle-list-row';
+            btn.dataset.value = opt.value;
+            btn.setAttribute('role', 'checkbox');
+            btn.setAttribute('aria-label', opt.label);
+            const dot = document.createElement('span');
+            dot.className = 'bubble-choice-dot';
+            const lbl = document.createElement('span');
+            lbl.className = 'bubble-choice-label';
+            lbl.textContent = opt.label;
+            btn.appendChild(dot);
+            btn.appendChild(lbl);
+            btn.addEventListener('click', () => {
+                const active = new Set(getValue());
+                if (active.has(opt.value)) { active.delete(opt.value); } else { active.add(opt.value); }
+                onChange([...active]);
+                sync();
+            });
+            list.appendChild(btn);
+        }
+
+        sync();
+        wrapper.appendChild(list);
+
+        if (tooltip) {
+            wrapper.addEventListener('mouseenter', () => TooltipManager.Instance?.Show(tooltip));
+            wrapper.addEventListener('mouseleave', () => TooltipManager.Instance?.Hide());
+        }
+
+        return wrapper;
     }
 
     /** Builds a small text divider used to separate groups of sub-fields. */

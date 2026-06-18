@@ -19,6 +19,7 @@ import { MaterialVisualSchema } from '../materials/MaterialVisualSchema';
 import { MaterialRegistry } from '../materials/MaterialRegistry';
 import { MaterialTags } from '../materials/definitions/MaterialTags';
 
+import { SimulationConfig } from '../config/SimulationConfig';
 import { SimulationSchema } from '../simulation/SimulationSchema';
 
 /**
@@ -143,6 +144,20 @@ export class ShaderFactory {
             `    let idx = clamp(i32(floor(materialId + 0.5)), 0, MATERIAL_COUNT - 1);`,
             `    return u32(idx) * SIM_FLOATS_PER_MATERIAL;`,
             `}`,
+        ].join('\n');
+    }
+
+    // @omitfromdocs
+    public static GenerateNoiseConstants(): string {
+        const { type, octaves, persistence, scale, scrollSpeed, threshold, strength } = SimulationConfig.GetConfig().noise;
+        return [
+            `const NOISE_TYPE: i32 = ${type};`,
+            `const NOISE_OCTAVES: i32 = ${octaves};`,
+            `const NOISE_PERSISTENCE: f32 = ${persistence};`,
+            `const NOISE_SCALE: f32 = ${scale};`,
+            `const NOISE_SCROLL_SPEED: f32 = ${scrollSpeed};`,
+            `const NOISE_THRESHOLD: f32 = ${threshold};`,
+            `const NOISE_STRENGTH: f32 = ${strength};`,
         ].join('\n');
     }
     //#endregion

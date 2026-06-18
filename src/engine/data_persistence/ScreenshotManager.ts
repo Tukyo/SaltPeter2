@@ -13,6 +13,8 @@ export class ScreenshotManager extends NitrateProcess {
 
     constructor() {
         super();
+        this.Register();
+        
         ScreenshotManager.Instance = this;
         this.unsubscribeHotkey = Input.Instance?.OnKeyDown(
             KeybindConfig.GetConfig().screenshot.capture,

@@ -37,6 +37,7 @@ import { Nitrate } from '@Nitrate';
 [`scene/`](scene/README.md)  
 [`shaders/`](shaders/README.md)  
 [`simulation/`](simulation/README.md)  
+[`time/`](time/README.md)  
 [`ui/`](ui/README.md)  
 &nbsp;&nbsp;&nbsp;&nbsp;↳ [`controls/`](ui/controls/README.md)  
 &nbsp;&nbsp;&nbsp;&nbsp;↳ [`fields/`](ui/fields/README.md)  

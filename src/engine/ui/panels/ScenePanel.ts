@@ -56,6 +56,7 @@ export class ScenePanel extends NitrateProcess {
 
     constructor(params?: ScenePanelParams) {
         super();
+        this.Register();
 
         const defaults = UserInterfaceConfig.GetConfig().defaults.scene;
         this.panel = new CollapsiblePanel({

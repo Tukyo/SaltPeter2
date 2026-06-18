@@ -23,6 +23,7 @@ export class ResourcesPreviewPanel extends NitrateProcess {
 
     constructor(params?: ResourcesPreviewPanelParams) {
         super();
+        this.Register();
 
         const defaults = UserInterfaceConfig.GetConfig().defaults.resourcePreview;
         this.panel = new CollapsiblePanel({

@@ -96,6 +96,8 @@ export class LogManager extends NitrateProcess {
 
     constructor(options?: LogManagerOptions) {
         super();
+        this.Register();
+        
         this.hideNoisyLogs = options?.quiet ?? false;
         this.showTimestamps = options?.showTimestamps ?? false;
         this.suppressedTags = new Set(options?.filters ?? []);

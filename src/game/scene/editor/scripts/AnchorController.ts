@@ -11,6 +11,8 @@ export class AnchorController extends Nitrate.NitrateProcess {
 
     constructor(canvas: HTMLElement, selection: SelectionController) {
         super();
+        this.Register();
+        
         this.canvas = canvas;
         this.selection = selection;
 
@@ -31,7 +33,7 @@ export class AnchorController extends Nitrate.NitrateProcess {
         canvas.addEventListener('mousedown', this.handleMouseDown);
     }
 
-    public Update(now: number): void {
+    public Update(): void {
         if (!this.anchorCell) { return; }
         const norm = this.selection.GetNormalizedSelection();
         if (!norm) { this.anchorCell = null; return; }

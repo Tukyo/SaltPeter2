@@ -1,4 +1,4 @@
-import type { AnyComponent } from '../component/Component';
+import type { Component } from '../component/Component';
 import type { ComponentField } from './fields/ComponentField';
 
 import { CollapsiblePanel } from './CollapsiblePanel';
@@ -33,6 +33,7 @@ export class Inspector extends NitrateProcess {
 
     constructor(params?: InspectorPanelParams) {
         super();
+        this.Register();
 
         const defaults = UserInterfaceConfig.GetConfig().defaults.inspector;
         this.panel = new CollapsiblePanel({
@@ -207,7 +208,7 @@ export class Inspector extends NitrateProcess {
     }
 
     /** Finds and instantiates the registered field class for a component. Returns null if no field is registered for the component type. */
-    private CreateField(component: AnyComponent, onRemove: () => void): ComponentField | null {
+    private CreateField(component: Component, onRemove: () => void): ComponentField | null {
         const FieldClass = ComponentFieldRegistry.Fields.get(component.type);
         if (!FieldClass) {
             LogManager.Instance?.LogWarning({

@@ -17,10 +17,10 @@ export const FlammableGas: MaterialDefinition = {
     phase: 'gas',
     phaseBehavior: {
         gas: {
-            activity: 3,
-            rise: 0.6,
+            activity: 12,
+            rise: 5.75,
             dissipation: 0.05,
-            turbulence: 0.38,
+            turbulence: 0.0075,
         }
     },
     physics: {

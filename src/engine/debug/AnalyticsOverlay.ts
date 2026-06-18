@@ -23,6 +23,8 @@ export class AnalyticsOverlay extends NitrateProcess {
 
     constructor() {
         super();
+        this.Register();
+        
         this.unsubKey = Input.Instance?.OnKeyDown(KeybindConfig.GetConfig().debug.analytics, () => {
             if (this.menu) {
                 this.menu.Destroy();

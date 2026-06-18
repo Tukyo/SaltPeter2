@@ -2,6 +2,7 @@ import type { Vec2 } from '../definitions/Primitives';
 
 import { LogManager } from '../debug/LogManager';
 import { NitrateProcess } from '../NitrateProcess';
+import { Renderer } from '../rendering/Renderer';
 import { Utils } from '../utility/Utils';
 
 export interface MouseState {
@@ -25,22 +26,25 @@ export type MouseButton = 0 | 1 | 2;
 export class Input extends NitrateProcess {
     public static Instance: Input | null = null;
 
-    private readonly canvas: HTMLCanvasElement;
+    private readonly canvas: HTMLCanvasElement | null = null;
     private onBlur: () => void = () => { };
 
-    constructor(canvas: HTMLCanvasElement) {
+    constructor() {
         super();
+        this.Register();
+
         Input.Instance = this;
 
+        const canvas = Renderer.Instance?.GetWebGPU()?.canvas ?? null;
         this.canvas = canvas;
 
-        this.InitMouse(canvas);
+        if (canvas) { this.InitMouse(canvas); }
         this.InitKeyboard();
     }
 
-    public Start(): void {
+    public Awake(): void {
         LogManager.Instance?.Log({
-            text: 'Input start.',
+            text: 'Input awake.',
             options: { tags: ['Input', 'NitrateProcessInit'] }
         });
     }
@@ -204,6 +208,7 @@ export class Input extends NitrateProcess {
 
     /** Computes canvas-relative mouse position from a DOM mouse event and flips Y to sim-space. */
     private UpdateCanvasPosition(e: MouseEvent): void {
+        if (!this.canvas) { return; }
         const rect = this.canvas.getBoundingClientRect();
         const normalizedX = (e.clientX - rect.left) / rect.width;
         const normalizedY = (e.clientY - rect.top) / rect.height;
@@ -306,10 +311,12 @@ export class Input extends NitrateProcess {
         window.removeEventListener('keyup', this.onKeyUp);
         window.removeEventListener('blur', this.onBlur);
 
-        this.canvas.removeEventListener('mousemove', this.onCanvasMouseMove);
-        this.canvas.removeEventListener('mousedown', this.onCanvasMouseDown);
-        this.canvas.removeEventListener('mouseup', this.onCanvasMouseUp);
-        this.canvas.removeEventListener('mouseleave', this.onCanvasMouseLeave);
+        if (this.canvas) {
+            this.canvas.removeEventListener('mousemove', this.onCanvasMouseMove);
+            this.canvas.removeEventListener('mousedown', this.onCanvasMouseDown);
+            this.canvas.removeEventListener('mouseup', this.onCanvasMouseUp);
+            this.canvas.removeEventListener('mouseleave', this.onCanvasMouseLeave);
+        }
 
         if (Input.Instance === this) {
             Input.Instance = null;

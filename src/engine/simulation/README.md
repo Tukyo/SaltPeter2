@@ -97,8 +97,6 @@ new Nitrate.SimulationManager();
 
 | Method | Description |
 |--------|-------------|
-| [`Block(): void`](SimulationManager.ts) | Prevents the simulation from starting or ticking. Call Unblock() to resume. |
-| [`Unblock(): void`](SimulationManager.ts) | Resumes the simulation after a Block() call. |
 | [`Debounce(frames: number): void`](SimulationManager.ts) | Pauses the simulation for n frames. |
 
 ---

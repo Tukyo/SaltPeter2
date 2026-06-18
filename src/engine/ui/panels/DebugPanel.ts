@@ -10,6 +10,7 @@ import { MaterialRegistry } from '../../materials/MaterialRegistry';
 import { NitrateProcess } from '../../NitrateProcess';
 import { Renderer } from '../../rendering/Renderer';
 import { SimulationManager } from '../../simulation/SimulationManager';
+import { Time } from '../../time/Time';
 import { UserInterfaceConfig } from '../../config/UserInterfaceConfig';
 import { UserInterfaceManager } from '../UserInterfaceManager';
 import { Utils } from '../../utility/Utils';
@@ -105,6 +106,8 @@ export class DebugPanel extends NitrateProcess {
 
     constructor(params?: DebugPanelParams) {
         super();
+        this.Register();
+        
         const defaults = UserInterfaceConfig.GetConfig().defaults.debug;
         this.panel = new CollapsiblePanel({
             label: 'Debug',
@@ -193,7 +196,7 @@ export class DebugPanel extends NitrateProcess {
         container.appendChild(advancedSection);
     }
 
-    public Update(now: number): void {
+    public Update(): void {
         const mouse = Input.Instance?.GetMouseState();
         const sim = SimulationManager.Instance;
         const renderer = Renderer.Instance?.GetWebGPU();
@@ -210,7 +213,7 @@ export class DebugPanel extends NitrateProcess {
             this.lastSim = simulationLayer;
             this.Reset();
         }
-        this.RecordFrame(now, stats);
+        this.RecordFrame(stats);
         if (!simulationLayer || !texturePixelReader) { return; }
 
         if (!this.IsAdvancedEnabled()) {
@@ -246,13 +249,13 @@ export class DebugPanel extends NitrateProcess {
         cellY = Utils.Clamp(cellY, 0, simulationLayer.height - 1);
         const cellKey = cellX + ',' + cellY;
         const cellChanged = cellKey !== this.lastHoveredCellKey;
-        const sampleDue = now - this.lastHoveredSampleTimeMs >= DebugPanel.HoveredCellSampleIntervalMs;
+        const sampleDue = Time.now - this.lastHoveredSampleTimeMs >= DebugPanel.HoveredCellSampleIntervalMs;
 
         if (!cellChanged && !sampleDue) { return; }
         if (this.hoveredReadPending) { return; }
 
         this.lastHoveredCellKey = cellKey;
-        this.lastHoveredSampleTimeMs = now;
+        this.lastHoveredSampleTimeMs = Time.now;
         this.hoveredReadPending = true;
         const version = ++this.hoveredReadVersion;
 
@@ -330,17 +333,17 @@ export class DebugPanel extends NitrateProcess {
         return toggle;
     }
 
-    private RecordFrame(nowMs: number, stats: FrameStats): void {
+    private RecordFrame(stats: FrameStats): void {
         this.SetSimSteps(stats.simulationSteps);
         this.SetPhysicsSteps(stats.physicsSteps);
 
         if (this.lastFrameTimeMs === null) {
-            this.lastFrameTimeMs = nowMs;
+            this.lastFrameTimeMs = Time.now;
             return;
         }
 
-        const deltaMs = nowMs - this.lastFrameTimeMs;
-        this.lastFrameTimeMs = nowMs;
+        const deltaMs = Time.now - this.lastFrameTimeMs;
+        this.lastFrameTimeMs = Time.now;
 
         this.SetFrameTime(deltaMs);
 

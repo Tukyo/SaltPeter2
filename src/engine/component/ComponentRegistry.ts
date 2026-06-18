@@ -1,9 +1,9 @@
-import type { AnyComponent } from './Component';
+import type { Component } from './Component';
 
 const modules = import.meta.glob('./definitions/**/*.ts', { eager: true }) as Record<string, Record<string, unknown>>;
 
 // @omitfromdocs
-export type ComponentConstructor = (new () => AnyComponent) & { label: string };
+export type ComponentConstructor = (new () => Component) & { label: string };
 
 /** Auto-discovers and registers all component definitions from the definitions directory. */
 export class ComponentRegistry {

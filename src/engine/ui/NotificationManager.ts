@@ -38,6 +38,8 @@ export class NotificationManager extends NitrateProcess {
 
     constructor() {
         super();
+        this.Register();
+        
         NotificationManager.Instance = this;
 
         this.container = document.createElement('div');

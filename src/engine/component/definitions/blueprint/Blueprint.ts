@@ -1,5 +1,6 @@
 import type { EdgeKey } from '../../BlueprintLayout';
 import type { Size2D, Vec2 } from '../../../definitions/Primitives';
+import type { BiomeName } from '../../../world/biome/definitions/BiomeIdentity';
 
 import { Component } from '../../Component';
 
@@ -19,6 +20,7 @@ export class Blueprint extends Component {
     readonly type = 'Blueprint' as const;
     name: string = '';
     size: Size2D = { width: 0, height: 0 };
+    biomes: BiomeName[] = [];
     edges: BlueprintEdges = {};
     cells: BlueprintCell[] = [];
 }

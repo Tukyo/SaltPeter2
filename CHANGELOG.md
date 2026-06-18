@@ -2,6 +2,46 @@
 
 ---
 
+## [0.1.6] - [06/18/2026]
+### Updates & Changes
+- **Component**
+  - **Added support for custom components!** *(Still in early stages...)*
+    - `AnyComponent` type union removed, allowing for expansion beyond engine defined components
+    - Icon created for custom component
+- **Engine**
+  - Large refactor to engine, many changes and improvements
+    - All engine processes now manually register and deregister from engine. This allows anything that needs to inherit processes from the engine such as `Update()` that are not available from boot, to register at a later time.
+    - `Awake()` added, `Start()` deferred by one frame `OnEnable()` and `OnDisable()` added and all engine processes store their enabled state, allowing for the removal of manual block methods from specific scripts.
+- **GameObject**
+  - GameObject and GameObjectManager instantiation and destroy flow refactored to handle their own internal `NitrateProcess` flow
+- **Materials**
+  - Updated `Steam`, `Smoke`, `PoisonGas` and `FlammableGas` with new phase behavior values to account for new movement provided by noise system within the shaders
+- **Scene**
+  - `Init` refactored for scenes - renamed to `InitRenderer` with the sole purpose of creating the WebGPU renderer across scenes so that it is available for any processes that require it during `Awake()`
+  - Brush and Input now automatically fetch the Renderer and no longer require it to be passed during construction from scenes
+- **Shaders**
+  - Added Noise configuration to `SimulationConfig`, noise is no longer a property of the particle system, and can be used across any shader that imports `common.wgsl`
+  - Gas phase uses noise and moves more smoothly now
+- **Time**
+  - New class and engine architecture
+  - `Now` no longer required for any update method, and instead Time can be fetched from the engine via `Time.now`
+  - All callsites to `Update(now: number)` became `Update()`
+- **UI**
+  - Added `ToggleListField` for inspector, used during biome selection within Blueprint authoring
+- **World**
+  - Custom blueprints now supported in Worldgen! Any blueprints saved in the CustomAssets folder will now be included.
+  - Added 'Biomes' field to the blueprint component, allowing you to indicate which biome[s] the blueprint can appear in
+  - Templates are loaded on entry into the World scene, no app restart required to see new custom blueprints in Worldgen
+
+### Bug Fixes
+- Fixed a bug causing panels to reflow incorrectly
+  - Also fixed a bug causing left panels to be pushed off-screen
+- Fixed a bug causing the Nitrate engine to be running twice due to it being needed before scenes and during scene lifecycle. `Run()` is now stopped before being called again in the `SceneManager`
+- Fixed a bug causing the scene launch buttons to be able to pressed rapidly causing multiple Nitrate engine processes to start simultaneously
+- Fixed a bug causing GameObjects to not be exported correctly due to the enabled state being handled by the engine now
+
+---
+
 ## [0.1.5] - [06/16/2026]
 ### Updates & Changes
 - **Brush**
@@ -15,7 +55,7 @@
     - The `MouseState` has also been split to provide canvas and screen related information
 - **Logging**
   - Added more logging to many different places
-    - All `OnDestroy` for all `NitrateProcess` implementers now log2
+    - All `OnDestroy` for all `NitrateProcess` implementers now log
     - All `OnResize` for all `NitrateProcess` implementers also log
 - **Materials**
   - Added 4 new material tags `Metal`, `Organic`, `Ore`, `Alloy`

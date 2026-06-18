@@ -13,8 +13,6 @@ import { SelectionController } from './scripts/SelectionController';
 export class EditorScene extends Nitrate.Scene {
     private mode: EditorMode = 'gameobject';
 
-    private renderer: Nitrate.RendererWebGPU | null = null;
-
     private modeController: EditorModeController | null = null;
 
     private goExport: Nitrate.ExportGameObject | null = null;
@@ -38,21 +36,23 @@ export class EditorScene extends Nitrate.Scene {
 
     private restartHandle: number | null = null;
 
-    public async Init(): Promise<void> {
-        this.renderer = await Nitrate.Renderer.CreateWebGPU({
+    public async InitRenderer(): Promise<Nitrate.RendererWebGPU> {
+        return await Nitrate.Renderer.CreateWebGPU({
             containerId: 'sim-container',
             canvasId: 'sim-canvas',
             size: { width: 1, height: 1 },
             style: { display: 'block', cursor: 'none', background: '#111', imageRendering: 'pixelated' },
         });
+    }
 
-        new Nitrate.Input(this.renderer.canvas);
+    public Awake(): void {
+        new Nitrate.Input();
         new Nitrate.BrushPreview();
         new Nitrate.RenderingManager();
         new Nitrate.BrushManager();
 
         new Nitrate.SimulationManager();
-        Nitrate.SimulationManager.Instance?.Block();
+        if (Nitrate.SimulationManager.Instance) { Nitrate.SimulationManager.Instance.enabled = false; }
 
         new Nitrate.UserInterfaceManager();
 
@@ -105,7 +105,7 @@ export class EditorScene extends Nitrate.Scene {
     }
 
     private SetupModeSpecific(): void {
-        const renderer = this.renderer;
+        const renderer = Nitrate.Renderer.Instance?.GetWebGPU() ?? null;
         if (!renderer) { return; }
 
         if (this.mode === 'gameobject') {
@@ -506,7 +506,7 @@ export class EditorScene extends Nitrate.Scene {
     }
 
     private InitGPU(): void {
-        const renderer = this.renderer;
+        const renderer = Nitrate.Renderer.Instance?.GetWebGPU() ?? null;
         if (!renderer || !this.renderingPanel) { return; }
 
         const grid = this.renderingPanel.GetGridDimensions();
@@ -587,7 +587,6 @@ export class EditorScene extends Nitrate.Scene {
             this.restartHandle = null;
         }
 
-        this.renderer = null;
         this.modeController = null;
         this.goExport = null;
         this.bpExport = null;

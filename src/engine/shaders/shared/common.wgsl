@@ -39,6 +39,67 @@ fn displacementHash(coord: vec2f, time: f32) -> f32 {
     return hash(coord + vec2f(fract(time * 7.3), fract(time * 11.9)));
 }
 
+fn gradNoise(p: vec2f) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    let a = hash(i + vec2f(0.0, 0.0));
+    let b = hash(i + vec2f(1.0, 0.0));
+    let c = hash(i + vec2f(0.0, 1.0));
+    let d = hash(i + vec2f(1.0, 1.0));
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y) * 2.0 - 1.0;
+}
+
+fn worleyNoise(p: vec2f) -> f32 {
+    let cell = floor(p);
+    var minDist = 8.0;
+    for (var dy: i32 = -1; dy <= 1; dy++) {
+        for (var dx: i32 = -1; dx <= 1; dx++) {
+            let neighbor = cell + vec2f(f32(dx), f32(dy));
+            let point = neighbor + vec2f(hash(neighbor), hash(neighbor + vec2f(17.3, 31.7)));
+            minDist = min(minDist, length(p - point));
+        }
+    }
+    return clamp(minDist, 0.0, 1.0) * 2.0 - 1.0;
+}
+
+fn sampleNoiseX(p: vec2f, noiseType: i32) -> f32 {
+    if noiseType == 0 { return gradNoise(p); }
+    if noiseType == 1 { return 1.0 - abs(gradNoise(p)); }
+    if noiseType == 2 { return worleyNoise(p); }
+    if noiseType == 3 { return 1.0 - worleyNoise(p); }
+    return hash(p) * 2.0 - 1.0;
+}
+
+fn sampleNoiseY(p: vec2f, noiseType: i32) -> f32 {
+    if noiseType == 0 { return gradNoise(p + vec2f(31.7, 17.3)); }
+    if noiseType == 1 { return 1.0 - abs(gradNoise(p + vec2f(31.7, 17.3))); }
+    if noiseType == 2 { return worleyNoise(p + vec2f(31.7, 17.3)); }
+    if noiseType == 3 { return 1.0 - worleyNoise(p + vec2f(31.7, 17.3)); }
+    return hash(p + vec2f(31.7, 17.3)) * 2.0 - 1.0;
+}
+
+fn fbm(baseCoord: vec2f, noiseType: i32, octaves: i32, persistence: f32, timeSeed: f32) -> vec2f {
+    var totalX = 0.0;
+    var totalY = 0.0;
+    var amplitude = 1.0;
+    var frequency = 1.0;
+    var totalWeight = 0.0;
+
+    for (var i: i32 = 0; i < 8; i++) {
+        if i >= octaves { break; }
+        let p = baseCoord * frequency + vec2f(f32(i) * 13.7, timeSeed * 1.618 + f32(i) * 7.3);
+        totalX += sampleNoiseX(p, noiseType) * amplitude;
+        totalY += sampleNoiseY(p, noiseType) * amplitude;
+        totalWeight += amplitude;
+        amplitude *= persistence;
+        frequency *= 2.0;
+    }
+
+    if totalWeight <= 0.0 { return vec2f(0.0); }
+    return vec2f(totalX, totalY) / totalWeight;
+}
+
 // --- Ownership helpers ---
 
 fn isOwnedCell(ownerValue: u32) -> bool {

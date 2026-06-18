@@ -25,6 +25,8 @@ export class TooltipManager extends NitrateProcess {
 
     constructor() {
         super();
+        this.Register();
+        
         TooltipManager.Instance = this;
 
         this.overlay = document.createElement('div');

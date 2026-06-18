@@ -89,7 +89,10 @@ export class Resources extends NitrateProcess {
 
     constructor(options: ResourcesParams = {}) {
         super();
+        this.Register();
+
         Resources.Instance = this;
+        
         this.onImport = options.onImport;
         this.previewPanel = new ResourcesPreviewPanel(options.previewPanel);
 

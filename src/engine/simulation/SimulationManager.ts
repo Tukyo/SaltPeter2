@@ -22,6 +22,7 @@ import { MaterialVisualBuffer } from '../materials/MaterialVisualBuffer';
 import { MaterialSimulationBuffer } from '../materials/MaterialSimulationBuffer';
 
 import { NitrateProcess } from '../NitrateProcess';
+import { Time } from '../time/Time';
 
 import { ReactionLookupBuffer } from '../materials/ReactionLookupBuffer';
 
@@ -96,12 +97,11 @@ export class SimulationManager extends NitrateProcess {
     public readonly state: SimulationState = new SimulationState();
 
     private clock: SimulationClock = new SimulationClock();
-    private blocked: boolean = false;
     private debounceCountdown: number = 0;
 
     private readonly processes: SimulationResource[] = [];
 
-    private Register<T extends SimulationResource>(process: T): T {
+    private RegisterResource<T extends SimulationResource>(process: T): T {
         this.processes.push(process);
         LogManager.Instance?.Log({
             text: `Registered process: ${process.constructor.name}`,
@@ -112,35 +112,20 @@ export class SimulationManager extends NitrateProcess {
 
     constructor() {
         super();
+        this.Register();
+        
         SimulationManager.Instance = this;
-    }
-
-    /** Prevents the simulation from starting or ticking. Call Unblock() to resume. */
-    public Block(): void {
-        this.blocked = true;
-        LogManager.Instance?.Log({
-            text: 'SimulationManager blocked.',
-            options: { tags: ['Sim'] }
-        });
-    }
-    /** Resumes the simulation after a Block() call. */
-    public Unblock(): void {
-        this.blocked = false;
-        LogManager.Instance?.Log({
-            text: 'SimulationManager unblocked.',
-            options: { tags: ['Sim'] }
-        });
     }
 
     /** Pauses the simulation for n frames. */
     public Debounce(frames: number): void { this.debounceCountdown = frames; }
 
-    public Start(): void {
-        if (this.blocked || this.simulationLayer) { return; }
+    public Awake(): void {
+        if (!this.enabled || this.simulationLayer) { return; }
         const webgpu = Renderer.Instance?.GetWebGPU();
         if (!webgpu) { return; }
         LogManager.Instance?.Log({
-            text: 'SimulationManager start.',
+            text: 'SimulationManager awake.',
             options: { tags: ['Sim', 'NitrateProcessInit'] }
         });
         const scale = this.state.GetResolutionScale();
@@ -150,24 +135,23 @@ export class SimulationManager extends NitrateProcess {
                 height: Chunk.GetSimHeight(Math.floor(webgpu.canvas.height * scale))
             }
             : this.state.ComputeSimSize({ width: webgpu.canvas.width, height: webgpu.canvas.height });
-        this.Init(size);
+        this.InitializeSimulation(size);
     }
 
-    public Update(now: number): void {
-        if (this.blocked) { return; }
+    public Update(): void {
         if (this.debounceCountdown > 0) { this.debounceCountdown--; return; }
-        this.Simulate(now);
+        this.Simulate();
     }
 
     /** Allocates all passes, textures, and material buffers for the given size, then emits the init event. @internal */
-    public async Init(size: Size2D): Promise<void> {
+    private async InitializeSimulation(size: Size2D): Promise<void> {
         const webgpu = Renderer.Instance?.GetWebGPU();
         if (!webgpu) { return; }
         const { device } = webgpu;
         const { width, height } = size;
 
-        this.simulationLayer = this.Register(new SimulationLayer(device, width, height));
-        this.gameObjectLayer = this.Register(new GameObjectLayer(device, width, height));
+        this.simulationLayer = this.RegisterResource(new SimulationLayer(device, width, height));
+        this.gameObjectLayer = this.RegisterResource(new GameObjectLayer(device, width, height));
 
         new SimulationInitializer(device, this.simulationLayer, this.gameObjectLayer);
 
@@ -175,18 +159,18 @@ export class SimulationManager extends NitrateProcess {
             await ChunkManager.Instance?.InitializeChunks(device, this.simulationLayer, size);
         }
 
-        this.gameObjectBuffers = this.Register(new GameObjectBuffers(device));
-        this.intent = this.Register(new SimulationTexture(device, size));
-        this.texturePixelReader = this.Register(new TexturePixelReader(device));
-        this.materialPhysicsBuffer = this.Register(new MaterialPhysicsBuffer(device));
-        this.materialStateBuffer = this.Register(new MaterialStateBuffer(device));
-        this.materialVisualBuffer = this.Register(new MaterialVisualBuffer(device));
-        this.materialSimBuffer = this.Register(new MaterialSimulationBuffer(device));
-        this.reactionBuffer = this.Register(new ReactionLookupBuffer(device));
-        this.particleBuffer = this.Register(new ParticleBuffer(device));
-        this.particleDefinitionBuffer = this.Register(new ParticleDefinitionBuffer(device));
-        this.particleEmitterBuffer = this.Register(new ParticleEmitterBuffer(device));
-        this.particleSourceLookupBuffer = this.Register(new ParticleSourceLookupBuffer(device));
+        this.gameObjectBuffers = this.RegisterResource(new GameObjectBuffers(device));
+        this.intent = this.RegisterResource(new SimulationTexture(device, size));
+        this.texturePixelReader = this.RegisterResource(new TexturePixelReader(device));
+        this.materialPhysicsBuffer = this.RegisterResource(new MaterialPhysicsBuffer(device));
+        this.materialStateBuffer = this.RegisterResource(new MaterialStateBuffer(device));
+        this.materialVisualBuffer = this.RegisterResource(new MaterialVisualBuffer(device));
+        this.materialSimBuffer = this.RegisterResource(new MaterialSimulationBuffer(device));
+        this.reactionBuffer = this.RegisterResource(new ReactionLookupBuffer(device));
+        this.particleBuffer = this.RegisterResource(new ParticleBuffer(device));
+        this.particleDefinitionBuffer = this.RegisterResource(new ParticleDefinitionBuffer(device));
+        this.particleEmitterBuffer = this.RegisterResource(new ParticleEmitterBuffer(device));
+        this.particleSourceLookupBuffer = this.RegisterResource(new ParticleSourceLookupBuffer(device));
 
         const [
             intentPass, simPass, diffusionPass, physicsPass, gameObjectPass,
@@ -250,15 +234,15 @@ export class SimulationManager extends NitrateProcess {
             AnalyticsPass.Create(device),
         ]);
 
-        this.intentPass = this.Register(intentPass);
-        this.simPass = this.Register(simPass);
-        this.diffusionPass = this.Register(diffusionPass);
-        this.physicsPass = this.Register(physicsPass);
-        this.simAnalyticsPass = this.Register(simAnalyticsPass);
-        this.goAnalyticsPass = this.Register(goAnalyticsPass);
-        this.gameObjectPass = this.Register(gameObjectPass);
-        this.particleEmissionPass = this.Register(particleEmissionPass);
-        this.particleSimulationPass = this.Register(particleSimulationPass);
+        this.intentPass = this.RegisterResource(intentPass);
+        this.simPass = this.RegisterResource(simPass);
+        this.diffusionPass = this.RegisterResource(diffusionPass);
+        this.physicsPass = this.RegisterResource(physicsPass);
+        this.simAnalyticsPass = this.RegisterResource(simAnalyticsPass);
+        this.goAnalyticsPass = this.RegisterResource(goAnalyticsPass);
+        this.gameObjectPass = this.RegisterResource(gameObjectPass);
+        this.particleEmissionPass = this.RegisterResource(particleEmissionPass);
+        this.particleSimulationPass = this.RegisterResource(particleSimulationPass);
 
         Analytics.Init(simAnalyticsPass, goAnalyticsPass);
 
@@ -272,7 +256,7 @@ export class SimulationManager extends NitrateProcess {
     }
 
     /** Dispatches all simulation passes for the current frame. Returns step counts for profiling. @internal */
-    public Simulate(now: number): { simulationSteps: number; physicsSteps: number } {
+    public Simulate(): { simulationSteps: number; physicsSteps: number } {
         const {
             simulationLayer, gameObjectLayer, intentPass, simPass, diffusionPass,
             physicsPass, gameObjectPass, particleEmissionPass, particleSimulationPass,
@@ -299,7 +283,7 @@ export class SimulationManager extends NitrateProcess {
 
         const stepInfo = state.GetPaused()
             ? { simulationSteps: 0 }
-            : this.clock.Update(now * 0.001, { gravity, simSpeed: state.GetSimSpeed() });
+            : this.clock.Update(Time.now * 0.001, { gravity, simSpeed: state.GetSimSpeed() });
 
         let physicsSteps = 0;
 
@@ -396,7 +380,7 @@ export class SimulationManager extends NitrateProcess {
             : this.state.ComputeSimSize({ width: webgpu.canvas.width, height: webgpu.canvas.height });
 
         this.OnDestroy();
-        this.Init(size);
+        this.InitializeSimulation(size);
     }
 
     /** Destroys every registered {@link SimulationResource} and nulls all used variables. @internal */

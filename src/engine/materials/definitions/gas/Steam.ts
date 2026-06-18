@@ -17,10 +17,10 @@ export const Steam: MaterialDefinition = {
     phase: 'gas',
     phaseBehavior: {
         gas: {
-            activity: 1.75,
-            rise: 0.55,
+            activity: 10,
+            rise: 6,
             dissipation: 0.1,
-            turbulence: 0.4,
+            turbulence: 0.01,
         }
     },
     physics: {

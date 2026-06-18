@@ -16,28 +16,30 @@ export class SelectionController extends Nitrate.NitrateProcess {
 
     constructor(canvas: HTMLElement) {
         super();
+        this.Register();
+        
         this.canvas = canvas;
 
         const input = Nitrate.Input.Instance;
 
         this.unsubShiftDown = input?.OnKeyDown('Shift', () => {
-            Nitrate.BrushManager.Instance?.Block();
+            if (Nitrate.BrushManager.Instance) { Nitrate.BrushManager.Instance.enabled = false; }
         });
 
         this.unsubShiftUp = input?.OnKeyUp('Shift', () => {
             this.selectionDragStart = null;
             if (!input.IsKeyDown('Control')) {
-                Nitrate.BrushManager.Instance?.Unblock();
+                if (Nitrate.BrushManager.Instance) { Nitrate.BrushManager.Instance.enabled = true; }
             }
         });
 
         this.unsubCtrlDown = input?.OnKeyDown('Control', () => {
-            Nitrate.BrushManager.Instance?.Block();
+            if (Nitrate.BrushManager.Instance) { Nitrate.BrushManager.Instance.enabled = false; }
         });
 
         this.unsubCtrlUp = input?.OnKeyUp('Control', () => {
             if (!input.IsKeyDown('Shift')) {
-                Nitrate.BrushManager.Instance?.Unblock();
+                if (Nitrate.BrushManager.Instance) { Nitrate.BrushManager.Instance.enabled = true; }
             }
         });
 

@@ -26,6 +26,8 @@ export class Renderer extends NitrateProcess {
 
     private constructor() {
         super();
+        this.Register();
+        
         Renderer.Instance = this;
     }
 

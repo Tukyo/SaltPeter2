@@ -73,6 +73,7 @@ export class MaterialsPanel extends NitrateProcess {
 
     constructor(params?: MaterialsPanelParams) {
         super();
+        this.Register();
 
         const defaultMaterialId = params?.activeMaterial?.defaultMaterial
             ? MaterialRegistry.Materials[params.activeMaterial.defaultMaterial]?.id

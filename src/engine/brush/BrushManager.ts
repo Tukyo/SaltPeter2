@@ -14,6 +14,7 @@ import { Renderer } from '../rendering/Renderer';
 import { SceneManager } from '../scene/SceneManager';
 import { SimulationConfig } from '../config/SimulationConfig';
 import { SimulationManager } from '../simulation/SimulationManager';
+import { Time } from '../time/Time';
 import { World } from '../world/World';
 import { WorldConfig } from '../config/WorldConfig';
 
@@ -33,10 +34,8 @@ export class BrushManager extends NitrateProcess {
     private brushPass: BrushPass | null = null;
     private simulationLayer: SimulationLayer | null = null;
 
-    private blocked: boolean = false;
     private marginSize: number = 0;
     private simTime: number = 0;
-    private lastUpdateTime: number | null = null;
     private brushAccumulator: number = 0;
 
     public onPaletteChange: ((colors: Color[]) => void) | null = null;
@@ -45,6 +44,8 @@ export class BrushManager extends NitrateProcess {
 
     constructor() {
         super();
+        this.Register();
+        
         BrushManager.Instance = this;
         this.onSimInit = async () => {
             if (BrushManager.Instance !== this) { return; }
@@ -80,36 +81,23 @@ export class BrushManager extends NitrateProcess {
         return map[mode];
     }
 
-    /**
-     * Prevents brush strokes from being applied.
-     * 
-     * Useful for scenarios like when you need to capture mouse input for other purposes (e.g. drawing a bounding box or placing an anchor).
-     */
-    public Block(): void { this.blocked = true; }
-
-    /** Restores normal brush painting after a {@link Block} call. */
-    public Unblock(): void { this.blocked = false; }
-
     /** Sets the number of margin cells the brush shader will refuse to write. Pass 0 to disable. */
     public SetMarginSize(size: number): void { this.marginSize = size; }
 
-    public Update(now: number): void {
+    public Update(): void {
         const mouse = Input.Instance?.GetMouseState();
         const canvas = Renderer.Instance?.GetWebGPU()?.canvas;
         const simulationLayer = SimulationManager.Instance?.simulationLayer;
         if (!mouse || !canvas || !simulationLayer) { return; }
 
         const config = SimulationConfig.GetConfig();
-        const time = now * 0.001;
-        if (this.lastUpdateTime === null) { this.lastUpdateTime = time; return; }
-        const dt = Math.min(Math.max(0, time - this.lastUpdateTime), config.time.maxDeltaTime);
-        this.lastUpdateTime = time;
+        const deltaTime = Math.min(Time.deltaTime, config.time.maxDeltaTime);
 
-        const mouseActive = (mouse.leftDown || mouse.rightDown) && mouse.canvas.isInside && !this.blocked;
+        const mouseActive = (mouse.leftDown || mouse.rightDown) && mouse.canvas.isInside;
         if (!mouseActive) { this.brushAccumulator = 0; return; }
 
         this.brushAccumulator = Math.min(
-            this.brushAccumulator + dt * config.time.baseTickRate,
+            this.brushAccumulator + deltaTime * config.time.baseTickRate,
             config.performance.maxAccumulatedSteps
         );
         const steps = Math.floor(this.brushAccumulator);

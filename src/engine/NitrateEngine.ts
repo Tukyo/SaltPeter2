@@ -2,6 +2,7 @@ import type { Size2D } from './definitions/Primitives';
 
 import type { NitrateProcess } from './NitrateProcess';
 import { LogManager } from './debug/LogManager';
+import { Time } from './time/Time';
 
 /**
  * The engine - it provides registry for all engine singletons, de-registry and initialization processing.
@@ -61,16 +62,29 @@ export class NitrateEngine {
         });
     }
 
-    /** Starts the requestAnimationFrame loop, calling Update on all processes each tick. */
+    /** Starts the requestAnimationFrame loop. Awake fires immediately, Start fires on the first frame before Update. */
     // @omitfromdocs
     public static Run(): void {
+        NitrateEngine.Awake();
+        let started = false;
         const tick = (now: number) => {
+            if (!started) { NitrateEngine.Start(); started = true; }
             NitrateEngine.Update(now);
             NitrateEngine.frame = requestAnimationFrame(tick);
         };
         NitrateEngine.frame = requestAnimationFrame(tick);
         LogManager.Instance?.Log({
             text: 'Run.',
+            options: { tags: ['NitrateEngine'] }
+        });
+    }
+
+    /** Calls Awake on all registered processes. */
+    // @omitfromdocs
+    public static Awake(): void {
+        for (const p of NitrateEngine.processes) p.Awake?.();
+        LogManager.Instance?.Log({
+            text: `Awake. (${NitrateEngine.processes.length} processes)`,
             options: { tags: ['NitrateEngine'] }
         });
     }
@@ -95,10 +109,13 @@ export class NitrateEngine {
         });
     }
 
-    /** Calls Update on all registered processes with the current timestamp. */
+    /** Calls Update on all registered processes. */
     // @omitfromdocs
     public static Update(now: number): void {
-        for (const p of NitrateEngine.processes) p.Update?.(now);
+        Time.Tick(now);
+        for (const p of NitrateEngine.processes) {
+            if (p.enabled) { p.Update?.(); }
+        }
     }
 
     /** Calls BeforeResize on all processes (awaited), then OnResize with the new size. */

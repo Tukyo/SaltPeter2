@@ -26,6 +26,7 @@ export class BrushPreview extends NitrateProcess {
 
     constructor() {
         super();
+        this.Register();
 
         const renderer = Renderer.Instance?.GetWebGPU();
         if (!renderer) { throw new Error('BrushPreview requires an active Renderer'); }
@@ -36,16 +37,16 @@ export class BrushPreview extends NitrateProcess {
         document.body.appendChild(this.element);
     }
 
-    public Start(): void {
+    public Awake(): void {
         LogManager.Instance?.Log({
-            text: 'BrushPreview start.',
+            text: 'BrushPreview awake.',
             options: {
                 tags: ['Brush', "NitrateProcessInit"]
             }
         });
     }
 
-    public Update(now: number): void {
+    public Update(): void {
         const mouse = Input.Instance?.GetMouseState();
         if (!mouse || !mouse.canvas.isInside) { this.Hide(); return; }
 

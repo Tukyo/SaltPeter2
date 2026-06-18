@@ -87,6 +87,7 @@ export class ShaderAssembler {
             ShaderFactory.GenerateFireSimulationStruct(),
             ShaderFactory.GenerateIntentUniformStruct(),
             ShaderFactory.GenerateReactionConstants(),
+            ShaderFactory.GenerateNoiseConstants(),
             commonWgsl,
             identityWgsl,
             identityQueriesWgsl,

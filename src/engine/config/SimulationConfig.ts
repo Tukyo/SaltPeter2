@@ -8,6 +8,15 @@ export class SimulationConfig {
         time: {
             baseTickRate: 60,
             maxDeltaTime: 0.05
+        },
+        noise: {
+            type: 0,
+            octaves: 2,
+            persistence: 0.5,
+            scale: 15.0,
+            scrollSpeed: 0.03,
+            threshold: 0.3,
+            strength: 0.25
         }
     };
 

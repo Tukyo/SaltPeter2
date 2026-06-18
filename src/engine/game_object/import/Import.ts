@@ -1,4 +1,4 @@
-import type { AnyComponent } from '../../component/Component';
+import type { Component } from '../../component/Component';
 import type { GameObject } from '../GameObject';
 
 import { ComponentRegistry } from '../../component/ComponentRegistry';
@@ -93,18 +93,18 @@ export abstract class Import extends NitrateProcess {
         for (const component of [...go.components]) {
             if (!fileTypes.has(component.type)) {
                 const ComponentClass = ComponentRegistry.GetByType(component.type);
-                if (ComponentClass) { go.RemoveComponent(ComponentClass as new () => AnyComponent); }
+                if (ComponentClass) { go.RemoveComponent(ComponentClass as new () => Component); }
             }
         }
 
         for (const raw of data.components) {
             const typeName = raw['type'];
             if (typeof typeName !== 'string') { continue; }
-            let component: AnyComponent | undefined = go.components.find(c => c.type === typeName);
+            let component: Component | undefined = go.components.find(c => c.type === typeName);
             if (!component) {
                 const ComponentClass = ComponentRegistry.GetByType(typeName);
                 if (ComponentClass) {
-                    component = go.AddComponent(ComponentClass as new () => AnyComponent);
+                    component = go.AddComponent(ComponentClass as new () => Component);
                 } else {
                     LogManager.Instance?.LogWarning({
                         text: `Unknown component type '${typeName}' on ${go.name} — skipped.`,

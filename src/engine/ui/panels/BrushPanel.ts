@@ -89,6 +89,7 @@ export class BrushPanel extends NitrateProcess {
 
     constructor(options: BrushOptions) {
         super();
+        this.Register();
 
         const defaults = UserInterfaceConfig.GetConfig().defaults.brush;
         this.panel = new CollapsiblePanel({
