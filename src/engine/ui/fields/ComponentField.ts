@@ -305,6 +305,30 @@ export abstract class ComponentField<T extends Component = Component> {
         return row;
     }
 
+    /** Builds a labeled text input row. */
+    protected StringField(label: string, value: string, onChange: (v: string) => void, tooltip?: string): HTMLElement {
+        const row = document.createElement('div');
+        row.className = 'inspector-field';
+
+        const lbl = document.createElement('label');
+        lbl.textContent = label;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = value;
+        input.addEventListener('input', () => { onChange(input.value); });
+
+        row.appendChild(lbl);
+        row.appendChild(input);
+
+        if (tooltip) {
+            row.addEventListener('mouseenter', () => TooltipManager.Instance?.Show(tooltip));
+            row.addEventListener('mouseleave', () => TooltipManager.Instance?.Hide());
+        }
+
+        return row;
+    }
+
     /** Builds a read-only labeled text row. */
     protected ReadOnlyField(label: string, value: string, tooltip?: string): HTMLElement {
         const row = document.createElement('div');

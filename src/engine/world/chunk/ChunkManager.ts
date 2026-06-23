@@ -147,12 +147,16 @@ export class ChunkManager extends NitrateProcess {
         return entry;
     }
 
-    /** Persists the chunk to disk and removes it from the in-memory map. @internal */
-    public async SaveAndUnload(address: ChunkAddress): Promise<void> {
-        const entry = this.Get(address);
-        if (!entry) { return; }
-        await this.persistence.SaveChunk(address, entry);
-        this.Unload(address);
+    /** Persists every loaded chunk to disk. Call on save/quit, not during play. @internal */
+    public async SaveAll(): Promise<void> {
+        const count = this.chunks.size;
+        for (const entry of this.chunks.values()) {
+            await this.persistence.SaveChunk(entry.address, entry);
+        }
+        LogManager.Instance?.Log({
+            text: `Saved ${count} chunks to disk.`,
+            options: { tags: ['Chunk'] }
+        });
     }
 
     /** Uploads the newly exposed strip of chunks after a shift. @internal */
@@ -211,17 +215,6 @@ export class ChunkManager extends NitrateProcess {
                 this.uploadedChunks.add(ChunkData.GetKey({ cx, cy }));
             }
         }
-    }
-
-    /** Removes a chunk from the in-memory map without saving it. @internal */
-    public Unload(address: ChunkAddress): void {
-        const key = ChunkData.GetKey(address);
-        this.chunks.delete(key);
-        this.uploadedChunks.delete(key);
-        LogManager.Instance?.Log({
-            text: `Chunk (${address.cx},${address.cy}) unloaded.`,
-            options: { tags: ['Chunk'], noisy: true }
-        });
     }
 
     public OnResize(): void {

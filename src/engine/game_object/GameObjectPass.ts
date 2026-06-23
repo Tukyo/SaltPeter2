@@ -27,6 +27,7 @@ import { MaterialQuery } from '../materials/MaterialQuery';
 import { MaterialVisualSchema } from '../materials/MaterialVisualSchema';
 import { ShaderAssembler } from '../shaders/ShaderAssembler';
 import { SimulationConfig } from '../config/SimulationConfig';
+import { World } from '../world/World';
 import { GameObject } from './GameObject';
 
 interface GameObjectPassParams {
@@ -106,8 +107,31 @@ export class GameObjectPass implements SimulationResource {
     // @omitfromdocs
     public GetTotalBoundaryPoints(): number { return this.totalBoundaryPoints; }
 
+    /**
+     * Called by World when the sim buffer blits (shifts by one chunk).
+     * Adjusts all active GO positions in the GPU state buffer by the given sim-space delta
+     * so their positions remain correct after the streaming window has moved. @internal
+     */
+    public OnSimOriginShift(deltaX: number, deltaY: number): void {
+        for (const [, slot] of this.gameObjectSlots) {
+            if (slot === -1) { continue; }
+            const shadow = this.slotSimPositions.get(slot);
+            if (!shadow) { continue; }
+            shadow[0] += deltaX;
+            shadow[1] += deltaY;
+            shadow[2] += deltaX;
+            shadow[3] += deltaY;
+            this.device.queue.writeBuffer(
+                this.gameObjectBuffers.stateBuffer,
+                slot * GameObjectStateSchema.byteStride,
+                shadow
+            );
+        }
+    }
+
     // Slot tracking — persists for the lifetime of the pass
     private readonly gameObjectSlots = new Map<number, number>(); // GameObject id → state buffer slot index
+    private readonly slotSimPositions = new Map<number, Float32Array>(); // slot → [posX, posY, prevPosX, prevPosY] in sim space
     private nextSlot: number = 0;
     private totalCells: number = 0;
     private totalBoundaryPoints: number = 0;
@@ -271,10 +295,11 @@ export class GameObjectPass implements SimulationResource {
         const sf = new Float32Array(stateBuf);
         const su = new Uint32Array(stateBuf);
 
-        sf[0] = transform.position.x;
-        sf[1] = transform.position.y;
-        sf[2] = transform.position.x; // prevPosX — same as posX on first upload
-        sf[3] = transform.position.y; // prevPosY — same as posY on first upload
+        const simOrigin = World.Instance?.GetSimOrigin() ?? { x: 0, y: 0 };
+        sf[0] = transform.position.x - simOrigin.x;
+        sf[1] = transform.position.y - simOrigin.y;
+        sf[2] = transform.position.x - simOrigin.x; // prevPosX — same as posX on first upload
+        sf[3] = transform.position.y - simOrigin.y; // prevPosY — same as posY on first upload
         sf[4] = rigidbody ? rigidbody.velocity.x : 0;
         sf[5] = rigidbody ? rigidbody.velocity.y : 0;
         sf[6] = rigidbody ? rigidbody.gravityScale : 0;
@@ -361,10 +386,11 @@ export class GameObjectPass implements SimulationResource {
         const simH = this.simulationLayer.height;
         const maxDensity = MaterialQuery.GetMaxDensity();
         const colorsPerMaterial = MaterialVisualSchema.GetColorsPerMaterial();
+        const simOrigin = World.Instance?.GetSimOrigin() ?? { x: 0, y: 0 };
 
         for (const cell of cells) {
-            const simX = Math.round(transform.position.x + cell.pos.x - pivotX);
-            const simY = Math.round(transform.position.y - cell.pos.y + pivotY);
+            const simX = Math.round(transform.position.x - simOrigin.x + cell.pos.x - pivotX);
+            const simY = Math.round(transform.position.y - simOrigin.y - cell.pos.y + pivotY);
             if (simX < 0 || simY < 0 || simX >= simW || simY >= simH) { continue; }
             const texY = simY;
 
@@ -414,6 +440,29 @@ export class GameObjectPass implements SimulationResource {
         // Upload any GameObjects that haven't been seen before
         for (const gameObject of manager.GetAll()) {
             if (!this.gameObjectSlots.has(gameObject.id)) { this.UploadGameObject(gameObject); }
+        }
+
+        // Sync CPU transform position into GPU state buffer for GOs without a Rigidbody and
+        // for kinematic RBs. Both are position-driven from the CPU; the GPU physics pass is a
+        // no-op for kinematic bodies, so we push the authoritative position before the stamp.
+        const posXFieldIndex = 0;
+        const simOrigin = World.Instance?.GetSimOrigin() ?? { x: 0, y: 0 };
+        for (const [goId, slot] of this.gameObjectSlots) {
+            if (slot === -1) { continue; }
+            const go = manager.Get(goId);
+            if (!go) { continue; }
+            const rigidbody = go.GetComponent(Rigidbody);
+            if (rigidbody && rigidbody.bodyType !== 'Kinematic') { continue; }
+            const transform = go.GetComponent(Transform);
+            if (!transform) { continue; }
+            const simX = transform.position.x - simOrigin.x;
+            const simY = transform.position.y - simOrigin.y;
+            const byteOffset = slot * GameObjectStateSchema.byteStride + posXFieldIndex * 4;
+            this.device.queue.writeBuffer(
+                this.gameObjectBuffers.stateBuffer,
+                byteOffset,
+                new Float32Array([simX, simY, simX, simY])
+            );
         }
 
         // Collider rebuilds — CPU-side; driven by dirty flag (set by cell-loss detection later)
@@ -549,6 +598,10 @@ export class GameObjectPass implements SimulationResource {
         if (this.readbackInFlight || this.nextSlot === 0) { return; }
         this.readbackInFlight = true;
 
+        const simOrigin = World.Instance?.GetSimOrigin() ?? { x: 0, y: 0 };
+        const capturedSimOriginX = simOrigin.x;
+        const capturedSimOriginY = simOrigin.y;
+
         const { stateReadbackBuffer, deadCellReadbackBuffer } = this.gameObjectBuffers;
         const mapPromises: Promise<void>[] = [stateReadbackBuffer.mapAsync(GPUMapMode.READ)];
         if (this.totalCells > 0) { mapPromises.push(deadCellReadbackBuffer.mapAsync(GPUMapMode.READ)); }
@@ -586,17 +639,28 @@ export class GameObjectPass implements SimulationResource {
                 }
             }
 
-            const transform = gameObject.GetComponent(Transform);
-            if (transform) {
-                transform.position.x = dataF32[base + 0];
-                transform.position.y = dataF32[base + 1];
-                transform.rotation = dataF32[base + 23]; // theta
-            }
+            const simPosX = dataF32[base + 0];
+            const simPosY = dataF32[base + 1];
+            const simPrevX = dataF32[base + 2];
+            const simPrevY = dataF32[base + 3];
+
+            const shadow = this.slotSimPositions.get(slot) ?? new Float32Array(4);
+            shadow[0] = simPosX;
+            shadow[1] = simPosY;
+            shadow[2] = simPrevX;
+            shadow[3] = simPrevY;
+            this.slotSimPositions.set(slot, shadow);
 
             const rigidbody = gameObject.GetComponent(Rigidbody);
-            if (rigidbody) {
+            if (rigidbody && rigidbody.bodyType !== 'Kinematic') {
+                const transform = gameObject.GetComponent(Transform);
+                if (transform) {
+                    transform.position.x = simPosX + capturedSimOriginX;
+                    transform.position.y = simPosY + capturedSimOriginY;
+                    transform.rotation = dataF32[base + 23];
+                }
                 rigidbody.isSleeping = dataU32[base + 21] === 1;
-                rigidbody.angularVelocity = dataF32[base + 24]; // omega
+                rigidbody.angularVelocity = dataF32[base + 24];
             }
         }
 

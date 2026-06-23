@@ -40,6 +40,7 @@ function createWindow(): void {
         title: `SaltPeter v${app.getVersion()}`,
         width: 1280,
         height: 800,
+        fullscreen: true,
         webPreferences: {
             preload: join(__dirname, '../preload/preload.cjs'),
             contextIsolation: true,

@@ -377,6 +377,7 @@ export class ShaderAssembler {
             ShaderFactory.GenerateParticleConstants(),
             ShaderFactory.GenerateColorsPerMaterial(),
             ShaderFactory.GenerateVisualEntryStruct(),
+            ShaderFactory.GenerateParticleRenderUniformStruct(),
             particleRenderWgsl,
         ].join('\n');
     }

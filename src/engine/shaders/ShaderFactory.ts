@@ -398,6 +398,8 @@ export class ShaderFactory {
         return this.GenerateStruct('ParticleEmissionUniforms', [
             ['time', 'f32'],
             ['deltaTime', 'f32'],
+            ['simOriginX', 'f32'],
+            ['simOriginY', 'f32'],
         ]);
     }
 
@@ -406,6 +408,16 @@ export class ShaderFactory {
         return this.GenerateStruct('ParticleSimUniforms', [
             ['deltaTime', 'f32'],
             ['time', 'f32'],
+            ['simOriginX', 'f32'],
+            ['simOriginY', 'f32'],
+        ]);
+    }
+
+    // @omitfromdocs
+    public static GenerateParticleRenderUniformStruct(): string {
+        return this.GenerateStruct('ParticleRenderUniforms', [
+            ['simOriginX', 'f32'],
+            ['simOriginY', 'f32'],
         ]);
     }
     //#endregion

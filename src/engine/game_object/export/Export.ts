@@ -2,6 +2,7 @@ import type { AssetType } from '../Metadata';
 import type { Size2D, Vec2 } from '../../definitions/Primitives';
 import type { GameObject } from '../GameObject';
 
+import { CustomComponent } from '../../component/definitions/custom/Custom';
 import { LogManager } from '../../debug/LogManager';
 import { Metadata } from '../Metadata';
 import { Modal } from '../../ui/Modal';
@@ -37,9 +38,20 @@ export abstract class Export extends NitrateProcess {
 
         const components = go.components.map(c => {
             const serialized: Record<string, unknown> = { enabled: c.enabled };
-            for (const key of Object.keys(c)) {
-                if (key === 'gameObject' || key === '_enabled') { continue; }
-                serialized[key] = (c as unknown as Record<string, unknown>)[key];
+            if (c instanceof CustomComponent) {
+                serialized['customComponentType'] = c.constructor.name;
+                for (const key of Object.keys(c)) {
+                    if (key === 'gameObject' || key === '_enabled') { continue; }
+                    const value = (c as unknown as Record<string, unknown>)[key];
+                    if (value === null || typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') {
+                        serialized[key] = value;
+                    }
+                }
+            } else {
+                for (const key of Object.keys(c)) {
+                    if (key === 'gameObject' || key === '_enabled') { continue; }
+                    serialized[key] = (c as unknown as Record<string, unknown>)[key];
+                }
             }
             return serialized;
         });

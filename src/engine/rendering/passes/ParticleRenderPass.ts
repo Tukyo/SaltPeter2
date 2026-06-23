@@ -17,6 +17,8 @@ interface ParticleRenderPassCreateParams {
 interface ParticleRenderPassRunParams {
     encoder: GPUCommandEncoder;
     layers: RenderingLayers;
+    simOriginX: number;
+    simOriginY: number;
 }
 
 /**
@@ -35,6 +37,7 @@ export class ParticleRenderPass {
     private readonly particleBuffer: ParticleBuffer;
     private readonly particleDefinitionBuffer: ParticleDefinitionBuffer;
     private readonly materialVisualBuffer: MaterialVisualBuffer;
+    private readonly uniforms: GPUBuffer;
     private readonly workgroupSize: number;
 
     private constructor(
@@ -48,6 +51,10 @@ export class ParticleRenderPass {
         this.particleDefinitionBuffer = params.particleDefinitionBuffer;
         this.materialVisualBuffer = params.materialVisualBuffer;
         this.workgroupSize = workgroupSize;
+        this.uniforms = this.device.createBuffer({
+            size: 2 * Float32Array.BYTES_PER_ELEMENT,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
     }
 
     /** Compiles the particle render shader and returns a ready-to-use pass. @internal */
@@ -67,7 +74,8 @@ export class ParticleRenderPass {
 
     /** Clears the particle texture then scatter-writes active particle pixels. @internal */
     public Run(params: ParticleRenderPassRunParams): void {
-        const { encoder, layers } = params;
+        const { encoder, layers, simOriginX, simOriginY } = params;
+        this.device.queue.writeBuffer(this.uniforms, 0, new Float32Array([simOriginX, simOriginY]));
 
         const clearPass = encoder.beginRenderPass({
             colorAttachments: [{
@@ -86,6 +94,7 @@ export class ParticleRenderPass {
                 { binding: 1, resource: { buffer: this.particleDefinitionBuffer.buffer } },
                 { binding: 2, resource: { buffer: this.materialVisualBuffer.buffer } },
                 { binding: 3, resource: layers.particleTexture.createView() },
+                { binding: 4, resource: { buffer: this.uniforms } },
             ],
         });
 
@@ -98,5 +107,7 @@ export class ParticleRenderPass {
     }
 
     // @omitfromdocs
-    public Destroy(): void {}
+    public Destroy(): void {
+        this.uniforms.destroy();
+    }
 }

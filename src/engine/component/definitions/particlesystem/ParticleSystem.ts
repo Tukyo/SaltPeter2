@@ -4,7 +4,7 @@ import { Component } from '../../Component';
 import iconUrl from './icon.png';
 
 export class ParticleSystem extends Component {
-    static readonly label = 'ParticleSystem';
+    static readonly label = 'Particle System';
     static readonly icon = iconUrl;
     readonly type = 'ParticleSystem' as const;
     runtimeSlot: number = -1;

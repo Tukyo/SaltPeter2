@@ -1,6 +1,6 @@
 import { Nitrate } from '@Nitrate';
 
-import PlayerCapsuleRaw from '../../../resources/GameObjects/PlayerCapsule.gameobject.json';
+import PlayerCapsuleRaw from '../../resources/GameObjects/PlayerCapsule.gameobject.json';
 
 type GameObjectJson = { components: Array<{ type: string } & Record<string, unknown>> };
 

@@ -2,11 +2,13 @@ import type { ChunkEntry } from './chunk/ChunkData';
 import type { SimulationLayer } from '../simulation/SimulationLayer';
 import type { Size2D, Vec2 } from '../definitions/Primitives';
 
-import { Camera } from '../camera/Camera';
+import { Camera } from '../component/definitions/camera/Camera';
+import { Transform } from '../component/definitions/transform/Transform';
 import { ChunkData } from './chunk/ChunkData';
 import { ChunkManager } from './chunk/ChunkManager';
 import { DataConfig } from '../config/DataConfig';
 import { DataPersistenceManager } from '../data_persistence/DataPersistenceManager';
+import { GameObjectLayer } from '../game_object/GameObjectLayer';
 import { LogManager } from '../debug/LogManager';
 import { NitrateProcess } from '../NitrateProcess';
 import { Renderer } from '../rendering/Renderer';
@@ -25,20 +27,16 @@ export interface WorldMetadata {
 interface HorizontalShiftParams {
     device: GPUDevice;
     simulationLayer: SimulationLayer;
-    cam: Camera;
+    gameObjectLayer: GameObjectLayer;
     chunkSize: number;
-    contentWidth: number;
-    canvasWidth: number;
     offsetCellsX: number;
 }
 
 interface VerticalShiftParams {
     device: GPUDevice;
     simulationLayer: SimulationLayer;
-    cam: Camera;
+    gameObjectLayer: GameObjectLayer;
     chunkSize: number;
-    contentHeight: number;
-    canvasHeight: number;
     offsetCellsY: number;
 }
 
@@ -86,13 +84,14 @@ export class World extends NitrateProcess {
     public IsWorldReady(): Promise<void> { return this.isWorldReady; }
 
     private readonly blit = new WorldBlit();
+    private isInitialized: boolean = false;
 
     constructor() {
         super();
         this.Register();
 
         World.Instance = this;
-        
+
         new ChunkManager();
     }
 
@@ -102,9 +101,6 @@ export class World extends NitrateProcess {
             options: { tags: ['World', 'NitrateProcessInit'] }
         });
 
-        const { chunk, generation } = WorldConfig.GetConfig();
-        this.simOrigin.x = -(chunk.margin * chunk.size) + generation.spawnOffset.cx * chunk.size;
-        this.simOrigin.y = -(chunk.margin * chunk.size) + generation.spawnOffset.cy * chunk.size;
         this.isWorldReady = this.CreateOrFetchMeta()
             .then(() => WorldStampRegistry.LoadTemplates())
             .then(() => { this.SetupStamps(); });
@@ -114,127 +110,101 @@ export class World extends NitrateProcess {
 
     public Update(): void {
         const sim = SimulationManager.Instance;
-        const cam = Camera.Instance;
         const renderer = Renderer.Instance?.GetWebGPU();
-        if (!sim?.simulationLayer || !cam || !renderer) { return; }
+        if (!sim?.simulationLayer || !sim?.gameObjectLayer || !renderer) { return; }
 
         if (!this.blit.IsReady()) {
             this.blit.Allocate(renderer.device, sim.simulationLayer);
         }
 
-        const { simulationLayer } = sim;
-        const { canvas } = renderer;
+        const camPos = Camera.Main?.gameObject?.GetComponent(Transform)?.position ?? null;
+        if (!camPos) { return; }
+
+        const { simulationLayer, gameObjectLayer } = sim;
         const chunkSize = ChunkData.GetChunkSize();
         const { chunk } = WorldConfig.GetConfig();
         const margin = chunk.margin * chunk.size;
         const contentWidth = simulationLayer.width - 2 * margin;
         const contentHeight = simulationLayer.height - 2 * margin;
 
-        const { x: camX, y: camY } = cam.GetCameraPos();
-        const offsetCellsX = camX * contentWidth / canvas.width;
-        const offsetCellsY = -camY * contentHeight / canvas.height;
+        if (!this.isInitialized) {
+            this.simOrigin.x = Math.floor((camPos.x - simulationLayer.width / 2) / chunkSize) * chunkSize;
+            this.simOrigin.y = Math.floor((camPos.y - simulationLayer.height / 2) / chunkSize) * chunkSize;
+            this.isInitialized = true;
+            if (SimulationManager.Instance) { SimulationManager.Instance.enabled = false; }
+            (ChunkManager.Instance?.InitializeChunks(renderer.device, simulationLayer, { width: simulationLayer.width, height: simulationLayer.height }) ?? Promise.resolve())
+                .then(() => { if (SimulationManager.Instance) { SimulationManager.Instance.enabled = true; } });
+            return;
+        }
+
+        const offsetCellsX = (camPos.x - this.simOrigin.x) - contentWidth / 2 - margin;
+        const offsetCellsY = (camPos.y - this.simOrigin.y) - contentHeight / 2 - margin;
 
         this.HandleHorizontalShift({
             device: renderer.device,
             simulationLayer,
-            cam,
+            gameObjectLayer,
             chunkSize,
-            contentWidth,
-            canvasWidth: canvas.width,
             offsetCellsX
         });
         this.HandleVerticalShift({
             device: renderer.device,
             simulationLayer,
-            cam,
+            gameObjectLayer,
             chunkSize,
-            contentHeight: contentHeight,
-            canvasHeight: canvas.height,
             offsetCellsY
         });
     }
 
     /** Checks the horizontal camera offset and shifts the sim window left or right by one chunk if the threshold is exceeded. */
     private HandleHorizontalShift(params: HorizontalShiftParams): void {
-        const { device, simulationLayer, cam, chunkSize, contentWidth, canvasWidth, offsetCellsX } = params;
+        const { device, simulationLayer, gameObjectLayer, chunkSize, offsetCellsX } = params;
         const simDebounce = WorldConfig.GetConfig().performance.simDebounce;
 
         if (offsetCellsX > chunkSize) {
             const ox = this.simOrigin.x; const oy = this.simOrigin.y;
             this.simOrigin.x += chunkSize;
-            this.BeginStripReadback({
-                device,
-                simulationLayer,
-                delta: { x: chunkSize, y: 0 },
-                capturedOrigin: { x: ox, y: oy }
-            });
-            this.blit.Blit(device, simulationLayer, { x: chunkSize, y: 0 });
+            SimulationManager.Instance?.gameObjectPass?.OnSimOriginShift(-chunkSize, 0);
+            this.BeginStripReadback({ device, simulationLayer, delta: { x: chunkSize, y: 0 }, capturedOrigin: { x: ox, y: oy } });
+            this.blit.Blit(device, simulationLayer, gameObjectLayer, { x: chunkSize, y: 0 });
             ChunkManager.Instance?.UploadEdgeChunks(device, simulationLayer, { x: chunkSize, y: 0 }, this.simOrigin);
             SimulationManager.Instance?.Debounce(simDebounce);
-            cam.Pan(-chunkSize * canvasWidth / contentWidth, 0);
-            LogManager.Instance?.Log({
-                text: 'World scrolled right — loaded new chunk column.',
-                options: { tags: ['World'], noisy: true }
-            });
+            LogManager.Instance?.Log({ text: 'World scrolled right — loaded new chunk column.', options: { tags: ['World'], noisy: true } });
         } else if (offsetCellsX < -chunkSize) {
             const ox = this.simOrigin.x; const oy = this.simOrigin.y;
             this.simOrigin.x -= chunkSize;
-            this.BeginStripReadback({
-                device,
-                simulationLayer,
-                delta: { x: -chunkSize, y: 0 },
-                capturedOrigin: { x: ox, y: oy }
-            });
-            this.blit.Blit(device, simulationLayer, { x: -chunkSize, y: 0 });
+            SimulationManager.Instance?.gameObjectPass?.OnSimOriginShift(chunkSize, 0);
+            this.BeginStripReadback({ device, simulationLayer, delta: { x: -chunkSize, y: 0 }, capturedOrigin: { x: ox, y: oy } });
+            this.blit.Blit(device, simulationLayer, gameObjectLayer, { x: -chunkSize, y: 0 });
             ChunkManager.Instance?.UploadEdgeChunks(device, simulationLayer, { x: -chunkSize, y: 0 }, this.simOrigin);
             SimulationManager.Instance?.Debounce(simDebounce);
-            cam.Pan(chunkSize * canvasWidth / contentWidth, 0);
-            LogManager.Instance?.Log({
-                text: 'World scrolled left — loaded new chunk column.',
-                options: { tags: ['World'], noisy: true }
-            });
+            LogManager.Instance?.Log({ text: 'World scrolled left — loaded new chunk column.', options: { tags: ['World'], noisy: true } });
         }
     }
 
     /** Checks the vertical camera offset and shifts the sim window up or down by one chunk if the threshold is exceeded. */
     private HandleVerticalShift(params: VerticalShiftParams): void {
-        const { device, simulationLayer, cam, chunkSize, contentHeight, canvasHeight, offsetCellsY } = params;
+        const { device, simulationLayer, gameObjectLayer, chunkSize, offsetCellsY } = params;
         const simDebounce = WorldConfig.GetConfig().performance.simDebounce;
 
         if (offsetCellsY > chunkSize) {
             const ox = this.simOrigin.x; const oy = this.simOrigin.y;
             this.simOrigin.y += chunkSize;
-            this.BeginStripReadback({
-                device,
-                simulationLayer,
-                delta: { x: 0, y: chunkSize },
-                capturedOrigin: { x: ox, y: oy }
-            });
-            this.blit.Blit(device, simulationLayer, { x: 0, y: chunkSize });
+            SimulationManager.Instance?.gameObjectPass?.OnSimOriginShift(0, -chunkSize);
+            this.BeginStripReadback({ device, simulationLayer, delta: { x: 0, y: chunkSize }, capturedOrigin: { x: ox, y: oy } });
+            this.blit.Blit(device, simulationLayer, gameObjectLayer, { x: 0, y: chunkSize });
             ChunkManager.Instance?.UploadEdgeChunks(device, simulationLayer, { x: 0, y: chunkSize }, this.simOrigin);
             SimulationManager.Instance?.Debounce(simDebounce);
-            cam.Pan(0, chunkSize * canvasHeight / contentHeight);
-            LogManager.Instance?.Log({
-                text: 'World scrolled up — loaded new chunk row.',
-                options: { tags: ['World'], noisy: true }
-            });
+            LogManager.Instance?.Log({ text: 'World scrolled up — loaded new chunk row.', options: { tags: ['World'], noisy: true } });
         } else if (offsetCellsY < -chunkSize) {
             const ox = this.simOrigin.x; const oy = this.simOrigin.y;
             this.simOrigin.y -= chunkSize;
-            this.BeginStripReadback({
-                device,
-                simulationLayer,
-                delta: { x: 0, y: -chunkSize },
-                capturedOrigin: { x: ox, y: oy }
-            });
-            this.blit.Blit(device, simulationLayer, { x: 0, y: -chunkSize });
+            SimulationManager.Instance?.gameObjectPass?.OnSimOriginShift(0, chunkSize);
+            this.BeginStripReadback({ device, simulationLayer, delta: { x: 0, y: -chunkSize }, capturedOrigin: { x: ox, y: oy } });
+            this.blit.Blit(device, simulationLayer, gameObjectLayer, { x: 0, y: -chunkSize });
             ChunkManager.Instance?.UploadEdgeChunks(device, simulationLayer, { x: 0, y: -chunkSize }, this.simOrigin);
             SimulationManager.Instance?.Debounce(simDebounce);
-            cam.Pan(0, -chunkSize * canvasHeight / contentHeight);
-            LogManager.Instance?.Log({
-                text: 'World scrolled down — loaded new chunk row.',
-                options: { tags: ['World'], noisy: true }
-            });
+            LogManager.Instance?.Log({ text: 'World scrolled down — loaded new chunk row.', options: { tags: ['World'], noisy: true } });
         }
     }
 
@@ -283,21 +253,7 @@ export class World extends NitrateProcess {
         return { identityBuffer, physicsBuffer, stateBuffer, identityBPR, floatBPR };
     }
 
-    /** Saves and unloads every chunk covered by the evicted strip. */
-    private async EvictChunkStrip(readOrigin: Vec2, readSize: Size2D, capturedOrigin: Vec2): Promise<void> {
-        const chunkSize = ChunkData.GetChunkSize();
-        const startCX = Math.floor((readOrigin.x + capturedOrigin.x) / chunkSize);
-        const startCY = Math.floor((readOrigin.y + capturedOrigin.y) / chunkSize);
-        const endCX = Math.floor((readOrigin.x + readSize.width - 1 + capturedOrigin.x) / chunkSize);
-        const endCY = Math.floor((readOrigin.y + readSize.height - 1 + capturedOrigin.y) / chunkSize);
-        for (let cy = startCY; cy <= endCY; cy++) {
-            for (let cx = startCX; cx <= endCX; cx++) {
-                await ChunkManager.Instance?.SaveAndUnload({ cx, cy });
-            }
-        }
-    }
-
-    /** Maps the readback buffers, writes pixel data to CPU chunk memory, destroys the buffers, then evicts the covered chunks. */
+    /** Maps the readback buffers, writes pixel data to CPU chunk memory, then destroys the buffers. */
     private async CommitStripReadback(params: StripBufferParams): Promise<void> {
         const { buffers } = params;
         const { identityBuffer, physicsBuffer, stateBuffer } = buffers;
@@ -311,7 +267,6 @@ export class World extends NitrateProcess {
             identityBuffer.destroy();
             physicsBuffer.destroy();
             stateBuffer.destroy();
-            await this.EvictChunkStrip(params.readOrigin, params.readSize, params.capturedOrigin);
         } catch {
             identityBuffer.destroy();
             physicsBuffer.destroy();
@@ -414,13 +369,14 @@ export class World extends NitrateProcess {
 
     public OnResize(): void {
         this.blit.Reset();
+        this.isInitialized = false;
         LogManager.Instance?.Log({
             text: 'World OnResize.',
             options: { tags: ['Resize', 'World'] }
         });
     }
 
-    /** Reads back the entire sim texture to CPU chunk buffers and saves every loaded chunk. */
+    /** Reads back the entire sim texture to update all in-memory chunk buffers, then saves every chunk to disk. */
     private async ReadbackAndSaveAll(): Promise<void> {
         const sim = SimulationManager.Instance;
         const renderer = Renderer.Instance?.GetWebGPU();
@@ -431,6 +387,7 @@ export class World extends NitrateProcess {
         const readSize: Size2D = { width: simulationLayer.width, height: simulationLayer.height };
         const buffers = this.PrepareReadback(renderer.device, simulationLayer, readOrigin, readSize);
         await this.CommitStripReadback({ buffers, readOrigin, readSize, capturedOrigin: this.simOrigin });
+        await ChunkManager.Instance?.SaveAll();
     }
 
     public async BeforeDestroy(): Promise<void> {

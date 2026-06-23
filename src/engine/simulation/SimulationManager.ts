@@ -36,7 +36,6 @@ import { SimulationTexture } from './SimulationTexture';
 import { TexturePixelReader } from '../rendering/TexturePixelReader';
 
 import { Chunk } from '../world/chunk/Chunk';
-import { ChunkManager } from '../world/chunk/ChunkManager';
 import { World } from '../world/World';
 
 import { ParticleBuffer } from '../particle/ParticleBuffer';
@@ -154,10 +153,6 @@ export class SimulationManager extends NitrateProcess {
         this.gameObjectLayer = this.RegisterResource(new GameObjectLayer(device, width, height));
 
         new SimulationInitializer(device, this.simulationLayer, this.gameObjectLayer);
-
-        if (this.simulationLayer && World.Instance) {
-            await ChunkManager.Instance?.InitializeChunks(device, this.simulationLayer, size);
-        }
 
         this.gameObjectBuffers = this.RegisterResource(new GameObjectBuffers(device));
         this.intent = this.RegisterResource(new SimulationTexture(device, size));
@@ -321,6 +316,7 @@ export class SimulationManager extends NitrateProcess {
             state.SetSimStepCount(state.GetSimStepCount() + 1);
 
             const emitters = [];
+            const simOrigin = World.Instance?.GetSimOrigin() ?? { x: 0, y: 0 };
             for (const go of GameObjectManager.Instance?.GetAll() ?? []) {
                 const particleSystem = go.GetComponent(ParticleSystem);
                 const goTransform = go.GetComponent(Transform);
@@ -338,8 +334,14 @@ export class SimulationManager extends NitrateProcess {
             particleEmitterBuffer.Update(device, emitters, state.GetSimTime());
 
             const particleEnc = device.createCommandEncoder();
-            particleEmissionPass.Run({ encoder: particleEnc, time: state.GetSimTime(), deltaTime: simStepDuration });
-            particleSimulationPass.Run(particleEnc, simStepDuration, state.GetSimTime());
+            particleEmissionPass.Run({
+                encoder: particleEnc,
+                time: state.GetSimTime(),
+                deltaTime: simStepDuration,
+                simOriginX: simOrigin.x,
+                simOriginY: simOrigin.y,
+            });
+            particleSimulationPass.Run(particleEnc, simStepDuration, state.GetSimTime(), simOrigin.x, simOrigin.y);
             device.queue.submit([particleEnc.finish()]);
 
             state.SetPhysicsTickCounter(state.GetPhysicsTickCounter() + 1);

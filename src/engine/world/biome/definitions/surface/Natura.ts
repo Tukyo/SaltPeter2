@@ -23,7 +23,7 @@ export const Natura: BiomeDefinition = {
         {
             material: {
                 name: 'dirt',
-                occupancy: 'dynamic',
+                occupancy: 'static',
                 weight: 1
             }, depth: { min: -Infinity, max: 64 }
         }

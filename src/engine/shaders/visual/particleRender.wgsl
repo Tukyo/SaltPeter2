@@ -7,6 +7,7 @@
 @group(0) @binding(1) var<storage, read> definitions: array<f32>;
 @group(0) @binding(2) var<storage, read> materials: array<VisualEntry>;
 @group(0) @binding(3) var particleTexture: texture_storage_2d<rgba8unorm, write>;
+@group(0) @binding(4) var<uniform> uniforms: ParticleRenderUniforms;
 
 @compute @workgroup_size(PARTICLE_WG_SIZE)
 fn main(@builtin(global_invocation_id) id: vec3u) {
@@ -22,8 +23,8 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
     let particleId = i32(particles[base + 6u] + 0.5);
 
     let dims = textureDimensions(particleTexture);
-    let texX = i32(posX);
-    let texY = i32(posY);
+    let texX = i32(posX) - i32(uniforms.simOriginX);
+    let texY = i32(posY) - i32(uniforms.simOriginY);
     if texX < 0 || texX >= i32(dims.x) || texY < 0 || texY >= i32(dims.y) { return; }
 
     let defBase = particleId * PARTICLE_DEF_FLOATS;

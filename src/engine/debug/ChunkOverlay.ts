@@ -3,7 +3,8 @@ import type { ChunkAddress } from '../world/chunk/ChunkData';
 import type { Vec2 } from '../definitions/Primitives';
 
 import { BiomeQuery } from '../world/biome/BiomeQuery';
-import { Camera } from '../camera/Camera';
+import { Camera } from '../component/definitions/camera/Camera';
+import { Transform } from '../component/definitions/transform/Transform';
 import { ChunkData } from '../world/chunk/ChunkData';
 import { ChunkManager } from '../world/chunk/ChunkManager';
 import { Renderer } from '../rendering/Renderer';
@@ -110,9 +111,6 @@ export class ChunkOverlay {
         const simulationLayer = SimulationManager.Instance?.simulationLayer;
         if (!simulationLayer || !World.Instance) { return null; }
 
-        const cam = Camera.Instance;
-        if (!cam) { return null; }
-
         const chunkSize = ChunkData.GetChunkSize();
         const { x: simOriginX, y: simOriginY } = World.Instance.GetSimOrigin();
         const { chunk } = WorldConfig.GetConfig();
@@ -123,9 +121,10 @@ export class ChunkOverlay {
         const scaleX = canvas.width / contentWidth;
         const scaleY = canvas.height / contentHeight;
 
-        const { x: camX, y: camY } = cam.GetCameraPos();
-        const camCellX = camX * contentWidth / canvas.width;
-        const camCellY = -camY * contentHeight / canvas.height;
+        const camPos = Camera.Main?.gameObject?.GetComponent(Transform)?.position;
+        const simOrigin = World.Instance.GetSimOrigin();
+        const camCellX = camPos ? (camPos.x - simOrigin.x) - contentWidth / 2 - margin : 0;
+        const camCellY = camPos ? (camPos.y - simOrigin.y) - contentHeight / 2 - margin : 0;
 
         const worldLeft = margin + simOriginX + camCellX;
         const worldRight = simulationLayer.width - margin + simOriginX + camCellX;

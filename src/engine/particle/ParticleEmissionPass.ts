@@ -21,6 +21,8 @@ interface ParticleEmissionRunParams {
     encoder: GPUCommandEncoder;
     time: number;
     deltaTime: number;
+    simOriginX: number;
+    simOriginY: number;
 }
 
 /**
@@ -62,7 +64,7 @@ export class ParticleEmissionPass implements SimulationResource {
         this.particleEmitterBuffer = params.particleEmitterBuffer;
         this.workgroupSize = workgroupSize;
         this.uniforms = this.device.createBuffer({
-            size: 2 * Float32Array.BYTES_PER_ELEMENT,
+            size: 4 * Float32Array.BYTES_PER_ELEMENT,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
     }
@@ -95,8 +97,8 @@ export class ParticleEmissionPass implements SimulationResource {
 
     /** Encodes material and GameObject particle emission dispatches into the provided command encoder. @internal */
     public Run(params: ParticleEmissionRunParams): void {
-        const { encoder, time, deltaTime } = params;
-        this.device.queue.writeBuffer(this.uniforms, 0, new Float32Array([time, deltaTime]));
+        const { encoder, time, deltaTime, simOriginX, simOriginY } = params;
+        this.device.queue.writeBuffer(this.uniforms, 0, new Float32Array([time, deltaTime, simOriginX, simOriginY]));
 
         const materialBindGroup = this.device.createBindGroup({
             layout: this.materialPipeline.getBindGroupLayout(0),

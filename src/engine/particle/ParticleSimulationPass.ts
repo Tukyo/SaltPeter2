@@ -43,7 +43,7 @@ export class ParticleSimulationPass implements SimulationResource {
         this.simulationLayer = params.simulationLayer;
         this.workgroupSize = workgroupSize;
         this.uniforms = this.device.createBuffer({
-            size: 2 * Float32Array.BYTES_PER_ELEMENT,
+            size: 4 * Float32Array.BYTES_PER_ELEMENT,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
     }
@@ -62,8 +62,8 @@ export class ParticleSimulationPass implements SimulationResource {
     }
 
     /** Encodes a particle simulation dispatch into the provided command encoder. @internal */
-    public Run(encoder: GPUCommandEncoder, deltaTime: number, time: number): void {
-        this.device.queue.writeBuffer(this.uniforms, 0, new Float32Array([deltaTime, time]));
+    public Run(encoder: GPUCommandEncoder, deltaTime: number, time: number, simOriginX: number, simOriginY: number): void {
+        this.device.queue.writeBuffer(this.uniforms, 0, new Float32Array([deltaTime, time, simOriginX, simOriginY]));
 
         const bindGroup = this.device.createBindGroup({
             layout: this.pipeline.getBindGroupLayout(0),

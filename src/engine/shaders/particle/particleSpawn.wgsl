@@ -1,7 +1,7 @@
 // Shared particle spawn helper. Requires definitions, particles, and physicsTexture
 // bindings to be declared in the enclosing shader program.
 // Called by both the material emission pass and the GO emission pass.
-fn spawnParticle(originX: f32, originY: f32, defBase: i32, particleId: i32, seed: vec2f, time: f32) {
+fn spawnParticle(originX: f32, originY: f32, simOriginX: f32, simOriginY: f32, defBase: i32, particleId: i32, seed: vec2f, time: f32) {
     let targetSlot = u32(displacementHash(seed + vec2f(13.7, 1.0), time) * f32(PARTICLE_MAX_COUNT)) % PARTICLE_MAX_COUNT;
     let base = targetSlot * PARTICLE_FLOATS_PER_PARTICLE;
     if particles[base + 7u] > 0.5 { return; }
@@ -28,7 +28,7 @@ fn spawnParticle(originX: f32, originY: f32, defBase: i32, particleId: i32, seed
     let inheritEnabled = definitions[defBase + 40];
     let inheritMode = definitions[defBase + 41];
     if inheritEnabled > 0.5 && inheritMode < 0.5 {
-        let physics = textureLoad(physicsTexture, vec2i(i32(originX), i32(originY)));
+        let physics = textureLoad(physicsTexture, vec2i(i32(originX - simOriginX), i32(originY - simOriginY)));
         let mult = definitions[defBase + 42];
         velX += physics.b * mult;
         velY += physics.a * mult;

@@ -4,6 +4,7 @@ import { ComponentField } from '../ComponentField';
 
 export class CircleColliderField extends ComponentField<CircleCollider> {
     public static readonly forType = 'CircleCollider';
+    public static readonly menu = 'Physics/'
 
     protected BuildFields(container: HTMLElement): void {
         container.appendChild(this.Vec2Field(

@@ -1,8 +1,9 @@
 import type { Size2D } from '../../definitions/Primitives';
 import type { RenderingLayers } from '../RenderingLayers';
 
-import { Camera } from '../../camera/Camera';
+import { Camera } from '../../component/definitions/camera/Camera';
 import { ShaderAssembler } from '../../shaders/ShaderAssembler';
+import { Transform } from '../../component/definitions/transform/Transform';
 import { World } from '../../world/World';
 import { WorldConfig } from '../../config/WorldConfig';
 
@@ -66,9 +67,9 @@ export class CompositePass {
 
     /** Blends all layer textures and writes the result to the swapchain view. @internal */
     public Run(params: CompositePassRunParams): void {
-        const { encoder, swapchainView, layers, canvasSize } = params;
+        const { encoder, swapchainView, layers } = params;
 
-        const crop = this.ComputeCrop(layers.size, canvasSize);
+        const crop = this.ComputeCrop(layers.size);
         this.device.queue.writeBuffer(this.cropBuffer, 0, crop);
 
         const bindGroup = this.device.createBindGroup({
@@ -95,19 +96,21 @@ export class CompositePass {
         pass.end();
     }
 
-    private ComputeCrop(simSize: Size2D, canvasSize: Size2D): Float32Array {
+    private ComputeCrop(simSize: Size2D): Float32Array {
         const { chunk } = WorldConfig.GetConfig();
         const margin = chunk.margin * chunk.size;
         const contentW = simSize.width - 2 * margin;
         const contentH = simSize.height - 2 * margin;
         const world = World.Instance;
-        const cam = Camera.Instance;
+        const camTransform = Camera.Main?.gameObject?.GetComponent(Transform);
 
-        if (world && cam) {
-            const { x: camX, y: camY } = cam.GetCameraPos();
+        if (world && camTransform) {
+            const simOrigin = world.GetSimOrigin();
+            const camOriginX = (camTransform.position.x - simOrigin.x) - contentW / 2;
+            const camOriginY = (camTransform.position.y - simOrigin.y) - contentH / 2;
             return new Float32Array([
-                (margin + camX * contentW / canvasSize.width) / simSize.width,
-                (margin - camY * contentH / canvasSize.height) / simSize.height,
+                camOriginX / simSize.width,
+                camOriginY / simSize.height,
                 contentW / simSize.width,
                 contentH / simSize.height,
             ]);

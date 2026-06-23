@@ -9,6 +9,7 @@ import { ComponentField } from '../ComponentField';
 
 export class ParticleSystemField extends ComponentField<ParticleSystem> {
     public static readonly forType = 'ParticleSystem';
+    public static readonly menu = 'Effects/'
 
     protected BuildFields(container: HTMLElement): void {
         const modules = this.component.particle;

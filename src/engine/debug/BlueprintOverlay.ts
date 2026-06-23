@@ -1,4 +1,5 @@
-import { Camera } from '../camera/Camera';
+import { Camera } from '../component/definitions/camera/Camera';
+import { Transform } from '../component/definitions/transform/Transform';
 import { ChunkData } from '../world/chunk/ChunkData';
 import { Renderer } from '../rendering/Renderer';
 import { Renderer2D } from '../rendering/Renderer2D';
@@ -85,9 +86,6 @@ export class BlueprintOverlay {
         const simulationLayer = SimulationManager.Instance?.simulationLayer;
         if (!simulationLayer || !World.Instance) { return null; }
 
-        const cam = Camera.Instance;
-        if (!cam) { return null; }
-
         const registry = World.Instance.stampRegistry;
         if (!registry) { return null; }
 
@@ -101,9 +99,10 @@ export class BlueprintOverlay {
         const scaleX = canvas.width / contentWidth;
         const scaleY = canvas.height / contentHeight;
 
-        const { x: camX, y: camY } = cam.GetCameraPos();
-        const camCellX = camX * contentWidth / canvas.width;
-        const camCellY = -camY * contentHeight / canvas.height;
+        const camPos = Camera.Main?.gameObject?.GetComponent(Transform)?.position;
+        const simOrigin = World.Instance.GetSimOrigin();
+        const camCellX = camPos ? (camPos.x - simOrigin.x) - contentWidth / 2 - margin : 0;
+        const camCellY = camPos ? (camPos.y - simOrigin.y) - contentHeight / 2 - margin : 0;
 
         const items: StampDrawItem[] = [];
 

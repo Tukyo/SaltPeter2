@@ -1,0 +1,29 @@
+{
+  "name": "MainCamera",
+  "components": [
+    {
+      "enabled": true,
+      "type": "Transform",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "scale": {
+        "x": 1,
+        "y": 1
+      },
+      "parentId": null
+    },
+    {
+      "enabled": true,
+      "type": "Camera"
+    },
+    {
+      "enabled": true,
+      "customComponentType": "CameraController",
+      "type": "CustomComponent",
+      "followTarget": null
+    }
+  ]
+}

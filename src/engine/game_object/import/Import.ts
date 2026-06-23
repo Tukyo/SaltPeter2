@@ -2,6 +2,7 @@ import type { Component } from '../../component/Component';
 import type { GameObject } from '../GameObject';
 
 import { ComponentRegistry } from '../../component/ComponentRegistry';
+import { CustomComponent } from '../../component/definitions/custom/Custom';
 import { LogManager } from '../../debug/LogManager';
 import { NitrateProcess } from '../../NitrateProcess';
 
@@ -87,34 +88,51 @@ export abstract class Import extends NitrateProcess {
     protected static HydrateGameObject(go: GameObject, data: SerializedGameObject): void {
         go.name = data.name;
 
-        const fileTypes = new Set(
-            data.components.map(c => c['type']).filter((t): t is string => typeof t === 'string')
-        );
+        const fileKeys = new Set(data.components.map(c => {
+            const type = c['type'];
+            const customType = c['customComponentType'];
+            return typeof customType === 'string' ? customType : type;
+        }).filter((t): t is string => typeof t === 'string'));
+
         for (const component of [...go.components]) {
-            if (!fileTypes.has(component.type)) {
-                const ComponentClass = ComponentRegistry.GetByType(component.type);
-                if (ComponentClass) { go.RemoveComponent(ComponentClass as new () => Component); }
+            const key = component instanceof CustomComponent ? component.constructor.name : component.type;
+            if (!fileKeys.has(key)) {
+                if (component instanceof CustomComponent) {
+                    go.RemoveComponent(component.constructor as new () => Component);
+                } else {
+                    const ComponentClass = ComponentRegistry.GetByType(component.type);
+                    if (ComponentClass) { go.RemoveComponent(ComponentClass as new () => Component); }
+                }
             }
         }
 
         for (const raw of data.components) {
             const typeName = raw['type'];
             if (typeof typeName !== 'string') { continue; }
-            let component: Component | undefined = go.components.find(c => c.type === typeName);
+            const customTypeName = raw['customComponentType'];
+            const isCustom = typeName === 'CustomComponent' && typeof customTypeName === 'string';
+
+            let component: Component | undefined = isCustom
+                ? go.components.find(c => c instanceof CustomComponent && c.constructor.name === customTypeName)
+                : go.components.find(c => c.type === typeName);
+
             if (!component) {
-                const ComponentClass = ComponentRegistry.GetByType(typeName);
+                const ComponentClass = isCustom
+                    ? ComponentRegistry.GetByClassName(customTypeName as string)
+                    : ComponentRegistry.GetByType(typeName);
                 if (ComponentClass) {
                     component = go.AddComponent(ComponentClass as new () => Component);
                 } else {
                     LogManager.Instance?.LogWarning({
-                        text: `Unknown component type '${typeName}' on ${go.name} — skipped.`,
+                        text: `Unknown component type '${customTypeName ?? typeName}' on ${go.name} — skipped.`,
                         options: { tags: ['Import'] },
                     });
                 }
             }
+
             if (!component) { continue; }
             for (const [key, value] of Object.entries(raw)) {
-                if (key === 'type') { continue; }
+                if (key === 'type' || key === 'customComponentType') { continue; }
                 (component as unknown as Record<string, unknown>)[key] = value;
             }
         }

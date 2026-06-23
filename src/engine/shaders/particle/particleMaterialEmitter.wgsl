@@ -35,6 +35,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
         let spawnRng = displacementHash(coord + vec2f(f32(slot) * 7.3, 0.0), uniforms.time);
         if spawnRng >= emissionRate * uniforms.deltaTime { continue; }
 
-        spawnParticle(coord.x, coord.y, defBase, particleId, coord + vec2f(f32(slot) * 11.1, f32(slot) * 7.3), uniforms.time);
+        let worldCoord = coord + vec2f(uniforms.simOriginX, uniforms.simOriginY);
+        spawnParticle(worldCoord.x, worldCoord.y, uniforms.simOriginX, uniforms.simOriginY, defBase, particleId, coord + vec2f(f32(slot) * 11.1, f32(slot) * 7.3), uniforms.time);
     }
 }

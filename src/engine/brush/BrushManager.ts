@@ -5,7 +5,8 @@ import type { SimulationLayer } from '../simulation/SimulationLayer';
 
 import { BrushPass } from '../simulation/BrushPass';
 import { BrushState } from './BrushState';
-import { Camera } from '../camera/Camera';
+import { Camera } from '../component/definitions/camera/Camera';
+import { Transform } from '../component/definitions/transform/Transform';
 import { Input } from '../input/Input';
 import { LogManager } from '../debug/LogManager';
 import { MaterialRegistry } from '../materials/MaterialRegistry';
@@ -109,10 +110,12 @@ export class BrushManager extends NitrateProcess {
             : 0;
         const contentW = simulationLayer.width - 2 * margin;
         const contentH = simulationLayer.height - 2 * margin;
-        const camX = Camera.Instance?.GetCameraPos().x ?? 0;
-        const camY = Camera.Instance?.GetCameraPos().y ?? 0;
-        const simX = margin + (mouse.canvas.pos.x + camX) * contentW / canvas.width;
-        const simY = margin + (mouse.canvas.pos.y - camY) * contentH / canvas.height;
+        const camPos = Camera.Main?.gameObject?.GetComponent(Transform)?.position;
+        const simOrigin = World.Instance?.GetSimOrigin() ?? { x: 0, y: 0 };
+        const camOriginX = camPos ? (camPos.x - simOrigin.x) - contentW / 2 : margin;
+        const camOriginY = camPos ? (camPos.y - simOrigin.y) - contentH / 2 : margin;
+        const simX = camOriginX + mouse.canvas.pos.x * contentW / canvas.width;
+        const simY = camOriginY + mouse.canvas.pos.y * contentH / canvas.height;
         const isErase = mouse.rightDown;
         for (let i = 0; i < steps; i++) {
             this.simTime += 1 / config.time.baseTickRate;

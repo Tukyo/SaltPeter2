@@ -7,6 +7,7 @@ import { Renderer } from './Renderer';
 import { RenderingLayers } from './RenderingLayers';
 import { SimulationManager } from '../simulation/SimulationManager';
 import { SimulationRenderPass } from './passes/SimulationRenderPass';
+import { World } from '../world/World';
 
 /**
  * Drives the forward rendering pipeline each frame.
@@ -96,8 +97,9 @@ export class RenderingManager extends NitrateProcess {
         this.gameObjectRenderPass.Run({ encoder: goEnc, gameObjectLayer, layers: this.layers });
         device.queue.submit([goEnc.finish()]);
 
+        const simOrigin = World.Instance?.GetSimOrigin() ?? { x: 0, y: 0 };
         const particleEnc = device.createCommandEncoder();
-        this.particleRenderPass.Run({ encoder: particleEnc, layers: this.layers });
+        this.particleRenderPass.Run({ encoder: particleEnc, layers: this.layers, simOriginX: simOrigin.x, simOriginY: simOrigin.y });
         device.queue.submit([particleEnc.finish()]);
 
         const compositeEnc = device.createCommandEncoder();

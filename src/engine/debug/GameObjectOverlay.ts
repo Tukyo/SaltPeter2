@@ -1,4 +1,4 @@
-import { Camera } from '../camera/Camera';
+import { Camera } from '../component/definitions/camera/Camera';
 import { GameObjectColliderSchema } from '../game_object/GameObjectColliderSchema';
 import { GameObjectManager } from '../game_object/GameObjectManager';
 import { GameObjectStateSchema } from '../game_object/GameObjectStateSchema';
@@ -91,13 +91,10 @@ export class GameObjectOverlay {
         const contentW = width - 2 * margin;
         const contentH = height - 2 * margin;
 
-        const cam = Camera.Instance;
-        const camOriginX = cam
-            ? Math.round(margin + cam.GetCameraPos().x * contentW / renderer.canvas.width)
-            : margin;
-        const camOriginY = cam
-            ? Math.round(margin - cam.GetCameraPos().y * contentH / renderer.canvas.height)
-            : margin;
+        const camPos = Camera.Main?.gameObject?.GetComponent(Transform)?.position;
+        const simOrigin = World.Instance?.GetSimOrigin() ?? { x: 0, y: 0 };
+        const camOriginX = camPos ? Math.round((camPos.x - simOrigin.x) - contentW / 2) : margin;
+        const camOriginY = camPos ? Math.round((camPos.y - simOrigin.y) - contentH / 2) : margin;
 
         // r32uint: 4 bytes per pixel (one u32 per cell)
         const bytesPerPixel = 4;
@@ -184,7 +181,7 @@ export class GameObjectOverlay {
                     if (!colorCache.has(owner)) { colorCache.set(owner, color); }
 
                     const dst = ((Utils.FlipY(y, contentH) - 1) * contentW + x) * 4;
-                    pixels[dst]     = color[0];
+                    pixels[dst] = color[0];
                     pixels[dst + 1] = color[1];
                     pixels[dst + 2] = color[2];
                     pixels[dst + 3] = color[3];
@@ -197,14 +194,14 @@ export class GameObjectOverlay {
             this.ctx.clearRect(0, 0, this.renderer2D.canvas.width, this.renderer2D.canvas.height);
             this.ctx.drawImage(this.tmpCanvas, 0, 0, this.renderer2D.canvas.width, this.renderer2D.canvas.height);
 
-            const scaleX = this.renderer2D.canvas.width  / contentW;
+            const scaleX = this.renderer2D.canvas.width / contentW;
             const scaleY = this.renderer2D.canvas.height / contentH;
 
             // --- Collider boundary pass: cyan squares at each transformed boundary point ---
             if (stateReadbackBuffer && colliderReadbackBuffer) {
-                const stateRaw   = stateReadbackBuffer.getMappedRange();
-                const stateF32   = new Float32Array(stateRaw);
-                const stateU32   = new Uint32Array(stateRaw);
+                const stateRaw = stateReadbackBuffer.getMappedRange();
+                const stateF32 = new Float32Array(stateRaw);
+                const stateU32 = new Uint32Array(stateRaw);
                 const colliderI32 = new Int32Array(colliderReadbackBuffer.getMappedRange());
 
                 this.ctx.fillStyle = 'rgba(0, 200, 255, 1.0)';
@@ -212,13 +209,13 @@ export class GameObjectOverlay {
                     const base = slot * GameObjectStateSchema.stride;
                     if (stateU32[base + 14] === 0) { continue; } // inactive
 
-                    const posX           = stateF32[base + 0];
-                    const posY           = stateF32[base + 1];
-                    const pivotX         = stateF32[base + 8];
-                    const pivotY         = stateF32[base + 9];
-                    const theta          = stateF32[base + 23];
+                    const posX = stateF32[base + 0];
+                    const posY = stateF32[base + 1];
+                    const pivotX = stateF32[base + 8];
+                    const pivotY = stateF32[base + 9];
+                    const theta = stateF32[base + 23];
                     const boundaryOffset = stateU32[base + 16];
-                    const boundaryCount  = stateU32[base + 17];
+                    const boundaryCount = stateU32[base + 17];
 
                     const cosTheta = Math.cos(theta);
                     const sinTheta = Math.sin(theta);
@@ -234,7 +231,7 @@ export class GameObjectOverlay {
                         const wy = Math.floor(posY + sinTheta * localFX + cosTheta * localFY);
 
                         const canvasX = (wx - camOriginX) * scaleX;
-                        const canvasY = ((height - 1 - wy) - camOriginY) * scaleY;
+                        const canvasY = (contentH - 1 - wy + camOriginY) * scaleY;
                         this.ctx.fillRect(
                             Math.floor(canvasX), Math.floor(canvasY),
                             Math.ceil(scaleX), Math.ceil(scaleY)
@@ -249,12 +246,16 @@ export class GameObjectOverlay {
                 const arrowLength = 16;
                 this.ctx.lineWidth = 2;
 
+                const simOrigin = World.Instance?.GetSimOrigin() ?? { x: 0, y: 0 };
+
                 for (const gameObject of manager.GetAll()) {
                     const transform = gameObject.GetComponent(Transform);
                     if (!transform) { continue; }
 
-                    const canvasX = (transform.position.x - camOriginX) * scaleX;
-                    const canvasY = ((height - 1 - transform.position.y) - camOriginY) * scaleY;
+                    const simX = transform.position.x - simOrigin.x;
+                    const simY = transform.position.y - simOrigin.y;
+                    const canvasX = (simX - camOriginX) * scaleX;
+                    const canvasY = (contentH - 1 - simY + camOriginY) * scaleY;
 
                     const rigidbody = gameObject.GetComponent(Rigidbody);
                     this.ctx.fillStyle = rigidbody?.isSleeping ? 'black' : 'white';

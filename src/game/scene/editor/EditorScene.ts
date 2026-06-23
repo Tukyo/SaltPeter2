@@ -1,14 +1,14 @@
 import { Nitrate } from '@Nitrate';
 
-import type { EditorMode } from './scripts/EditorModeController';
+import type { EditorMode } from '../../scripts/editor/EditorModeController';
 
-import { AnchorController } from './scripts/AnchorController';
-import { BlueprintController } from './scripts/BlueprintController';
-import { EditorModeController } from './scripts/EditorModeController';
-import { EyedropperController } from './scripts/EyedropperController';
-import { OverlayController } from './scripts/OverlayController';
-import { PlayerScaleController } from './scripts/PlayerScaleController';
-import { SelectionController } from './scripts/SelectionController';
+import { AnchorController } from '../../scripts/editor/AnchorController';
+import { BlueprintController } from '../../scripts/editor/BlueprintController';
+import { EditorModeController } from '../../scripts/editor/EditorModeController';
+import { EyedropperController } from '../../scripts/editor/EyedropperController';
+import { OverlayController } from '../../scripts/editor/OverlayController';
+import { PlayerScaleController } from '../../scripts/editor/PlayerScaleController';
+import { SelectionController } from '../../scripts/editor/SelectionController';
 
 export class EditorScene extends Nitrate.Scene {
     private mode: EditorMode = 'gameobject';

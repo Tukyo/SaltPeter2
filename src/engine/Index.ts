@@ -2,7 +2,6 @@ export * from './NitrateEngine';
 export * from './NitrateProcess';
 
 export * from './brush/Index';
-export * from './camera/Index';
 export * from './config/Index';
 export * from './debug/Index';
 export * from './definitions/Index';

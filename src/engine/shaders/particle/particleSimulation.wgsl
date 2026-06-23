@@ -33,6 +33,8 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 
     let currentPosX = particles[base + 0u];
     let currentPosY = particles[base + 1u];
+    let simPosX = currentPosX - uniforms.simOriginX;
+    let simPosY = currentPosY - uniforms.simOriginY;
 
     if lifetime <= 0.0 {
         spawnSubParticle(currentPosX, currentPosY, base, defBase, 2);
@@ -83,7 +85,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
     var effVelY = velY + volVelY;
 
     if inheritEnabled > 0.5 && inheritMode > 0.5 {
-        let physics = textureLoad(physicsTexture, vec2i(i32(currentPosX), i32(currentPosY)));
+        let physics = textureLoad(physicsTexture, vec2i(i32(simPosX), i32(simPosY)));
         let mult = definitions[defBase + 42];
         effVelX += physics.b * mult;
         effVelY += physics.a * mult;
@@ -107,8 +109,10 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
         let minKillSpeed = definitions[defBase + 75];
 
         let dims = textureDimensions(identityTexture);
-        let currentTexel = vec2i(i32(currentPosX), i32(currentPosY));
-        let newTexel = vec2i(i32(newPosX), i32(newPosY));
+        let currentTexel = vec2i(i32(simPosX), i32(simPosY));
+        let simNewPosX = newPosX - uniforms.simOriginX;
+        let simNewPosY = newPosY - uniforms.simOriginY;
+        let newTexel = vec2i(i32(simNewPosX), i32(simNewPosY));
 
         let currentInBounds = currentTexel.x >= 0 && currentTexel.x < i32(dims.x)
                            && currentTexel.y >= 0 && currentTexel.y < i32(dims.y);
@@ -120,8 +124,8 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
         if !inEmitter && newInBounds && isOccupiedState(textureLoad(identityTexture, newTexel)) {
             spawnSubParticle(currentPosX, currentPosY, base, defBase, 1);
             let deltaTime = uniforms.deltaTime;
-            let horzTexel = vec2i(i32(currentPosX + effVelX * deltaTime), i32(currentPosY));
-            let vertTexel = vec2i(i32(currentPosX), i32(currentPosY + effVelY * deltaTime));
+            let horzTexel = vec2i(i32(simPosX + effVelX * deltaTime), i32(simPosY));
+            let vertTexel = vec2i(i32(simPosX), i32(simPosY + effVelY * deltaTime));
             let horzOcc = isSolid(horzTexel, dims);
             let vertOcc = isSolid(vertTexel, dims);
 

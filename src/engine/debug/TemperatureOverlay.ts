@@ -1,4 +1,5 @@
-import { Camera } from '../camera/Camera';
+import { Camera } from '../component/definitions/camera/Camera';
+import { Transform } from '../component/definitions/transform/Transform';
 import { Renderer } from '../rendering/Renderer';
 import { Renderer2D } from '../rendering/Renderer2D';
 import { SimulationManager } from '../simulation/SimulationManager';
@@ -73,9 +74,10 @@ export class TemperatureOverlay {
         const contentW = width - 2 * margin;
         const contentH = height - 2 * margin;
 
-        const cam = Camera.Instance;
-        const camOriginX = cam ? Math.round(margin + cam.GetCameraPos().x * contentW / renderer.canvas.width) : margin;
-        const camOriginY = cam ? Math.round(margin - cam.GetCameraPos().y * contentH / renderer.canvas.height) : margin;
+        const camPos = Camera.Main?.gameObject?.GetComponent(Transform)?.position;
+        const simOrigin = World.Instance?.GetSimOrigin() ?? { x: 0, y: 0 };
+        const camOriginX = camPos ? Math.round((camPos.x - simOrigin.x) - contentW / 2) : margin;
+        const camOriginY = camPos ? Math.round((camPos.y - simOrigin.y) - contentH / 2) : margin;
 
         this.readPending = true;
         const bytesPerPixel = 16;

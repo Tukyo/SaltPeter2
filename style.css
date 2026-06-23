@@ -1607,6 +1607,7 @@ button.action-button--warn:hover {
 }
 
 .inspector-field input[type=number],
+.inspector-field input[type=text],
 .inspector-field select {
     flex: 1;
     height: 26px;
@@ -1643,6 +1644,7 @@ button.action-button--warn:hover {
 }
 
 .inspector-field input[type=number]:focus,
+.inspector-field input[type=text]:focus,
 .inspector-field select:focus {
     border-color: rgba(255, 255, 255, 0.22);
     background: rgba(255, 255, 255, 0.06);
@@ -1769,6 +1771,49 @@ button.action-button--warn:hover {
 .inspector-add-component-dropdown button:hover {
     background: rgba(255, 255, 255, 0.06);
     color: var(--color-light-primary);
+}
+
+.inspector-add-component-search {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: transparent;
+    color: var(--color-light-primary);
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    outline: none;
+}
+
+.inspector-add-component-search::placeholder {
+    color: var(--color-light-secondary);
+}
+
+.inspector-add-component-dropdown .inspector-add-component-category-header {
+    color: var(--color-light-secondary);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.inspector-add-component-dropdown .inspector-add-component-category-header::before {
+    content: '▾';
+    margin-right: 6px;
+}
+
+.inspector-add-component-category.is-collapsed .inspector-add-component-category-header::before {
+    content: '▸';
+}
+
+.inspector-add-component-category.is-collapsed .inspector-add-component-category-items {
+    display: none;
+}
+
+.inspector-add-component-dropdown .inspector-add-component-option {
+    padding-left: 20px;
 }
 
 /* ─── Particle System Module Sections ──────────────────────────────────── */

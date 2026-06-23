@@ -7,14 +7,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if gameObjectIdx >= uniforms.gameObjectCount { return; }
 
     var state = gameObjectStates[gameObjectIdx];
-    if state.isActive == 0u || state.bodyType != GAMEOBJECT_BODY_DYNAMIC { return; }
-    if state.isSleeping == 1u { return; }
+    if state.isActive == 0u { return; }
+    if state.bodyType == GAMEOBJECT_BODY_STATIC { return; }
 
-    // Save current position and angle before integration so stamp can carry state
-    // forward from the previous cell locations in the texture
     state.prevPosX = state.posX;
     state.prevPosY = state.posY;
     state.prevTheta = state.theta;
+
+    if state.bodyType == GAMEOBJECT_BODY_KINEMATIC {
+        // Position is driven from the CPU each sim step via RunErase; no GPU integration needed.
+        gameObjectStates[gameObjectIdx] = state;
+        return;
+    }
+
+    if state.isSleeping == 1u { return; }
 
     // Gravity reduces upward velocity (sim Y-up: positive Y is up)
     state.velY -= uniforms.gravity * state.gravityScale * uniforms.simStepDuration;

@@ -29,5 +29,5 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
     let spawnRng = displacementHash(seed, uniforms.time);
     if spawnRng >= emissionRate * uniforms.deltaTime { return; }
 
-    spawnParticle(posX, posY, defBase, emitterId, seed, uniforms.time);
+    spawnParticle(posX, posY, uniforms.simOriginX, uniforms.simOriginY, defBase, emitterId, seed, uniforms.time);
 }

@@ -7,6 +7,7 @@ export class WorldConfig {
         chunk: {
             size: 128,
             margin: 2, // Extra chunks loaded on each side of the viewport (invisible buffer zone).
+            maxLoaded: 500 // Maximum amount of chunks loaded in active memory
         },
         cell: {
             identityBytes: 4, // rgba8unorm: materialId, colorSeed, variantId, occupancy
@@ -17,7 +18,6 @@ export class WorldConfig {
             wipeSaveOnLoad: true
         },
         generation: {
-            spawnOffset: { cx: 10, cy: 0 }, // Shifts the origin of the worldgen by cx, cy
             terrain: { // Base pass of the worldgen
                 noiseType: NoiseType.Perlin,
                 options: {
@@ -58,7 +58,7 @@ export class WorldConfig {
         },
         performance: {
             scale: 0.25, // Sets the resolution scale for scenes that have a world
-            simDebounce: 4 // Debouncer that pauses the sim for n frames when blitting
+            simDebounce: 0 // Debouncer that pauses the sim for n frames when blitting
         }
     }
 

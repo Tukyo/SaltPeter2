@@ -2,6 +2,46 @@
 
 ---
 
+## [0.1.7] - [06/22/2026]
+### Updates & Changes
+- **Camera**
+  - Removed Camera class and singleton from engine
+  - Camera is now a component that lives on a GameObject and it's position is no longer sim origin related, but instead derived from it's world pos
+  - Camera component provides access to the Active camera
+  - Updated all Rendering and Simulation processes to use new world based camera positions
+- **Config**
+  - WorldConfig
+    - Removed `SpawnOffset`, now derived from Camera world position
+    - Added `MaxLoaded` configuration to chunk sub-section. Not used yet, but will be used for performance and offloading chunks when max is exceeded during runtime
+    - Removed debouncer from simulation on new chunks loaded since all are in memory now
+- **Component**
+  - Added handling for `CustomComponent`
+    - These components have a sub type that is defined by the name of the class implementing `Nitrate.CustomComponent`
+    - Now available to be added to GameObjects in the inspector, or via `AddComponent` etc...
+    - Serializing all primative information for these components on export, and re-hydrating on import
+    - All custom components and engine level components are now registered in `ComponentRegistry`
+- **GameObject**
+  - Updated Kinematic Rigidbody processing between CPU <> GPU to use direct transform information, enforcing only Dynamic RBs to process physics
+- **Particles**
+  - Added world position and sim offset to particles so that particles in the world scroll with the texture and do not flicker on Blit of world edges
+- **UI**
+  - Updated the `AddComponent` button to have categories: `Effects`, `General`, `Physics`, `Rendering`, `Custom`. Also added a searchbar at the top of the dropdown
+  - Added `StringField` to the ComponentField builder
+  - Custom components now correctly displayed and handled in the inspector
+- **World**
+  - Added support for GameObjects into the world!
+  - Allocated scratch textures for GameObject ownership layer
+  - Chunks are no longer compressed and offloaded from memory during gameplay, allowing faster world streaming
+    - Still compressed into bin files on world exit, for use later when save/loading runs is possible
+  - Made the dirt in Natura static instead of dynamic since it is always packed below soil
+
+### Bug Fixes
+- Added support for Mac build `Universal` instead of just intel based macs, fixing a depreciation message showing when running the app on ARM based Apple computers
+- App now natively runs in fullscreen, preventing some resizing bugs that will be patched and improved over future updates
+- Fixed a bug causing the simulation to process before all initial chunks had been loaded in the world
+
+---
+
 ## [0.1.6] - [06/18/2026]
 ### Updates & Changes
 - **Component**

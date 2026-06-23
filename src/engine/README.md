@@ -18,7 +18,6 @@ import { Nitrate } from '@Nitrate';
 ## Table of Contents
 
 [`brush/`](brush/README.md)  
-[`camera/`](camera/README.md)  
 [`component/`](component/README.md)  
 [`config/`](config/README.md)  
 [`data_persistence/`](data_persistence/README.md)  

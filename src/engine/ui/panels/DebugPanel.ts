@@ -2,7 +2,8 @@ import type { SimulationLayer } from '../../simulation/SimulationLayer';
 import type { GameObjectLayer } from '../../game_object/GameObjectLayer';
 import type { TexturePixelReader } from '../../rendering/TexturePixelReader';
 
-import { Camera } from '../../camera/Camera';
+import { Camera } from '../../component/definitions/camera/Camera';
+import { Transform } from '../../component/definitions/transform/Transform';
 import { CollapsiblePanel } from '../CollapsiblePanel'
 import { Input } from '../../input/Input';
 import { KeybindConfig } from '../../config/KeybindConfig';
@@ -237,9 +238,12 @@ export class DebugPanel extends NitrateProcess {
             const margin = chunk.margin * chunk.size;
             const contentW = simulationLayer.width - 2 * margin;
             const contentH = simulationLayer.height - 2 * margin;
-            const cam = Camera.Instance?.GetCameraPos() ?? { x: 0, y: 0 };
-            cellX = Math.floor(margin + (cam.x + mouse.canvas.pos.x) * contentW / Math.max(1, canvasWidth));
-            cellY = Math.floor(margin + (mouse.canvas.pos.y - cam.y) * contentH / Math.max(1, canvasHeight));
+            const camPos = Camera.Main?.gameObject?.GetComponent(Transform)?.position;
+            const simOrigin = World.Instance?.GetSimOrigin() ?? { x: 0, y: 0 };
+            const camOriginX = camPos ? (camPos.x - simOrigin.x) - contentW / 2 : margin;
+            const camOriginY = camPos ? (camPos.y - simOrigin.y) - contentH / 2 : margin;
+            cellX = Math.floor(camOriginX + mouse.canvas.pos.x * contentW / Math.max(1, canvasWidth));
+            cellY = Math.floor(camOriginY + mouse.canvas.pos.y * contentH / Math.max(1, canvasHeight));
         } else {
             cellX = Math.floor(mouse.canvas.pos.x * (simulationLayer.width / Math.max(1, canvasWidth)));
             cellY = Math.floor(mouse.canvas.pos.y * (simulationLayer.height / Math.max(1, canvasHeight)));

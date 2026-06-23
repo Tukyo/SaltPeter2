@@ -5,6 +5,7 @@ import { NitrateProcess } from '../NitrateProcess';
 export type ComponentType =
     | 'Blueprint'
     | 'BoxCollider'
+    | 'Camera'
     | 'CircleCollider'
     | 'CustomComponent'
     | 'ParticleSystem'

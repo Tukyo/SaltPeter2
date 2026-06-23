@@ -1,9 +1,11 @@
 import type { Component } from '../component/Component';
+import type { ComponentConstructor } from '../component/ComponentRegistry';
 import type { ComponentField } from './fields/ComponentField';
 
 import { CollapsiblePanel } from './CollapsiblePanel';
 import { ComponentFieldRegistry } from './fields/ComponentFieldRegistry';
 import { ComponentRegistry } from '../component/ComponentRegistry';
+import { CustomComponent } from '../component/definitions/custom/Custom';
 import { GameObject } from '../game_object/GameObject';
 import { LogManager } from '../debug/LogManager';
 import { NitrateProcess } from '../NitrateProcess';
@@ -219,7 +221,7 @@ export class Inspector extends NitrateProcess {
         return FieldClass ? new FieldClass(component, onRemove) : null;
     }
 
-    /** Builds the Add Component button and dropdown, populated from the component registry. */
+    /** Builds the Add Component button and dropdown with category sections and search. */
     private BuildAddComponentButton(): HTMLElement {
         const wrapper = document.createElement('div');
         wrapper.className = 'inspector-add-component';
@@ -231,24 +233,126 @@ export class Inspector extends NitrateProcess {
         const dropdown = document.createElement('div');
         dropdown.className = 'inspector-add-component-dropdown';
 
-        btn.addEventListener('click', () => { dropdown.classList.toggle('is-open'); });
+        const search = document.createElement('input');
+        search.type = 'text';
+        search.placeholder = 'Search...';
+        search.className = 'inspector-add-component-search';
 
-        for (const component of [...ComponentRegistry.Components].sort((a, b) => a.label.localeCompare(b.label))) {
-            if (component === Transform) { continue; }
-            const option = document.createElement('button');
-            option.textContent = component.label;
-            option.addEventListener('click', () => {
-                if (!this.gameObject) { return; }
-                this.gameObject.AddComponent(component);
-                dropdown.classList.remove('is-open');
-                this.Render();
-            });
-            dropdown.appendChild(option);
+        const categoryContainer = document.createElement('div');
+
+        const searchResults = document.createElement('div');
+        searchResults.className = 'inspector-add-component-search-results';
+        searchResults.style.display = 'none';
+
+        dropdown.appendChild(search);
+        dropdown.appendChild(categoryContainer);
+        dropdown.appendChild(searchResults);
+
+        btn.addEventListener('click', () => {
+            const opening = !dropdown.classList.contains('is-open');
+            dropdown.classList.toggle('is-open');
+            if (opening) {
+                search.value = '';
+                categoryContainer.style.display = '';
+                searchResults.style.display = 'none';
+                searchResults.innerHTML = '';
+                search.focus();
+            }
+        });
+
+        const components = [...ComponentRegistry.Components]
+            .filter(c => c !== Transform)
+            .sort((a, b) => a.label.localeCompare(b.label));
+
+        const categories = new Map<string, ComponentConstructor[]>();
+        for (const component of components) {
+            const category = Inspector.GetComponentCategory(component);
+            if (!categories.has(category)) { categories.set(category, []); }
+            const bucket = categories.get(category);
+            if (bucket) { bucket.push(component); }
         }
+
+        const sortedCategories = [...categories.keys()].sort((a, b) => {
+            if (a === 'General') { return -1; }
+            if (b === 'General') { return 1; }
+            if (a === 'Custom') { return 1; }
+            if (b === 'Custom') { return -1; }
+            return a.localeCompare(b);
+        });
+
+        for (const category of sortedCategories) {
+            const bucket = categories.get(category);
+            if (!bucket) { continue; }
+            categoryContainer.appendChild(this.BuildCategorySection(category, bucket, dropdown));
+        }
+
+        search.addEventListener('input', () => {
+            const query = search.value.toLowerCase().trim();
+            if (!query) {
+                categoryContainer.style.display = '';
+                searchResults.style.display = 'none';
+                searchResults.innerHTML = '';
+                return;
+            }
+            categoryContainer.style.display = 'none';
+            searchResults.innerHTML = '';
+            searchResults.style.display = '';
+            for (const component of components.filter(c => c.label.toLowerCase().includes(query))) {
+                searchResults.appendChild(this.BuildComponentOption(component, dropdown));
+            }
+        });
 
         wrapper.appendChild(btn);
         wrapper.appendChild(dropdown);
         return wrapper;
+    }
+
+    private static GetComponentCategory(component: ComponentConstructor): string {
+        if ((component.prototype as object) instanceof CustomComponent) { return 'Custom'; }
+        for (const [type, ctor] of ComponentRegistry.byType.entries()) {
+            if (ctor !== component) { continue; }
+            const FieldClass = ComponentFieldRegistry.Fields.get(type);
+            const menu = (FieldClass as unknown as Record<string, unknown> | undefined)?.menu;
+            return typeof menu === 'string' ? menu.split('/')[0] : 'General';
+        }
+        return 'General';
+    }
+
+    private BuildCategorySection(
+        category: string,
+        items: ComponentConstructor[],
+        dropdown: HTMLElement
+    ): HTMLElement {
+        const section = document.createElement('div');
+        section.className = 'inspector-add-component-category is-collapsed';
+
+        const header = document.createElement('button');
+        header.className = 'inspector-add-component-category-header';
+        header.textContent = category;
+        header.addEventListener('click', () => { section.classList.toggle('is-collapsed'); });
+
+        const itemsEl = document.createElement('div');
+        itemsEl.className = 'inspector-add-component-category-items';
+        for (const component of items) {
+            itemsEl.appendChild(this.BuildComponentOption(component, dropdown));
+        }
+
+        section.appendChild(header);
+        section.appendChild(itemsEl);
+        return section;
+    }
+
+    private BuildComponentOption(component: ComponentConstructor, dropdown: HTMLElement): HTMLElement {
+        const option = document.createElement('button');
+        option.className = 'inspector-add-component-option';
+        option.textContent = component.label;
+        option.addEventListener('click', () => {
+            if (!this.gameObject) { return; }
+            this.gameObject.AddComponent(component);
+            dropdown.classList.remove('is-open');
+            this.Render();
+        });
+        return option;
     }
 
     public OnDestroy(): void {

@@ -4,6 +4,7 @@ import { ComponentField } from '../ComponentField';
 
 export class RigidbodyField extends ComponentField<Rigidbody> {
     public static readonly forType = 'Rigidbody';
+    public static readonly menu = 'Physics/'
 
     protected BuildFields(container: HTMLElement): void {
         const types: RigidbodyType[] = ['Static', 'Kinematic', 'Dynamic'];
