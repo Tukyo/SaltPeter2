@@ -62,6 +62,10 @@ interface StripBufferParams {
     capturedOrigin: Vec2;
 }
 
+interface ReusableStripBufferParams extends StripBufferParams {
+    isHorizontal: boolean;
+}
+
 /** 
  * Central process for the world simulation window.
  * Tracks the sim origin, handles world scrolling, and coordinates chunk lifecycle with ChunkManager.
@@ -85,6 +89,10 @@ export class World extends NitrateProcess {
 
     private readonly blit = new WorldBlit();
     private isInitialized: boolean = false;
+    private horizontalReadbackBuffers: ReadbackBuffers | null = null;
+    private verticalReadbackBuffers: ReadbackBuffers | null = null;
+    private horizontalReadbackInFlight: boolean = false;
+    private verticalReadbackInFlight: boolean = false;
 
     constructor() {
         super();
@@ -115,6 +123,7 @@ export class World extends NitrateProcess {
 
         if (!this.blit.IsReady()) {
             this.blit.Allocate(renderer.device, sim.simulationLayer);
+            this.AllocateReadbackBuffers(renderer.device, sim.simulationLayer);
         }
 
         const camPos = Camera.Main?.gameObject?.GetComponent(Transform)?.position ?? null;
@@ -208,7 +217,7 @@ export class World extends NitrateProcess {
         }
     }
 
-    /** Computes the strip region from the delta, calls PrepareReadback, then fires CommitStripReadback. */
+    /** Computes the strip region from the delta, then submits a readback using pre-allocated buffers when available. */
     private BeginStripReadback(params: StripReadbackParams): void {
         const { device, simulationLayer, delta, capturedOrigin } = params;
         const { width, height } = simulationLayer;
@@ -216,8 +225,94 @@ export class World extends NitrateProcess {
         const absDy = Math.abs(delta.y);
         const readOrigin: Vec2 = { x: delta.x < 0 ? width - absDx : 0, y: delta.y < 0 ? height - absDy : 0 };
         const readSize: Size2D = { width: delta.x !== 0 ? absDx : width, height: delta.y !== 0 ? absDy : height };
-        const buffers = this.PrepareReadback(device, simulationLayer, readOrigin, readSize);
-        this.CommitStripReadback({ buffers, readOrigin, readSize, capturedOrigin });
+        const isHorizontal = delta.x !== 0;
+        const prealloc = isHorizontal ? this.horizontalReadbackBuffers : this.verticalReadbackBuffers;
+        const inFlight = isHorizontal ? this.horizontalReadbackInFlight : this.verticalReadbackInFlight;
+        if (prealloc !== null && !inFlight) {
+            const enc = device.createCommandEncoder();
+            enc.copyTextureToBuffer(
+                { texture: simulationLayer.currentIdentity, origin: [readOrigin.x, readOrigin.y] },
+                { buffer: prealloc.identityBuffer, bytesPerRow: prealloc.identityBPR },
+                [readSize.width, readSize.height]
+            );
+            enc.copyTextureToBuffer(
+                { texture: simulationLayer.currentPhysics, origin: [readOrigin.x, readOrigin.y] },
+                { buffer: prealloc.physicsBuffer, bytesPerRow: prealloc.floatBPR },
+                [readSize.width, readSize.height]
+            );
+            enc.copyTextureToBuffer(
+                { texture: simulationLayer.currentState, origin: [readOrigin.x, readOrigin.y] },
+                { buffer: prealloc.stateBuffer, bytesPerRow: prealloc.floatBPR },
+                [readSize.width, readSize.height]
+            );
+            device.queue.submit([enc.finish()]);
+            if (isHorizontal) { this.horizontalReadbackInFlight = true; }
+            else { this.verticalReadbackInFlight = true; }
+            this.CommitReusableReadback({ buffers: prealloc, readOrigin, readSize, capturedOrigin, isHorizontal });
+        } else {
+            const buffers = this.PrepareReadback(device, simulationLayer, readOrigin, readSize);
+            this.CommitStripReadback({ buffers, readOrigin, readSize, capturedOrigin });
+        }
+    }
+
+    /** Allocates one persistent readback buffer set per shift direction, sized for the maximum strip. @internal */
+    private AllocateReadbackBuffers(device: GPUDevice, simulationLayer: SimulationLayer): void {
+        const { width, height } = simulationLayer;
+        const chunkSize = ChunkData.GetChunkSize();
+        const identCellBytes = ChunkData.GetIdentityBytesPerCell();
+        const floatCellBytes = ChunkData.GetPhysicsBytesPerCell();
+
+        const hIdentityBPR = chunkSize * identCellBytes;
+        const hFloatBPR = chunkSize * floatCellBytes;
+        this.horizontalReadbackBuffers = {
+            identityBuffer: device.createBuffer({
+                size: hIdentityBPR * height,
+                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+            }),
+            physicsBuffer: device.createBuffer({
+                size: hFloatBPR * height,
+                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+            }),
+            stateBuffer: device.createBuffer({
+                size: hFloatBPR * height,
+                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+            }),
+            identityBPR: hIdentityBPR,
+            floatBPR: hFloatBPR,
+        };
+
+        const vIdentityBPR = width * identCellBytes;
+        const vFloatBPR = width * floatCellBytes;
+        this.verticalReadbackBuffers = {
+            identityBuffer: device.createBuffer({
+                size: vIdentityBPR * chunkSize,
+                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+            }),
+            physicsBuffer: device.createBuffer({
+                size: vFloatBPR * chunkSize,
+                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+            }),
+            stateBuffer: device.createBuffer({
+                size: vFloatBPR * chunkSize,
+                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+            }),
+            identityBPR: vIdentityBPR,
+            floatBPR: vFloatBPR,
+        };
+    }
+
+    /** Destroys pre-allocated readback buffers and resets in-flight guards. @internal */
+    private DestroyReadbackBuffers(): void {
+        this.horizontalReadbackBuffers?.identityBuffer.destroy();
+        this.horizontalReadbackBuffers?.physicsBuffer.destroy();
+        this.horizontalReadbackBuffers?.stateBuffer.destroy();
+        this.horizontalReadbackBuffers = null;
+        this.horizontalReadbackInFlight = false;
+        this.verticalReadbackBuffers?.identityBuffer.destroy();
+        this.verticalReadbackBuffers?.physicsBuffer.destroy();
+        this.verticalReadbackBuffers?.stateBuffer.destroy();
+        this.verticalReadbackBuffers = null;
+        this.verticalReadbackInFlight = false;
     }
 
     /** Allocates GPU readback buffers, submits copy commands for the given region, and returns the buffers and row strides. */
@@ -251,6 +346,25 @@ export class World extends NitrateProcess {
         }, { buffer: stateBuffer, bytesPerRow: floatBPR }, [readSize.width, readSize.height]);
         device.queue.submit([enc.finish()]);
         return { identityBuffer, physicsBuffer, stateBuffer, identityBPR, floatBPR };
+    }
+
+    /** Maps pre-allocated readback buffers, applies chunk data, then unmaps them for reuse. */
+    private async CommitReusableReadback(params: ReusableStripBufferParams): Promise<void> {
+        const { buffers, isHorizontal } = params;
+        const { identityBuffer, physicsBuffer, stateBuffer } = buffers;
+        const results = await Promise.allSettled([
+            identityBuffer.mapAsync(GPUMapMode.READ),
+            physicsBuffer.mapAsync(GPUMapMode.READ),
+            stateBuffer.mapAsync(GPUMapMode.READ),
+        ]);
+        if (results.every(r => r.status === 'fulfilled')) {
+            this.ApplyReadbackToChunks(params);
+        }
+        if (results[0].status === 'fulfilled') { identityBuffer.unmap(); }
+        if (results[1].status === 'fulfilled') { physicsBuffer.unmap(); }
+        if (results[2].status === 'fulfilled') { stateBuffer.unmap(); }
+        if (isHorizontal) { this.horizontalReadbackInFlight = false; }
+        else { this.verticalReadbackInFlight = false; }
     }
 
     /** Maps the readback buffers, writes pixel data to CPU chunk memory, then destroys the buffers. */
@@ -369,6 +483,7 @@ export class World extends NitrateProcess {
 
     public OnResize(): void {
         this.blit.Reset();
+        this.DestroyReadbackBuffers();
         this.isInitialized = false;
         LogManager.Instance?.Log({
             text: 'World OnResize.',
@@ -400,6 +515,7 @@ export class World extends NitrateProcess {
 
     public OnDestroy(): void {
         this.blit.Reset();
+        this.DestroyReadbackBuffers();
         if (World.Instance === this) {
             World.Instance = null;
             LogManager.Instance?.Log({

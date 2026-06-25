@@ -2,7 +2,7 @@
 export class PhysicsConfig {
     private static readonly config = {
         general: {
-            interval: 8,
+            stepsPerTick: 5,
             gravity: 9.8
         },
         pressure: {

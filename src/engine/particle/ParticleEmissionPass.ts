@@ -47,6 +47,8 @@ export class ParticleEmissionPass implements SimulationResource {
     private readonly particleEmitterBuffer: ParticleEmitterBuffer;
     private readonly uniforms: GPUBuffer;
     private readonly workgroupSize: number;
+    private readonly materialBindGroupCache = new Map<GPUTexture, GPUBindGroup>();
+    private readonly goBindGroupCache = new Map<GPUTexture, GPUBindGroup>();
 
     private constructor(
         params: ParticleEmissionPassParams,
@@ -100,28 +102,38 @@ export class ParticleEmissionPass implements SimulationResource {
         const { encoder, time, deltaTime, simOriginX, simOriginY } = params;
         this.device.queue.writeBuffer(this.uniforms, 0, new Float32Array([time, deltaTime, simOriginX, simOriginY]));
 
-        const materialBindGroup = this.device.createBindGroup({
-            layout: this.materialPipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: this.simulationLayer.currentIdentity.createView() },
-                { binding: 1, resource: { buffer: this.particleSourceLookupBuffer.buffer } },
-                { binding: 2, resource: { buffer: this.particleDefinitionBuffer.buffer } },
-                { binding: 3, resource: { buffer: this.particleBuffer.buffer } },
-                { binding: 4, resource: { buffer: this.uniforms } },
-                { binding: 5, resource: this.simulationLayer.currentPhysics.createView() },
-            ],
-        });
+        const cacheKey = this.simulationLayer.currentIdentity;
 
-        const gameObjectBindGroup = this.device.createBindGroup({
-            layout: this.gameObjectPipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: { buffer: this.particleEmitterBuffer.buffer } },
-                { binding: 1, resource: { buffer: this.particleDefinitionBuffer.buffer } },
-                { binding: 2, resource: { buffer: this.particleBuffer.buffer } },
-                { binding: 3, resource: { buffer: this.uniforms } },
-                { binding: 4, resource: this.simulationLayer.currentPhysics.createView() },
-            ],
-        });
+        let materialBindGroup = this.materialBindGroupCache.get(cacheKey);
+        if (!materialBindGroup) {
+            materialBindGroup = this.device.createBindGroup({
+                layout: this.materialPipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: this.simulationLayer.currentIdentity.createView() },
+                    { binding: 1, resource: { buffer: this.particleSourceLookupBuffer.buffer } },
+                    { binding: 2, resource: { buffer: this.particleDefinitionBuffer.buffer } },
+                    { binding: 3, resource: { buffer: this.particleBuffer.buffer } },
+                    { binding: 4, resource: { buffer: this.uniforms } },
+                    { binding: 5, resource: this.simulationLayer.currentPhysics.createView() },
+                ],
+            });
+            this.materialBindGroupCache.set(cacheKey, materialBindGroup);
+        }
+
+        let gameObjectBindGroup = this.goBindGroupCache.get(cacheKey);
+        if (!gameObjectBindGroup) {
+            gameObjectBindGroup = this.device.createBindGroup({
+                layout: this.gameObjectPipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: { buffer: this.particleEmitterBuffer.buffer } },
+                    { binding: 1, resource: { buffer: this.particleDefinitionBuffer.buffer } },
+                    { binding: 2, resource: { buffer: this.particleBuffer.buffer } },
+                    { binding: 3, resource: { buffer: this.uniforms } },
+                    { binding: 4, resource: this.simulationLayer.currentPhysics.createView() },
+                ],
+            });
+            this.goBindGroupCache.set(cacheKey, gameObjectBindGroup);
+        }
 
         const gameObjectWorkgroups = Math.ceil(
             this.particleEmitterBuffer.capacity / (this.workgroupSize * this.workgroupSize)
@@ -143,5 +155,7 @@ export class ParticleEmissionPass implements SimulationResource {
     // @omitfromdocs
     public Destroy(): void {
         this.uniforms.destroy();
+        this.materialBindGroupCache.clear();
+        this.goBindGroupCache.clear();
     }
 }

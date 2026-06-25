@@ -117,7 +117,8 @@ a temporary buffer sized to the requested rows and destroys it after the read.
 | Method | Description |
 |--------|-------------|
 | [`async ReadPixel(params: ReadPixelParams): Promise<number[]>`](TexturePixelReader.ts) | Reads a single pixel from a GPU texture at the given coordinates. Returns RGBA as a number array. |
-| [`async ReadRegion(params: { texture: GPUTexture; rowStart: number; rowCount: number; fullWidth: number; }): Promise<{ data: Uint8Array; bytesPerRow: number }>`](TexturePixelReader.ts) | Reads a rectangular strip of full rows from a texture. Returns raw bytes (rgba8unorm) and the aligned bytes-per-row stride. The caller must use bytesPerRow to index: offset = row * bytesPerRow + col * 4. |
+| [`async ReadRegion(params: { texture: GPUTexture; rowStart: number; rowCount: number; fullWidth: number; }): Promise<{ data: Uint8Array; bytesPerRow: number }>`](TexturePixelReader.ts) | Reads a rectangular strip of full rows from a texture. Returns raw bytes (rgba8unorm) and the aligned bytes-per-row stride. |
+| [`async ReadRect(params: { texture: GPUTexture; pos: Vec2; size: Size2D; }): Promise<{ data: Uint8Array; bytesPerRow: number }>`](TexturePixelReader.ts) | Reads an arbitrary rectangle from a texture. Returns raw bytes (rgba8unorm) and the aligned bytes-per-row stride. |
 
 ---
 

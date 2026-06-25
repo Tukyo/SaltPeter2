@@ -30,6 +30,7 @@ export class ParticleSimulationPass implements SimulationResource {
     private readonly simulationLayer: SimulationLayer;
     private readonly uniforms: GPUBuffer;
     private readonly workgroupSize: number;
+    private readonly bindGroupCache = new Map<GPUTexture, GPUBindGroup>();
 
     private constructor(
         params: ParticleSimulationPassParams,
@@ -65,16 +66,21 @@ export class ParticleSimulationPass implements SimulationResource {
     public Run(encoder: GPUCommandEncoder, deltaTime: number, time: number, simOriginX: number, simOriginY: number): void {
         this.device.queue.writeBuffer(this.uniforms, 0, new Float32Array([deltaTime, time, simOriginX, simOriginY]));
 
-        const bindGroup = this.device.createBindGroup({
-            layout: this.pipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: { buffer: this.particleBuffer.buffer } },
-                { binding: 1, resource: { buffer: this.particleDefinitionBuffer.buffer } },
-                { binding: 2, resource: { buffer: this.uniforms } },
-                { binding: 3, resource: this.simulationLayer.currentIdentity.createView() },
-                { binding: 4, resource: this.simulationLayer.currentPhysics.createView() },
-            ],
-        });
+        const cacheKey = this.simulationLayer.currentIdentity;
+        let bindGroup = this.bindGroupCache.get(cacheKey);
+        if (!bindGroup) {
+            bindGroup = this.device.createBindGroup({
+                layout: this.pipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: { buffer: this.particleBuffer.buffer } },
+                    { binding: 1, resource: { buffer: this.particleDefinitionBuffer.buffer } },
+                    { binding: 2, resource: { buffer: this.uniforms } },
+                    { binding: 3, resource: this.simulationLayer.currentIdentity.createView() },
+                    { binding: 4, resource: this.simulationLayer.currentPhysics.createView() },
+                ],
+            });
+            this.bindGroupCache.set(cacheKey, bindGroup);
+        }
 
         const { maxParticles } = ParticleConfig.GetConfig().performance;
         const pass = encoder.beginComputePass();
@@ -87,6 +93,7 @@ export class ParticleSimulationPass implements SimulationResource {
     // @omitfromdocs
     public Destroy(): void {
         this.uniforms.destroy();
+        this.bindGroupCache.clear();
     }
 
 }

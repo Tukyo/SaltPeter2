@@ -39,6 +39,7 @@ export class ParticleRenderPass {
     private readonly materialVisualBuffer: MaterialVisualBuffer;
     private readonly uniforms: GPUBuffer;
     private readonly workgroupSize: number;
+    private cachedBindGroup: GPUBindGroup | null = null;
 
     private constructor(
         params: ParticleRenderPassCreateParams,
@@ -87,16 +88,19 @@ export class ParticleRenderPass {
         });
         clearPass.end();
 
-        const bindGroup = this.device.createBindGroup({
-            layout: this.pipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: { buffer: this.particleBuffer.buffer } },
-                { binding: 1, resource: { buffer: this.particleDefinitionBuffer.buffer } },
-                { binding: 2, resource: { buffer: this.materialVisualBuffer.buffer } },
-                { binding: 3, resource: layers.particleTexture.createView() },
-                { binding: 4, resource: { buffer: this.uniforms } },
-            ],
-        });
+        if (!this.cachedBindGroup) {
+            this.cachedBindGroup = this.device.createBindGroup({
+                layout: this.pipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: { buffer: this.particleBuffer.buffer } },
+                    { binding: 1, resource: { buffer: this.particleDefinitionBuffer.buffer } },
+                    { binding: 2, resource: { buffer: this.materialVisualBuffer.buffer } },
+                    { binding: 3, resource: layers.particleTexture.createView() },
+                    { binding: 4, resource: { buffer: this.uniforms } },
+                ],
+            });
+        }
+        const bindGroup = this.cachedBindGroup;
 
         const { maxParticles } = ParticleConfig.GetConfig().performance;
         const pass = encoder.beginComputePass();
@@ -109,5 +113,6 @@ export class ParticleRenderPass {
     // @omitfromdocs
     public Destroy(): void {
         this.uniforms.destroy();
+        this.cachedBindGroup = null;
     }
 }

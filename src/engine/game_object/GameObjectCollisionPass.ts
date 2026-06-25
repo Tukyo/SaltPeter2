@@ -43,6 +43,7 @@ export class GameObjectCollisionPass {
     private readonly physicsBuffer: MaterialPhysicsBuffer;
     private readonly pipeline: GPUComputePipeline;
     private readonly workgroupSize: number;
+    private readonly bindGroupCache = new Map<GPUTexture, GPUBindGroup>();
 
     private constructor(
         params: GameObjectCollisionPassCreateParams,
@@ -106,18 +107,23 @@ export class GameObjectCollisionPass {
         uf[17] = physics.angular.minLeverArm;
         device.queue.writeBuffer(buffers.collisionUniformBuffer, 0, uniformData);
 
-        const bindGroup = device.createBindGroup({
-            layout: pipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: { buffer: buffers.stateBuffer } },
-                { binding: 1, resource: { buffer: buffers.colliderBuffer } },
-                { binding: 2, resource: { buffer: buffers.collisionUniformBuffer } },
-                { binding: 3, resource: simulationLayer.nextIdentity.createView() },
-                { binding: 4, resource: gameObjectLayer.currentOwnership.createView() },
-                { binding: 5, resource: { buffer: this.physicsBuffer.buffer } },
-                { binding: 6, resource: simulationLayer.nextPhysics.createView() },
-            ],
-        });
+        const cacheKey = simulationLayer.nextIdentity;
+        let bindGroup = this.bindGroupCache.get(cacheKey);
+        if (!bindGroup) {
+            bindGroup = device.createBindGroup({
+                layout: pipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: { buffer: buffers.stateBuffer } },
+                    { binding: 1, resource: { buffer: buffers.colliderBuffer } },
+                    { binding: 2, resource: { buffer: buffers.collisionUniformBuffer } },
+                    { binding: 3, resource: simulationLayer.nextIdentity.createView() },
+                    { binding: 4, resource: gameObjectLayer.currentOwnership.createView() },
+                    { binding: 5, resource: { buffer: this.physicsBuffer.buffer } },
+                    { binding: 6, resource: simulationLayer.nextPhysics.createView() },
+                ],
+            });
+            this.bindGroupCache.set(cacheKey, bindGroup);
+        }
 
         const pass = encoder.beginComputePass();
         pass.setPipeline(pipeline);

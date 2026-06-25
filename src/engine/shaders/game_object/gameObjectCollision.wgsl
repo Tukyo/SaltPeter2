@@ -21,7 +21,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if gameObjectIdx >= uniforms.gameObjectCount { return; }
 
     var state = gameObjectStates[gameObjectIdx];
-    if state.isActive == 0u || state.bodyType != GAMEOBJECT_BODY_DYNAMIC { return; }
+    if state.isActive == 0u { return; }
     if state.boundaryCount == 0u { return; }
 
     // Precompute rotation matrix components from current angle — boundary points are stored in

@@ -22,11 +22,9 @@ import { MaterialVisualBuffer } from '../materials/MaterialVisualBuffer';
 import { MaterialSimulationBuffer } from '../materials/MaterialSimulationBuffer';
 
 import { NitrateProcess } from '../NitrateProcess';
-import { Time } from '../time/Time';
 
 import { ReactionLookupBuffer } from '../materials/ReactionLookupBuffer';
 
-import { SimulationClock } from './SimulationClock';
 import { SimulationInitializer } from './SimulationInitializer';
 import { SimulationLayer } from './SimulationLayer';
 import { SimulationPass } from './SimulationPass';
@@ -95,7 +93,6 @@ export class SimulationManager extends NitrateProcess {
 
     public readonly state: SimulationState = new SimulationState();
 
-    private clock: SimulationClock = new SimulationClock();
     private debounceCountdown: number = 0;
 
     private readonly processes: SimulationResource[] = [];
@@ -112,7 +109,7 @@ export class SimulationManager extends NitrateProcess {
     constructor() {
         super();
         this.Register();
-        
+
         SimulationManager.Instance = this;
     }
 
@@ -270,33 +267,33 @@ export class SimulationManager extends NitrateProcess {
         const physicsConfig = PhysicsConfig.GetConfig();
         const simConfig = SimulationConfig.GetConfig();
         const gravity = physicsConfig.general.gravity;
-        const physicsInterval = physicsConfig.general.interval;
-        const baseTickRate = simConfig.time.baseTickRate;
+        const physicsInterval = physicsConfig.general.stepsPerTick;
+        const simStepsPerSecond = simConfig.time.baseTickRate * simConfig.time.stepsPerTick;
+        const stepDelta = 1 / simStepsPerSecond;
+        const frameDelta = 1 / simConfig.time.baseTickRate;
 
         const { state } = this;
         const { device } = webgpu;
 
-        const stepInfo = state.GetPaused()
-            ? { simulationSteps: 0 }
-            : this.clock.Update(Time.now * 0.001, { gravity, simSpeed: state.GetSimSpeed() });
-
+        const simulationSteps = state.GetPaused()
+            ? 0
+            : Math.round(simConfig.time.stepsPerTick * Math.max(0, state.GetSimSpeed()));
         let physicsSteps = 0;
 
-        for (let i = 0; i < stepInfo.simulationSteps; i++) {
-            const simStepDuration = 1 / baseTickRate;
-            state.SetSimTime(state.GetSimTime() + simStepDuration);
+        for (let i = 0; i < simulationSteps; i++) {
+            state.SetSimTime(state.GetSimTime() + stepDelta);
 
             const encSim = device.createCommandEncoder();
-            intentPass.Run({ encoder: encSim, time: state.GetSimTime(), gravity });
-            simPass.Run({ encoder: encSim, time: state.GetSimTime(), gravity });
+            intentPass.Run({ encoder: encSim, time: state.GetSimTime(), gravity, simStepDuration: stepDelta });
+            simPass.Run({ encoder: encSim, time: state.GetSimTime(), gravity, simStepDuration: stepDelta });
             device.queue.submit([encSim.finish()]);
 
             const encErase = device.createCommandEncoder();
-            gameObjectPass.RunErase({ encoder: encErase, gravity, simStepDuration, time: state.GetSimTime() });
+            gameObjectPass.RunErase({ encoder: encErase, gravity, simStepDuration: frameDelta, time: state.GetSimTime() });
             device.queue.submit([encErase.finish()]);
 
             const encGameObjects = device.createCommandEncoder();
-            gameObjectPass.RunStamp({ encoder: encGameObjects, gravity, simStepDuration, time: state.GetSimTime() });
+            gameObjectPass.RunStamp({ encoder: encGameObjects, gravity, simStepDuration: frameDelta, time: state.GetSimTime() });
             device.queue.submit([encGameObjects.finish()]);
             gameObjectPass.ReadbackPositions();
 
@@ -337,11 +334,11 @@ export class SimulationManager extends NitrateProcess {
             particleEmissionPass.Run({
                 encoder: particleEnc,
                 time: state.GetSimTime(),
-                deltaTime: simStepDuration,
+                deltaTime: frameDelta,
                 simOriginX: simOrigin.x,
                 simOriginY: simOrigin.y,
             });
-            particleSimulationPass.Run(particleEnc, simStepDuration, state.GetSimTime(), simOrigin.x, simOrigin.y);
+            particleSimulationPass.Run(particleEnc, frameDelta, state.GetSimTime(), simOrigin.x, simOrigin.y);
             device.queue.submit([particleEnc.finish()]);
 
             state.SetPhysicsTickCounter(state.GetPhysicsTickCounter() + 1);
@@ -356,10 +353,10 @@ export class SimulationManager extends NitrateProcess {
             }
         }
 
-        state.SetLastTickSimulationSteps(stepInfo.simulationSteps);
+        state.SetLastTickSimulationSteps(simulationSteps);
         state.SetLastTickPhysicsSteps(physicsSteps);
 
-        return { simulationSteps: stepInfo.simulationSteps, physicsSteps };
+        return { simulationSteps, physicsSteps };
     }
 
     public OnResize(): void {
@@ -371,7 +368,6 @@ export class SimulationManager extends NitrateProcess {
         });
 
         this.state.Reset();
-        this.clock = new SimulationClock();
 
         const scale = this.state.GetResolutionScale();
         const size: Size2D = World.Instance

@@ -28,7 +28,7 @@ export const Moss: MaterialDefinition = {
             restitution: 0.1,
             hardness: 0.1,
         },
-        density: 0.505,
+        density: 1.1,
         durability: 1.2,
         flammability: 0.55,
         temperature: {

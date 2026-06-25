@@ -1,5 +1,5 @@
 import type { SimulationResource } from "../simulation/SimulationManager";
-import type { Vec2 } from "../definitions/Primitives";
+import type { Size2D, Vec2 } from "../definitions/Primitives";
 
 type ReadPixelParams = {
     texture: GPUTexture;
@@ -80,7 +80,6 @@ export class TexturePixelReader implements SimulationResource {
     /**
      * Reads a rectangular strip of full rows from a texture.
      * Returns raw bytes (rgba8unorm) and the aligned bytes-per-row stride.
-     * The caller must use bytesPerRow to index: offset = row * bytesPerRow + col * 4.
      */
     public async ReadRegion(params: {
         texture: GPUTexture;
@@ -103,6 +102,42 @@ export class TexturePixelReader implements SimulationResource {
             { texture, origin: { x: 0, y: rowStart, z: 0 } },
             { buffer, bytesPerRow, rowsPerImage: rowCount },
             { width: fullWidth, height: rowCount, depthOrArrayLayers: 1 }
+        );
+        this.device.queue.submit([encoder.finish()]);
+
+        await buffer.mapAsync(GPUMapMode.READ);
+        const data = new Uint8Array(bufferSize);
+        data.set(new Uint8Array(buffer.getMappedRange()));
+        buffer.unmap();
+        buffer.destroy();
+
+        return { data, bytesPerRow };
+    }
+
+    /**
+     * Reads an arbitrary rectangle from a texture.
+     * Returns raw bytes (rgba8unorm) and the aligned bytes-per-row stride.
+     */
+    public async ReadRect(params: {
+        texture: GPUTexture;
+        pos: Vec2;
+        size: Size2D;
+    }): Promise<{ data: Uint8Array; bytesPerRow: number }> {
+        const { texture, pos, size } = params;
+
+        const bytesPerRow = Math.ceil(size.width * 4 / 256) * 256;
+        const bufferSize = bytesPerRow * size.height;
+
+        const buffer = this.device.createBuffer({
+            size: bufferSize,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+        });
+
+        const encoder = this.device.createCommandEncoder();
+        encoder.copyTextureToBuffer(
+            { texture, origin: { x: pos.x, y: pos.y, z: 0 } },
+            { buffer, bytesPerRow, rowsPerImage: size.height },
+            { width: size.width, height: size.height, depthOrArrayLayers: 1 }
         );
         this.device.queue.submit([encoder.finish()]);
 

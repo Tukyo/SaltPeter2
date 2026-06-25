@@ -30,6 +30,7 @@ export class GameObjectPhysicsPass {
     private readonly buffers: GameObjectBuffers;
     private readonly pipeline: GPUComputePipeline;
     private readonly workgroupSize: number;
+    private cachedBindGroup: GPUBindGroup | null = null;
 
     private constructor(
         params: GameObjectPhysicsPassParams,
@@ -72,13 +73,16 @@ export class GameObjectPhysicsPass {
 
         device.queue.writeBuffer(buffers.physicsUniformBuffer, 0, uniformData);
 
-        const bindGroup = device.createBindGroup({
-            layout: this.pipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: { buffer: buffers.stateBuffer } },
-                { binding: 1, resource: { buffer: buffers.physicsUniformBuffer } },
-            ],
-        });
+        if (!this.cachedBindGroup) {
+            this.cachedBindGroup = device.createBindGroup({
+                layout: this.pipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: { buffer: buffers.stateBuffer } },
+                    { binding: 1, resource: { buffer: buffers.physicsUniformBuffer } },
+                ],
+            });
+        }
+        const bindGroup = this.cachedBindGroup;
 
         const pass = encoder.beginComputePass();
         pass.setPipeline(this.pipeline);

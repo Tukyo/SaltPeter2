@@ -88,12 +88,17 @@ export class GameObjectPass implements SimulationResource {
     private readonly collisionPass: GameObjectCollisionPass;
 
     private readonly gameObjectBuffers: GameObjectBuffers;
-    private readonly materialPhysicsBuffer: MaterialPhysicsBuffer;
-    private readonly materialStateBuffer: MaterialStateBuffer;
-    private readonly reactionBuffer: ReactionLookupBuffer;
     private readonly particleDefinitionBuffer: ParticleDefinitionBuffer;
 
     private readonly workgroupSize: number;
+    private readonly initialGoOwnership: GPUTexture;
+    private readonly initialGoPhysics: GPUTexture;
+    private readonly eraseBindGroupA: GPUBindGroup;
+    private readonly eraseBindGroupB: GPUBindGroup;
+    private readonly stampBindGroupA0: GPUBindGroup;
+    private readonly stampBindGroupA1: GPUBindGroup;
+    private readonly stampBindGroupB0: GPUBindGroup;
+    private readonly stampBindGroupB1: GPUBindGroup;
 
     /** Returns the GameObject Collider buffer. @internal */
     public GetColliderBuffer(): GPUBuffer { return this.gameObjectBuffers.colliderBuffer; }
@@ -158,11 +163,102 @@ export class GameObjectPass implements SimulationResource {
         this.gameObjectBuffers = gameObjectBuffers;
         this.physicsPass = physicsPass;
         this.collisionPass = collisionPass;
-        this.materialPhysicsBuffer = params.physicsBuffer;
-        this.materialStateBuffer = params.stateBuffer;
-        this.reactionBuffer = params.reactionBuffer;
         this.particleDefinitionBuffer = params.particleDefinitionBuffer;
         this.workgroupSize = workgroupSize;
+
+        const go = params.gameObjectLayer;
+        const sim = params.simulationLayer;
+        this.initialGoOwnership = go.currentOwnership;
+        this.initialGoPhysics = go.currentPhysics;
+
+        const eraseLayout = erasePipeline.getBindGroupLayout(0);
+        const stampLayout = stampPipeline.getBindGroupLayout(0);
+        const eraseStableEntries = [
+            { binding: 0, resource: { buffer: gameObjectBuffers.cellBuffer } },
+            { binding: 1, resource: { buffer: gameObjectBuffers.stateBuffer } },
+            { binding: 2, resource: { buffer: gameObjectBuffers.eraseUniformBuffer } },
+        ];
+        const stampStableEntries = [
+            { binding: 0, resource: { buffer: gameObjectBuffers.cellBuffer } },
+            { binding: 1, resource: { buffer: gameObjectBuffers.stateBuffer } },
+            { binding: 2, resource: { buffer: gameObjectBuffers.stampUniformBuffer } },
+            { binding: 11, resource: { buffer: gameObjectBuffers.deadCellBuffer } },
+            { binding: 12, resource: sim.nextIdentity.createView() },
+            { binding: 13, resource: { buffer: params.physicsBuffer.buffer } },
+            { binding: 14, resource: { buffer: params.stateBuffer.buffer } },
+            { binding: 17, resource: sim.currentIdentity.createView() },
+            { binding: 18, resource: { buffer: params.reactionBuffer.buffer } },
+        ];
+
+        this.eraseBindGroupA = params.device.createBindGroup({ layout: eraseLayout, entries: [
+            ...eraseStableEntries,
+            { binding: 3, resource: go.currentOwnership.createView() },
+            { binding: 4, resource: go.nextIdentity.createView() },
+            { binding: 5, resource: go.nextOwnership.createView() },
+        ]});
+        this.eraseBindGroupB = params.device.createBindGroup({ layout: eraseLayout, entries: [
+            ...eraseStableEntries,
+            { binding: 3, resource: go.nextOwnership.createView() },
+            { binding: 4, resource: go.currentIdentity.createView() },
+            { binding: 5, resource: go.currentOwnership.createView() },
+        ]});
+
+        this.stampBindGroupA0 = params.device.createBindGroup({ layout: stampLayout, entries: [
+            ...stampStableEntries,
+            { binding: 3, resource: go.currentIdentity.createView() },
+            { binding: 4, resource: go.currentOwnership.createView() },
+            { binding: 5, resource: go.nextIdentity.createView() },
+            { binding: 6, resource: go.nextOwnership.createView() },
+            { binding: 7, resource: go.currentPhysics.createView() },
+            { binding: 8, resource: go.nextPhysics.createView() },
+            { binding: 9, resource: go.currentState.createView() },
+            { binding: 10, resource: go.nextState.createView() },
+            { binding: 15, resource: sim.nextPhysics.createView() },
+            { binding: 16, resource: sim.nextState.createView() },
+            { binding: 19, resource: go.currentIdentity.createView() },
+        ]});
+        this.stampBindGroupA1 = params.device.createBindGroup({ layout: stampLayout, entries: [
+            ...stampStableEntries,
+            { binding: 3, resource: go.nextIdentity.createView() },
+            { binding: 4, resource: go.nextOwnership.createView() },
+            { binding: 5, resource: go.currentIdentity.createView() },
+            { binding: 6, resource: go.currentOwnership.createView() },
+            { binding: 7, resource: go.currentPhysics.createView() },
+            { binding: 8, resource: go.nextPhysics.createView() },
+            { binding: 9, resource: go.nextState.createView() },
+            { binding: 10, resource: go.currentState.createView() },
+            { binding: 15, resource: sim.nextPhysics.createView() },
+            { binding: 16, resource: sim.currentState.createView() },
+            { binding: 19, resource: go.nextIdentity.createView() },
+        ]});
+        this.stampBindGroupB0 = params.device.createBindGroup({ layout: stampLayout, entries: [
+            ...stampStableEntries,
+            { binding: 3, resource: go.currentIdentity.createView() },
+            { binding: 4, resource: go.currentOwnership.createView() },
+            { binding: 5, resource: go.nextIdentity.createView() },
+            { binding: 6, resource: go.nextOwnership.createView() },
+            { binding: 7, resource: go.nextPhysics.createView() },
+            { binding: 8, resource: go.currentPhysics.createView() },
+            { binding: 9, resource: go.currentState.createView() },
+            { binding: 10, resource: go.nextState.createView() },
+            { binding: 15, resource: sim.currentPhysics.createView() },
+            { binding: 16, resource: sim.nextState.createView() },
+            { binding: 19, resource: go.currentIdentity.createView() },
+        ]});
+        this.stampBindGroupB1 = params.device.createBindGroup({ layout: stampLayout, entries: [
+            ...stampStableEntries,
+            { binding: 3, resource: go.nextIdentity.createView() },
+            { binding: 4, resource: go.nextOwnership.createView() },
+            { binding: 5, resource: go.currentIdentity.createView() },
+            { binding: 6, resource: go.currentOwnership.createView() },
+            { binding: 7, resource: go.nextPhysics.createView() },
+            { binding: 8, resource: go.currentPhysics.createView() },
+            { binding: 9, resource: go.nextState.createView() },
+            { binding: 10, resource: go.currentState.createView() },
+            { binding: 15, resource: sim.currentPhysics.createView() },
+            { binding: 16, resource: sim.currentState.createView() },
+            { binding: 19, resource: go.nextIdentity.createView() },
+        ]});
     }
 
     /** Compiles erase and stamp shaders, creates sub-passes, and returns a ready-to-use pass. @internal */
@@ -442,26 +538,23 @@ export class GameObjectPass implements SimulationResource {
             if (!this.gameObjectSlots.has(gameObject.id)) { this.UploadGameObject(gameObject); }
         }
 
-        // Sync CPU transform position into GPU state buffer for GOs without a Rigidbody and
-        // for kinematic RBs. Both are position-driven from the CPU; the GPU physics pass is a
-        // no-op for kinematic bodies, so we push the authoritative position before the stamp.
-        const posXFieldIndex = 0;
+        // Sync transform → GPU state for non-dynamic GOs (no RB or Static/Kinematic).
+        // Dynamic bodies are fully GPU-driven; their position comes back via ReadbackPositions.
         const simOrigin = World.Instance?.GetSimOrigin() ?? { x: 0, y: 0 };
         for (const [goId, slot] of this.gameObjectSlots) {
             if (slot === -1) { continue; }
             const go = manager.Get(goId);
             if (!go) { continue; }
             const rigidbody = go.GetComponent(Rigidbody);
-            if (rigidbody && rigidbody.bodyType !== 'Kinematic') { continue; }
+            if (rigidbody && rigidbody.bodyType === 'Dynamic') { continue; }
             const transform = go.GetComponent(Transform);
             if (!transform) { continue; }
             const simX = transform.position.x - simOrigin.x;
             const simY = transform.position.y - simOrigin.y;
-            const byteOffset = slot * GameObjectStateSchema.byteStride + posXFieldIndex * 4;
             this.device.queue.writeBuffer(
                 this.gameObjectBuffers.stateBuffer,
-                byteOffset,
-                new Float32Array([simX, simY, simX, simY])
+                slot * GameObjectStateSchema.byteStride,
+                new Float32Array([simX, simY, simX, simY, 0, 0])
             );
         }
 
@@ -489,17 +582,9 @@ export class GameObjectPass implements SimulationResource {
         eraseF32[5] = GameObjectConfig.GetConfig().physics.bleed.threshold;
         device.queue.writeBuffer(gameObjectBuffers.eraseUniformBuffer, 0, eraseUniformData);
 
-        const eraseBindGroup = device.createBindGroup({
-            layout: this.erasePipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: { buffer: gameObjectBuffers.cellBuffer } },
-                { binding: 1, resource: { buffer: gameObjectBuffers.stateBuffer } },
-                { binding: 2, resource: { buffer: gameObjectBuffers.eraseUniformBuffer } },
-                { binding: 3, resource: gameObjectLayer.currentOwnership.createView() },
-                { binding: 4, resource: gameObjectLayer.nextIdentity.createView() },
-                { binding: 5, resource: gameObjectLayer.nextOwnership.createView() },
-            ],
-        });
+        const eraseBindGroup = this.gameObjectLayer.currentOwnership === this.initialGoOwnership
+            ? this.eraseBindGroupA
+            : this.eraseBindGroupB;
         const erasePass = encoder.beginComputePass();
         erasePass.setPipeline(this.erasePipeline);
         erasePass.setBindGroup(0, eraseBindGroup);
@@ -531,31 +616,13 @@ export class GameObjectPass implements SimulationResource {
             this.collisionPass.Run({ encoder, simulationLayer, gameObjectLayer, gravity, simStepDuration });
 
             // Stamp — carry full cell state (identity, physics, state) from prevPos to new pos
-            const stampBindGroup = device.createBindGroup({
-                layout: this.stampPipeline.getBindGroupLayout(0),
-                entries: [
-                    { binding: 0, resource: { buffer: gameObjectBuffers.cellBuffer } },
-                    { binding: 1, resource: { buffer: gameObjectBuffers.stateBuffer } },
-                    { binding: 2, resource: { buffer: gameObjectBuffers.stampUniformBuffer } },
-                    { binding: 3, resource: gameObjectLayer.currentIdentity.createView() },
-                    { binding: 4, resource: gameObjectLayer.currentOwnership.createView() },
-                    { binding: 5, resource: gameObjectLayer.nextIdentity.createView() },
-                    { binding: 6, resource: gameObjectLayer.nextOwnership.createView() },
-                    { binding: 7, resource: gameObjectLayer.currentPhysics.createView() },
-                    { binding: 8, resource: gameObjectLayer.nextPhysics.createView() },
-                    { binding: 9, resource: gameObjectLayer.currentState.createView() },
-                    { binding: 10, resource: gameObjectLayer.nextState.createView() },
-                    { binding: 11, resource: { buffer: gameObjectBuffers.deadCellBuffer } },
-                    { binding: 12, resource: simulationLayer.nextIdentity.createView() },
-                    { binding: 13, resource: { buffer: this.materialPhysicsBuffer.buffer } },
-                    { binding: 14, resource: { buffer: this.materialStateBuffer.buffer } },
-                    { binding: 15, resource: simulationLayer.nextPhysics.createView() },
-                    { binding: 16, resource: simulationLayer.nextState.createView() },
-                    { binding: 17, resource: simulationLayer.currentIdentity.createView() },
-                    { binding: 18, resource: { buffer: this.reactionBuffer.buffer } },
-                    { binding: 19, resource: gameObjectLayer.currentIdentity.createView() },
-                ],
-            });
+            const goIsInitial = gameObjectLayer.currentOwnership === this.initialGoOwnership;
+            const physicsIsInitial = gameObjectLayer.currentPhysics === this.initialGoPhysics;
+            let stampBindGroup: GPUBindGroup;
+            if (goIsInitial && physicsIsInitial) { stampBindGroup = this.stampBindGroupA0; }
+            else if (!goIsInitial && physicsIsInitial) { stampBindGroup = this.stampBindGroupA1; }
+            else if (goIsInitial && !physicsIsInitial) { stampBindGroup = this.stampBindGroupB0; }
+            else { stampBindGroup = this.stampBindGroupB1; }
             const stampPass = encoder.beginComputePass();
             stampPass.setPipeline(this.stampPipeline);
             stampPass.setBindGroup(0, stampBindGroup);
@@ -652,7 +719,7 @@ export class GameObjectPass implements SimulationResource {
             this.slotSimPositions.set(slot, shadow);
 
             const rigidbody = gameObject.GetComponent(Rigidbody);
-            if (rigidbody && rigidbody.bodyType !== 'Kinematic') {
+            if (rigidbody && rigidbody.bodyType == 'Dynamic') {
                 const transform = gameObject.GetComponent(Transform);
                 if (transform) {
                     transform.position.x = simPosX + capturedSimOriginX;

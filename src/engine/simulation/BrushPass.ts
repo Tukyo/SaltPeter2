@@ -54,6 +54,7 @@ export class BrushPass {
     private readonly uniforms: GPUBuffer;
     private readonly workgroupSize: number;
     private readonly uniformSize: number;
+    private readonly bindGroupCache = new Map<GPUTexture, GPUBindGroup>();
 
     private constructor(
         params: BrushPassParams,
@@ -142,20 +143,25 @@ export class BrushPass {
             isErase,
         ]));
 
-        const bindGroup = device.createBindGroup({
-            layout: this.pipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: this.simulationLayer.currentIdentity.createView() },
-                { binding: 1, resource: this.simulationLayer.nextIdentity.createView() },
-                { binding: 2, resource: { buffer: this.uniforms } },
-                { binding: 3, resource: this.simulationLayer.currentPhysics.createView() },
-                { binding: 4, resource: this.simulationLayer.nextPhysics.createView() },
-                { binding: 5, resource: { buffer: this.physicsBuffer.buffer } },
-                { binding: 6, resource: this.simulationLayer.currentState.createView() },
-                { binding: 7, resource: this.simulationLayer.nextState.createView() },
-                { binding: 8, resource: { buffer: this.stateBuffer.buffer } },
-            ],
-        });
+        const cacheKey = this.simulationLayer.currentIdentity;
+        let bindGroup = this.bindGroupCache.get(cacheKey);
+        if (!bindGroup) {
+            bindGroup = device.createBindGroup({
+                layout: this.pipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: this.simulationLayer.currentIdentity.createView() },
+                    { binding: 1, resource: this.simulationLayer.nextIdentity.createView() },
+                    { binding: 2, resource: { buffer: this.uniforms } },
+                    { binding: 3, resource: this.simulationLayer.currentPhysics.createView() },
+                    { binding: 4, resource: this.simulationLayer.nextPhysics.createView() },
+                    { binding: 5, resource: { buffer: this.physicsBuffer.buffer } },
+                    { binding: 6, resource: this.simulationLayer.currentState.createView() },
+                    { binding: 7, resource: this.simulationLayer.nextState.createView() },
+                    { binding: 8, resource: { buffer: this.stateBuffer.buffer } },
+                ],
+            });
+            this.bindGroupCache.set(cacheKey, bindGroup);
+        }
 
         const pass = encoder.beginComputePass();
         pass.setPipeline(this.pipeline);
@@ -170,5 +176,6 @@ export class BrushPass {
     // @omitfromdocs
     public Destroy(): void {
         this.uniforms.destroy();
+        this.bindGroupCache.clear();
     }
 }

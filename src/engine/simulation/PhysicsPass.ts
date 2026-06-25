@@ -28,6 +28,8 @@ export class PhysicsPass implements SimulationResource {
     private readonly goStateBuffer: GPUBuffer;
     private readonly uniforms: GPUBuffer;
     private readonly workgroupSize: number;
+    private readonly simBindGroupCache = new Map<GPUTexture, GPUBindGroup>();
+    private readonly goBindGroupCache = new Map<GPUTexture, GPUBindGroup>();
 
     private constructor(
         params: PhysicsPassParams,
@@ -65,34 +67,45 @@ export class PhysicsPass implements SimulationResource {
         this.device.queue.writeBuffer(this.uniforms, 0, new Float32Array([gravity]));
 
         const layout = this.pipeline.getBindGroupLayout(0);
-        const simBindGroup = this.device.createBindGroup({
-            layout,
-            entries: [
-                { binding: 0, resource: this.simulationLayer.currentIdentity.createView() },
-                { binding: 1, resource: this.simulationLayer.currentPhysics.createView() },
-                { binding: 2, resource: this.simulationLayer.nextPhysics.createView() },
-                { binding: 3, resource: { buffer: this.physicsBuffer.buffer } },
-                { binding: 4, resource: { buffer: this.uniforms } },
-                { binding: 5, resource: this.gameObjectLayer.currentIdentity.createView() },
-                { binding: 6, resource: this.gameObjectLayer.currentPhysics.createView() },
-                { binding: 7, resource: this.gameObjectLayer.currentOwnership.createView() },
-                { binding: 8, resource: { buffer: this.goStateBuffer } },
-            ],
-        });
-        const goBindGroup = this.device.createBindGroup({
-            layout,
-            entries: [
-                { binding: 0, resource: this.gameObjectLayer.currentIdentity.createView() },
-                { binding: 1, resource: this.gameObjectLayer.currentPhysics.createView() },
-                { binding: 2, resource: this.gameObjectLayer.nextPhysics.createView() },
-                { binding: 3, resource: { buffer: this.physicsBuffer.buffer } },
-                { binding: 4, resource: { buffer: this.uniforms } },
-                { binding: 5, resource: this.simulationLayer.currentIdentity.createView() },
-                { binding: 6, resource: this.simulationLayer.currentPhysics.createView() },
-                { binding: 7, resource: this.gameObjectLayer.currentOwnership.createView() },
-                { binding: 8, resource: { buffer: this.goStateBuffer } },
-            ],
-        });
+        const cacheKey = this.simulationLayer.currentIdentity;
+
+        let simBindGroup = this.simBindGroupCache.get(cacheKey);
+        if (!simBindGroup) {
+            simBindGroup = this.device.createBindGroup({
+                layout,
+                entries: [
+                    { binding: 0, resource: this.simulationLayer.currentIdentity.createView() },
+                    { binding: 1, resource: this.simulationLayer.currentPhysics.createView() },
+                    { binding: 2, resource: this.simulationLayer.nextPhysics.createView() },
+                    { binding: 3, resource: { buffer: this.physicsBuffer.buffer } },
+                    { binding: 4, resource: { buffer: this.uniforms } },
+                    { binding: 5, resource: this.gameObjectLayer.currentIdentity.createView() },
+                    { binding: 6, resource: this.gameObjectLayer.currentPhysics.createView() },
+                    { binding: 7, resource: this.gameObjectLayer.currentOwnership.createView() },
+                    { binding: 8, resource: { buffer: this.goStateBuffer } },
+                ],
+            });
+            this.simBindGroupCache.set(cacheKey, simBindGroup);
+        }
+
+        let goBindGroup = this.goBindGroupCache.get(cacheKey);
+        if (!goBindGroup) {
+            goBindGroup = this.device.createBindGroup({
+                layout,
+                entries: [
+                    { binding: 0, resource: this.gameObjectLayer.currentIdentity.createView() },
+                    { binding: 1, resource: this.gameObjectLayer.currentPhysics.createView() },
+                    { binding: 2, resource: this.gameObjectLayer.nextPhysics.createView() },
+                    { binding: 3, resource: { buffer: this.physicsBuffer.buffer } },
+                    { binding: 4, resource: { buffer: this.uniforms } },
+                    { binding: 5, resource: this.simulationLayer.currentIdentity.createView() },
+                    { binding: 6, resource: this.simulationLayer.currentPhysics.createView() },
+                    { binding: 7, resource: this.gameObjectLayer.currentOwnership.createView() },
+                    { binding: 8, resource: { buffer: this.goStateBuffer } },
+                ],
+            });
+            this.goBindGroupCache.set(cacheKey, goBindGroup);
+        }
 
         const workgroupsX = Math.ceil(this.simulationLayer.width / this.workgroupSize);
         const workgroupsY = Math.ceil(this.simulationLayer.height / this.workgroupSize);
@@ -109,5 +122,7 @@ export class PhysicsPass implements SimulationResource {
     // @omitfromdocs
     public Destroy(): void {
         this.uniforms.destroy();
+        this.simBindGroupCache.clear();
+        this.goBindGroupCache.clear();
     }
 }

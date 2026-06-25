@@ -62,34 +62,41 @@ export class ChunkManager extends NitrateProcess {
         const startCY = Math.floor(simOriginY / chunkSize);
         const endCX = Math.floor((simOriginX + width - 1) / chunkSize);
         const endCY = Math.floor((simOriginY + height - 1) / chunkSize);
-        let uploaded = 0;
 
+        const addresses: ChunkAddress[] = [];
         for (let cy = startCY; cy <= endCY; cy++) {
             for (let cx = startCX; cx <= endCX; cx++) {
-                const chunk = await this.GetOrLoad({ cx, cy });
-                const texX = cx * chunkSize - simOriginX;
-                const texY = cy * chunkSize - simOriginY;
-                const origin = { x: texX, y: texY };
-                const extent: GPUExtent3DStrict = [chunkSize, chunkSize];
-                const identityBPR = chunkSize * ChunkData.GetIdentityBytesPerCell();
-                const physicsBPR = chunkSize * ChunkData.GetPhysicsBytesPerCell();
-                const stateBPR = chunkSize * ChunkData.GetStateBytesPerCell();
-                device.queue.writeTexture(
-                    { texture: simulationLayer.currentIdentity, origin }, chunk.identity, { bytesPerRow: identityBPR }, extent
-                );
-                device.queue.writeTexture(
-                    { texture: simulationLayer.currentPhysics, origin }, chunk.physics, { bytesPerRow: physicsBPR }, extent
-                );
-                device.queue.writeTexture(
-                    { texture: simulationLayer.currentState, origin }, chunk.state, { bytesPerRow: stateBPR }, extent
-                );
-                this.uploadedChunks.add(ChunkData.GetKey({ cx, cy }));
-                uploaded++;
+                addresses.push({ cx, cy });
             }
         }
 
+        const chunks = await Promise.all(addresses.map(addr => this.GetOrLoad(addr)));
+
+        const identityBPR = chunkSize * ChunkData.GetIdentityBytesPerCell();
+        const physicsBPR = chunkSize * ChunkData.GetPhysicsBytesPerCell();
+        const stateBPR = chunkSize * ChunkData.GetStateBytesPerCell();
+        const extent: GPUExtent3DStrict = [chunkSize, chunkSize];
+
+        for (let i = 0; i < addresses.length; i++) {
+            const { cx, cy } = addresses[i];
+            const chunk = chunks[i];
+            const texX = cx * chunkSize - simOriginX;
+            const texY = cy * chunkSize - simOriginY;
+            const origin = { x: texX, y: texY };
+            device.queue.writeTexture(
+                { texture: simulationLayer.currentIdentity, origin }, chunk.identity, { bytesPerRow: identityBPR }, extent
+            );
+            device.queue.writeTexture(
+                { texture: simulationLayer.currentPhysics, origin }, chunk.physics, { bytesPerRow: physicsBPR }, extent
+            );
+            device.queue.writeTexture(
+                { texture: simulationLayer.currentState, origin }, chunk.state, { bytesPerRow: stateBPR }, extent
+            );
+            this.uploadedChunks.add(ChunkData.GetKey({ cx, cy }));
+        }
+
         LogManager.Instance?.Log({
-            text: `Initialized ${uploaded} chunks.`,
+            text: `Initialized ${addresses.length} chunks.`,
             options: { tags: ['Chunk'] }
         });
     }

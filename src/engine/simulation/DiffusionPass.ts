@@ -22,9 +22,11 @@ export class DiffusionPass implements SimulationResource {
     private readonly device: GPUDevice;
     private readonly pipeline: GPUComputePipeline;
     private readonly simulationLayer: SimulationLayer;
-    private readonly physicsBuffer: MaterialPhysicsBuffer;
     private readonly uniforms: GPUBuffer;
     private readonly workgroupSize: number;
+    private readonly initialPhysics: GPUTexture;
+    private readonly bindGroupA: GPUBindGroup;
+    private readonly bindGroupB: GPUBindGroup;
 
     private constructor(
         params: DiffusionPassParams,
@@ -34,11 +36,45 @@ export class DiffusionPass implements SimulationResource {
         this.device = params.device;
         this.pipeline = pipeline;
         this.simulationLayer = params.simulationLayer;
-        this.physicsBuffer = params.physicsBuffer;
         this.workgroupSize = workgroupSize;
         this.uniforms = this.device.createBuffer({
             size: SimulationSchema.GetDiffusionUniformFields().length * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+
+        this.initialPhysics = params.simulationLayer.currentPhysics;
+        const layout = pipeline.getBindGroupLayout(0);
+        const physicsBufferResource = { buffer: params.physicsBuffer.buffer };
+        const uniformsResource = { buffer: this.uniforms };
+
+        // DiffusionPass always runs after SwapIdentity (step 4), so currentIdentity is always
+        // nextIdentity-at-construction and nextIdentity is always currentIdentity-at-construction.
+        // Identity bindings are fixed across both groups; only physics bindings vary with PhysicsPass parity.
+        const identityReadView = params.simulationLayer.nextIdentity.createView();
+        const identityWriteView = params.simulationLayer.currentIdentity.createView();
+
+        this.bindGroupA = this.device.createBindGroup({
+            layout,
+            entries: [
+                { binding: 0, resource: identityReadView },
+                { binding: 1, resource: identityWriteView },
+                { binding: 2, resource: params.simulationLayer.currentPhysics.createView() },
+                { binding: 3, resource: physicsBufferResource },
+                { binding: 4, resource: params.simulationLayer.nextPhysics.createView() },
+                { binding: 5, resource: uniformsResource },
+            ],
+        });
+
+        this.bindGroupB = this.device.createBindGroup({
+            layout,
+            entries: [
+                { binding: 0, resource: identityReadView },
+                { binding: 1, resource: identityWriteView },
+                { binding: 2, resource: params.simulationLayer.nextPhysics.createView() },
+                { binding: 3, resource: physicsBufferResource },
+                { binding: 4, resource: params.simulationLayer.currentPhysics.createView() },
+                { binding: 5, resource: uniformsResource },
+            ],
         });
     }
 
@@ -77,17 +113,9 @@ export class DiffusionPass implements SimulationResource {
         f32[13] = pressure.densityScale.gas;
         this.device.queue.writeBuffer(this.uniforms, 0, uniformData);
 
-        const bindGroup = this.device.createBindGroup({
-            layout: this.pipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: this.simulationLayer.currentIdentity.createView() },
-                { binding: 1, resource: this.simulationLayer.nextIdentity.createView() },
-                { binding: 2, resource: this.simulationLayer.currentPhysics.createView() },
-                { binding: 3, resource: { buffer: this.physicsBuffer.buffer } },
-                { binding: 4, resource: this.simulationLayer.nextPhysics.createView() },
-                { binding: 5, resource: { buffer: this.uniforms } },
-            ],
-        });
+        const bindGroup = this.simulationLayer.currentPhysics === this.initialPhysics
+            ? this.bindGroupA
+            : this.bindGroupB;
 
         const pass = encoder.beginComputePass();
         pass.setPipeline(this.pipeline);

@@ -30,6 +30,7 @@ export class SimulationRenderPass {
     private readonly materialVisualBuffer: MaterialVisualBuffer;
     private readonly pipeline: GPUComputePipeline;
     private readonly workgroupSize: number;
+    private readonly bindGroupCache = new Map<GPUTexture, GPUBindGroup>();
 
     private constructor(
         params: SimulationRenderPassCreateParams,
@@ -63,14 +64,19 @@ export class SimulationRenderPass {
     public Run(params: SimulationRenderPassRunParams): void {
         const { encoder, simulationLayer, layers } = params;
 
-        const bindGroup = this.device.createBindGroup({
-            layout: this.pipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: simulationLayer.currentIdentity.createView() },
-                { binding: 1, resource: { buffer: this.materialVisualBuffer.buffer } },
-                { binding: 2, resource: layers.simTexture.createView() },
-            ],
-        });
+        const cacheKey = simulationLayer.currentIdentity;
+        let bindGroup = this.bindGroupCache.get(cacheKey);
+        if (!bindGroup) {
+            bindGroup = this.device.createBindGroup({
+                layout: this.pipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: simulationLayer.currentIdentity.createView() },
+                    { binding: 1, resource: { buffer: this.materialVisualBuffer.buffer } },
+                    { binding: 2, resource: layers.simTexture.createView() },
+                ],
+            });
+            this.bindGroupCache.set(cacheKey, bindGroup);
+        }
 
         const pass = encoder.beginComputePass();
         pass.setPipeline(this.pipeline);
@@ -80,5 +86,10 @@ export class SimulationRenderPass {
             Math.ceil(simulationLayer.height / this.workgroupSize)
         );
         pass.end();
+    }
+
+    // @omitfromdocs
+    public Destroy(): void {
+        this.bindGroupCache.clear();
     }
 }

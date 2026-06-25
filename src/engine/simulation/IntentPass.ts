@@ -23,6 +23,7 @@ interface IntentRunParams {
     encoder: GPUCommandEncoder;
     time: number;
     gravity: number;
+    simStepDuration: number;
 }
 
 /**
@@ -40,6 +41,7 @@ export class IntentPass implements SimulationResource {
     private readonly reactionBuffer: ReactionLookupBuffer;
     private readonly uniforms: GPUBuffer;
     private readonly workgroupSize: number;
+    private readonly bindGroupCache = new Map<GPUTexture, GPUBindGroup>();
 
     private constructor(
         params: IntentPassParams,
@@ -76,15 +78,13 @@ export class IntentPass implements SimulationResource {
     /** Encodes an intent compute dispatch into the provided command encoder. @internal */
     public Run(params: IntentRunParams): void {
         const { device } = this;
-        const { encoder, time, gravity } = params;
+        const { encoder, time, gravity, simStepDuration } = params;
 
-        const gravityStrength = Math.max(1, Math.abs(gravity));
-        const deltaTime = 1 / (SimulationConfig.GetConfig().time.baseTickRate * gravityStrength);
         const spread = PhysicsConfig.GetConfig().pressure.spread;
         device.queue.writeBuffer(this.uniforms, 0, new Float32Array([
             time,
             gravity,
-            deltaTime,
+            simStepDuration,
             spread.threshold.powder,
             spread.scale.powder,
             spread.maxChance.powder,
@@ -93,18 +93,23 @@ export class IntentPass implements SimulationResource {
             spread.maxChance.solid,
         ]));
 
-        const bindGroup = device.createBindGroup({
-            layout: this.pipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: this.simulationLayer.currentIdentity.createView() },
-                { binding: 1, resource: this.intent.texture.createView() },
-                { binding: 2, resource: { buffer: this.physicsBuffer.buffer } },
-                { binding: 3, resource: { buffer: this.simBuffer.buffer } },
-                { binding: 4, resource: { buffer: this.uniforms } },
-                { binding: 5, resource: this.simulationLayer.currentPhysics.createView() },
-                { binding: 6, resource: { buffer: this.reactionBuffer.buffer } },
-            ],
-        });
+        const cacheKey = this.simulationLayer.currentIdentity;
+        let bindGroup = this.bindGroupCache.get(cacheKey);
+        if (!bindGroup) {
+            bindGroup = device.createBindGroup({
+                layout: this.pipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: this.simulationLayer.currentIdentity.createView() },
+                    { binding: 1, resource: this.intent.texture.createView() },
+                    { binding: 2, resource: { buffer: this.physicsBuffer.buffer } },
+                    { binding: 3, resource: { buffer: this.simBuffer.buffer } },
+                    { binding: 4, resource: { buffer: this.uniforms } },
+                    { binding: 5, resource: this.simulationLayer.currentPhysics.createView() },
+                    { binding: 6, resource: { buffer: this.reactionBuffer.buffer } },
+                ],
+            });
+            this.bindGroupCache.set(cacheKey, bindGroup);
+        }
 
         const pass = encoder.beginComputePass();
         pass.setPipeline(this.pipeline);
@@ -119,5 +124,6 @@ export class IntentPass implements SimulationResource {
     // @omitfromdocs
     public Destroy(): void {
         this.uniforms.destroy();
+        this.bindGroupCache.clear();
     }
 }

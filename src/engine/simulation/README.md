@@ -56,16 +56,6 @@ Created and owned by [`SimulationManager`](SimulationManager.ts). Called each fr
 
 ---
 
-### [`SimulationClock`](SimulationClock.ts)
-Fixed-timestep accumulator for the simulation loop.
-
-Each frame, `Update` computes delta time, accumulates it scaled by tick rate and sim speed,
-and returns the number of whole simulation steps to run. Caps accumulation to prevent
-spiral-of-death on slow frames.
-
-
----
-
 ### [`SimulationInitializer`](SimulationInitializer.ts)
 Seeds physics textures on all layers with air's resting temperature
 so all cells start at ambient rather than absolute zero.

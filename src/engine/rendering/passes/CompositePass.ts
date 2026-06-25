@@ -32,6 +32,7 @@ export class CompositePass {
     private readonly device: GPUDevice;
     private readonly pipeline: GPURenderPipeline;
     private readonly cropBuffer: GPUBuffer;
+    private cachedBindGroup: GPUBindGroup | null = null;
 
     private constructor(device: GPUDevice, pipeline: GPURenderPipeline) {
         this.device = device;
@@ -72,15 +73,18 @@ export class CompositePass {
         const crop = this.ComputeCrop(layers.size);
         this.device.queue.writeBuffer(this.cropBuffer, 0, crop);
 
-        const bindGroup = this.device.createBindGroup({
-            layout: this.pipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: layers.simTexture.createView() },
-                { binding: 1, resource: layers.gameObjectsTexture.createView() },
-                { binding: 2, resource: { buffer: this.cropBuffer } },
-                { binding: 3, resource: layers.particleTexture.createView() },
-            ],
-        });
+        if (!this.cachedBindGroup) {
+            this.cachedBindGroup = this.device.createBindGroup({
+                layout: this.pipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: layers.simTexture.createView() },
+                    { binding: 1, resource: layers.gameObjectsTexture.createView() },
+                    { binding: 2, resource: { buffer: this.cropBuffer } },
+                    { binding: 3, resource: layers.particleTexture.createView() },
+                ],
+            });
+        }
+        const bindGroup = this.cachedBindGroup;
 
         const pass = encoder.beginRenderPass({
             colorAttachments: [{
@@ -129,5 +133,8 @@ export class CompositePass {
     }
 
     // @omitfromdocs
-    public Destroy(): void { this.cropBuffer.destroy(); }
+    public Destroy(): void {
+        this.cropBuffer.destroy();
+        this.cachedBindGroup = null;
+    }
 }

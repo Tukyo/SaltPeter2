@@ -26,7 +26,7 @@ export const Ice: MaterialDefinition = {
             restitution: 0.3,
             hardness: 0.55,
         },
-        density: 0.9,
+        density: 1.25,
         durability: 1.5,
         temperature: {
             specificHeat: 2,

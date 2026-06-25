@@ -3,7 +3,6 @@ export * from './DiffusionPass';
 export * from './IntentPass';
 export * from './PhysicsPass';
 export * from './SimulationLayer';
-export * from './SimulationClock';
 export * from './SimulationInitializer';
 export * from './SimulationManager';
 export * from './SimulationPass';

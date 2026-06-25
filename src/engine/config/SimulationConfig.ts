@@ -7,6 +7,7 @@ export class SimulationConfig {
         },
         time: {
             baseTickRate: 60,
+            stepsPerTick: 10,
             maxDeltaTime: 0.05
         },
         noise: {

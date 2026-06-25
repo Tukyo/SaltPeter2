@@ -26,6 +26,7 @@ interface SimulationRunParams {
     encoder: GPUCommandEncoder;
     time: number;
     gravity: number;
+    simStepDuration: number;
 }
 
 /**
@@ -37,14 +38,14 @@ export class SimulationPass implements SimulationResource {
     private readonly device: GPUDevice;
     private readonly pipeline: GPUComputePipeline;
     private readonly simulationLayer: SimulationLayer;
-    private readonly gameObjectLayer: GameObjectLayer;
-    private readonly intent: SimulationTexture;
-    private readonly physicsBuffer: MaterialPhysicsBuffer;
-    private readonly simBuffer: MaterialSimulationBuffer;
-    private readonly stateBuffer: MaterialStateBuffer;
-    private readonly reactionBuffer: ReactionLookupBuffer;
     private readonly uniforms: GPUBuffer;
     private readonly workgroupSize: number;
+    private readonly initialPhysics: GPUTexture;
+    private readonly initialState: GPUTexture;
+    private readonly bindGroupA0: GPUBindGroup;
+    private readonly bindGroupA1: GPUBindGroup;
+    private readonly bindGroupB0: GPUBindGroup;
+    private readonly bindGroupB1: GPUBindGroup;
 
     private constructor(
         params: SimulationPassParams,
@@ -54,17 +55,73 @@ export class SimulationPass implements SimulationResource {
         this.device = params.device;
         this.pipeline = pipeline;
         this.simulationLayer = params.simulationLayer;
-        this.gameObjectLayer = params.gameObjectLayer;
-        this.intent = params.intent;
-        this.physicsBuffer = params.physicsBuffer;
-        this.simBuffer = params.simBuffer;
-        this.stateBuffer = params.stateBuffer;
-        this.reactionBuffer = params.reactionBuffer;
         this.workgroupSize = workgroupSize;
         this.uniforms = this.device.createBuffer({
             size: SimulationSchema.GetSimUniformFields().length * 4,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
+
+        this.initialPhysics = params.simulationLayer.currentPhysics;
+        this.initialState = params.simulationLayer.currentState;
+        const layout = pipeline.getBindGroupLayout(0);
+        const sim = params.simulationLayer;
+        const go = params.gameObjectLayer;
+        const stableEntries = [
+            { binding: 2, resource: params.intent.texture.createView() },
+            { binding: 3, resource: { buffer: params.physicsBuffer.buffer } },
+            { binding: 4, resource: { buffer: params.simBuffer.buffer } },
+            { binding: 5, resource: { buffer: this.uniforms } },
+            { binding: 10, resource: { buffer: params.stateBuffer.buffer } },
+            { binding: 11, resource: { buffer: params.reactionBuffer.buffer } },
+        ];
+
+        this.bindGroupA0 = this.device.createBindGroup({ layout, entries: [
+            { binding: 0, resource: sim.currentIdentity.createView() },
+            { binding: 1, resource: sim.nextIdentity.createView() },
+            ...stableEntries,
+            { binding: 6, resource: sim.currentPhysics.createView() },
+            { binding: 7, resource: sim.nextPhysics.createView() },
+            { binding: 8, resource: sim.currentState.createView() },
+            { binding: 9, resource: sim.nextState.createView() },
+            { binding: 12, resource: go.currentOwnership.createView() },
+            { binding: 13, resource: go.currentIdentity.createView() },
+        ]});
+
+        this.bindGroupA1 = this.device.createBindGroup({ layout, entries: [
+            { binding: 0, resource: sim.currentIdentity.createView() },
+            { binding: 1, resource: sim.nextIdentity.createView() },
+            ...stableEntries,
+            { binding: 6, resource: sim.currentPhysics.createView() },
+            { binding: 7, resource: sim.nextPhysics.createView() },
+            { binding: 8, resource: sim.nextState.createView() },
+            { binding: 9, resource: sim.currentState.createView() },
+            { binding: 12, resource: go.nextOwnership.createView() },
+            { binding: 13, resource: go.nextIdentity.createView() },
+        ]});
+
+        this.bindGroupB0 = this.device.createBindGroup({ layout, entries: [
+            { binding: 0, resource: sim.currentIdentity.createView() },
+            { binding: 1, resource: sim.nextIdentity.createView() },
+            ...stableEntries,
+            { binding: 6, resource: sim.nextPhysics.createView() },
+            { binding: 7, resource: sim.currentPhysics.createView() },
+            { binding: 8, resource: sim.currentState.createView() },
+            { binding: 9, resource: sim.nextState.createView() },
+            { binding: 12, resource: go.currentOwnership.createView() },
+            { binding: 13, resource: go.currentIdentity.createView() },
+        ]});
+
+        this.bindGroupB1 = this.device.createBindGroup({ layout, entries: [
+            { binding: 0, resource: sim.currentIdentity.createView() },
+            { binding: 1, resource: sim.nextIdentity.createView() },
+            ...stableEntries,
+            { binding: 6, resource: sim.nextPhysics.createView() },
+            { binding: 7, resource: sim.currentPhysics.createView() },
+            { binding: 8, resource: sim.nextState.createView() },
+            { binding: 9, resource: sim.currentState.createView() },
+            { binding: 12, resource: go.nextOwnership.createView() },
+            { binding: 13, resource: go.nextIdentity.createView() },
+        ]});
     }
 
     /** Compiles the simulation compute shader and returns a ready-to-use pass. @internal */
@@ -82,32 +139,17 @@ export class SimulationPass implements SimulationResource {
 
     /** Encodes a simulation compute dispatch into the provided command encoder. @internal */
     public Run(params: SimulationRunParams): void {
-        const { device } = this;
-        const { encoder, time, gravity } = params;
+        const { encoder, time, gravity, simStepDuration } = params;
 
-        const gravityStrength = Math.max(1, Math.abs(gravity));
-        const deltaTime = 1 / (SimulationConfig.GetConfig().time.baseTickRate * gravityStrength);
-        device.queue.writeBuffer(this.uniforms, 0, new Float32Array([time, gravity, deltaTime]));
+        this.device.queue.writeBuffer(this.uniforms, 0, new Float32Array([time, gravity, simStepDuration]));
 
-        const bindGroup = device.createBindGroup({
-            layout: this.pipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: this.simulationLayer.currentIdentity.createView() },
-                { binding: 1, resource: this.simulationLayer.nextIdentity.createView() },
-                { binding: 2, resource: this.intent.texture.createView() },
-                { binding: 3, resource: { buffer: this.physicsBuffer.buffer } },
-                { binding: 4, resource: { buffer: this.simBuffer.buffer } },
-                { binding: 5, resource: { buffer: this.uniforms } },
-                { binding: 6, resource: this.simulationLayer.currentPhysics.createView() },
-                { binding: 7, resource: this.simulationLayer.nextPhysics.createView() },
-                { binding: 8, resource: this.simulationLayer.currentState.createView() },
-                { binding: 9, resource: this.simulationLayer.nextState.createView() },
-                { binding: 10, resource: { buffer: this.stateBuffer.buffer } },
-                { binding: 11, resource: { buffer: this.reactionBuffer.buffer } },
-                { binding: 12, resource: this.gameObjectLayer.currentOwnership.createView() },
-                { binding: 13, resource: this.gameObjectLayer.currentIdentity.createView() },
-            ],
-        });
+        const physicsIsInitial = this.simulationLayer.currentPhysics === this.initialPhysics;
+        const stateIsInitial = this.simulationLayer.currentState === this.initialState;
+        let bindGroup: GPUBindGroup;
+        if (physicsIsInitial && stateIsInitial) { bindGroup = this.bindGroupA0; }
+        else if (physicsIsInitial && !stateIsInitial) { bindGroup = this.bindGroupA1; }
+        else if (!physicsIsInitial && stateIsInitial) { bindGroup = this.bindGroupB0; }
+        else { bindGroup = this.bindGroupB1; }
 
         const pass = encoder.beginComputePass();
         pass.setPipeline(this.pipeline);

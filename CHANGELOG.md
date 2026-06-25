@@ -2,6 +2,32 @@
 
 ---
 
+## [0.1.8] - [06/25/2026]
+### Updates & Changes
+- **Config**
+  - Added `stepsPerTick` to `PhysicsConfig` and `SimulationConfig` - Every frame Physics ticks exactly 2 steps and the main simulation ticks 10 times
+- **GameObject**
+  - GameObject transforms are now directly written from CPU > GPU for every non-dynamic Rigidbody
+- **Optimization**
+  - Added caches to all simulation and render passes
+    - `GameObjectPass`, `GameObjectCollisionPass`, `ParticleEmissionPass`, `ParticleSimulationPass`, `CompositePass`, `GameObjectRenderPass`, `SimulationRenderPass`, `BrushPass`, `DiffusionPass`, `IntentPass`, `PhysicsPass`, `SimulationPass`
+- **Rendering**
+  - `TexturePixelReader` can now read a specific Rect2D in the sim via `ReadRect`, allowing for specific queries to specific areas
+- **Shaders**
+  - Removed arbitrary check in `gameObjectCollision` shader for processing collisions on non-dynamic rigidbody types. Collisions no longer care about rigidbodies, and only collider components are needed to process collisions now
+- **Simulation**
+  - Removed the `SimulationClock` class and the `SimulationManager` now handles the tick at a fixed rate using the new `Time` class directly
+    - Simulation and Physics steps are now at a completely fixed rate, and gravity is no longer used in the calculation
+- **World**
+  - All chunks now load in parallel during initial worldgen
+  - Blitting offscreen chunks is now also cached into pre-allocated persistent GPU readback buffers
+
+### Bug Fixes
+- Fixed a bug causing materials to duplicate during displacement `Ice`, `Moss` & `Salt`
+- Fixed a bug causing GPU Bind Groups to be created at an unbounded rate, the bind group is now cached and D3D12 descriptor heap growth should be fixed, no longer exceeding ~12-14 bind groups
+
+---
+
 ## [0.1.7] - [06/22/2026]
 ### Updates & Changes
 - **Camera**

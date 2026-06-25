@@ -31,6 +31,7 @@ export class GameObjectRenderPass {
     private readonly materialVisualBuffer: MaterialVisualBuffer;
     private readonly pipeline: GPUComputePipeline;
     private readonly workgroupSize: number;
+    private readonly bindGroupCache = new Map<GPUTexture, GPUBindGroup>();
 
     private constructor(
         params: GameObjectRenderPassCreateParams,
@@ -64,14 +65,19 @@ export class GameObjectRenderPass {
     public Run(params: GameObjectRenderPassRunParams): void {
         const { encoder, gameObjectLayer, layers } = params;
 
-        const bindGroup = this.device.createBindGroup({
-            layout: this.pipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: gameObjectLayer.currentIdentity.createView() },
-                { binding: 1, resource: { buffer: this.materialVisualBuffer.buffer } },
-                { binding: 2, resource: layers.gameObjectsTexture.createView() },
-            ],
-        });
+        const cacheKey = gameObjectLayer.currentIdentity;
+        let bindGroup = this.bindGroupCache.get(cacheKey);
+        if (!bindGroup) {
+            bindGroup = this.device.createBindGroup({
+                layout: this.pipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: gameObjectLayer.currentIdentity.createView() },
+                    { binding: 1, resource: { buffer: this.materialVisualBuffer.buffer } },
+                    { binding: 2, resource: layers.gameObjectsTexture.createView() },
+                ],
+            });
+            this.bindGroupCache.set(cacheKey, bindGroup);
+        }
 
         const pass = encoder.beginComputePass();
         pass.setPipeline(this.pipeline);
@@ -84,5 +90,7 @@ export class GameObjectRenderPass {
     }
 
     // @omitfromdocs
-    public Destroy(): void {}
+    public Destroy(): void {
+        this.bindGroupCache.clear();
+    }
 }

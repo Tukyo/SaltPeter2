@@ -28,7 +28,7 @@ export const Salt: MaterialDefinition = {
             restitution: 0.25,
             hardness: 0.2,
         },
-        density: 0.675,
+        density: 1.15,
         durability: 1,
         temperature: {
             specificHeat: 0.5,

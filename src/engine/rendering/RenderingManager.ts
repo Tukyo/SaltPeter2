@@ -115,11 +115,13 @@ export class RenderingManager extends NitrateProcess {
     public OnResize(): void {
         this.layers?.Destroy();
         this.layers = null;
+        this.simRenderPass?.Destroy();
         this.simRenderPass = null;
         this.gameObjectRenderPass?.Destroy();
         this.gameObjectRenderPass = null;
         this.particleRenderPass?.Destroy();
         this.particleRenderPass = null;
+        this.compositePass?.Destroy();
         this.compositePass = null;
         LogManager.Instance?.Log({
             text: 'RenderingManager OnResize.',
@@ -131,11 +133,13 @@ export class RenderingManager extends NitrateProcess {
         NitrateProcess.RemoveInitListener(SimulationManager, this.onSimInit);
         this.layers?.Destroy();
         this.layers = null;
+        this.simRenderPass?.Destroy();
         this.simRenderPass = null;
         this.gameObjectRenderPass?.Destroy();
         this.gameObjectRenderPass = null;
         this.particleRenderPass?.Destroy();
         this.particleRenderPass = null;
+        this.compositePass?.Destroy();
         this.compositePass = null;
         if (RenderingManager.Instance === this) {
             RenderingManager.Instance = null;

@@ -1161,23 +1161,6 @@
     },
     {
       "enabled": true,
-      "type": "Rigidbody",
-      "bodyType": "Kinematic",
-      "mass": 1,
-      "gravityScale": 1,
-      "drag": 0,
-      "angularDrag": 0,
-      "friction": 0.5,
-      "bounciness": 0.2,
-      "velocity": {
-        "x": 0,
-        "y": 0
-      },
-      "angularVelocity": 0,
-      "isSleeping": false
-    },
-    {
-      "enabled": true,
       "customComponentType": "PlayerController",
       "type": "CustomComponent",
       "moveSpeed": 3
